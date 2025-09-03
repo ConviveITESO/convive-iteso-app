@@ -1,0 +1,24 @@
+{
+	"name": "convive-iteso-app",
+	"version": "1.0.0",
+	"description": "",
+	"main": "index.js",
+	"scripts": {
+		"format-and-lint": "biome check .",
+		"format-and-lint:fix": "biome check . --write",
+		"dev": "turbo dev"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"packageManager": "pnpm@10.15.1",
+	"devDependencies": {
+		"@biomejs/biome": "2.2.2",
+		"@repo/typescript-config": "workspace:*",
+		"@repo/schemas": "workspace:*",
+		"turbo": "^2.5.6"
+	},
+	"engines": {
+		"node": ">=22"
+	}
+}
