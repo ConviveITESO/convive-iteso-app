@@ -6,7 +6,11 @@
 	"scripts": {
 		"format-and-lint": "biome check .",
 		"format-and-lint:fix": "biome check . --write",
-		"dev": "turbo dev"
+		"dev": "turbo dev",
+		"db:push": "pnpm --filter ./apps/api exec drizzle-kit push",
+		"db:migrate": "pnpm --filter ./apps/api exec drizzle-kit migrate",
+		"db:generate": "pnpm --filter ./apps/api exec drizzle-kit generate",
+		"ui:add": "pnpm --filter ./apps/web ui:add"
 	},
 	"keywords": [],
 	"author": "",

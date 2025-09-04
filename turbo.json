@@ -14,6 +14,7 @@
 		"//#format-and-lint:fix": {
 			"cache": false
 		},
+
 		"test": {},
 		"test:e2e": {}
 	},
