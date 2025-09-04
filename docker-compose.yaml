@@ -1,0 +1,28 @@
+# This file is for development use
+
+services:
+  # database service
+  db:
+    image: postgres
+    restart: always
+    environment:
+      - POSTGRES_PASSWORD=unsafe
+      - POSTGRES_USER=user
+      - POSTGRES_DB=convive-iteso-db
+    container_name: convive-iteso-database
+    ports:
+      - "5432:5432"
+
+  # aws services
+  localstack:
+    image: localstack/localstack
+    container_name: mov-e-aws-services
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=s3 # add your AWS service here if you need it
+      - DEFAULT_REGION=us-east-1
+      - AWS_DEFAULT_REGION=us-east-1
+      - AWS_REGION=us-east-1
+    depends_on:
+      - db

@@ -1,0 +1,29 @@
+{
+	"name": "convive-iteso-app",
+	"version": "1.0.0",
+	"description": "",
+	"main": "index.js",
+	"scripts": {
+		"format-and-lint": "biome check .",
+		"format-and-lint:fix": "biome check . --write",
+		"dev": "turbo dev",
+		"db:push": "pnpm --filter ./apps/api exec drizzle-kit push",
+		"db:migrate": "pnpm --filter ./apps/api exec drizzle-kit migrate",
+		"db:generate": "pnpm --filter ./apps/api exec drizzle-kit generate",
+		"ui:add": "pnpm --filter ./apps/web ui:add"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"packageManager": "pnpm@10.15.1",
+	"devDependencies": {
+		"@biomejs/biome": "2.2.2",
+		"@repo/schemas": "workspace:*",
+		"@repo/typescript-config": "workspace:*",
+		"turbo": "^2.5.6",
+		"typescript": "^5.9.2"
+	},
+	"engines": {
+		"node": ">=22"
+	}
+}

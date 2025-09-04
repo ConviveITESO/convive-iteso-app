@@ -1,0 +1,6 @@
+// packages/schemas/tsconfig.json
+{
+	"extends": "@repo/typescript-config/base.json",
+	"compilerOptions": { "outDir": "./dist", "declaration": true },
+	"include": ["./**/*.ts"]
+}
