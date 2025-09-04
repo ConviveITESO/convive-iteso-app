@@ -7,6 +7,7 @@
 		"postinstall": "turbo build --filter=@repo/schemas",
 		"format-and-lint": "biome check .",
 		"format-and-lint:fix": "biome check . --write",
+		"commitlint": "commitlint",
 		"dev": "turbo dev",
 		"dev:app": "turbo dev --filter",
 		"lint": "turbo lint",
@@ -28,8 +29,11 @@
 	"packageManager": "pnpm@10.15.1",
 	"devDependencies": {
 		"@biomejs/biome": "2.2.2",
+		"@commitlint/config-conventional": "^19.8.1",
 		"@repo/schemas": "workspace:*",
 		"@repo/typescript-config": "workspace:*",
+		"commitlint": "^19.8.1",
+		"lefthook": "^1.12.3",
 		"turbo": "^2.5.6",
 		"typescript": "^5.9.2"
 	},
