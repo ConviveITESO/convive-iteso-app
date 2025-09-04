@@ -21,7 +21,11 @@
 		"check": "turbo check",
 		"check:app": "turbo check --filter",
 		"check:fix": "turbo check:fix",
-		"check:app:fix": "turbo check:fix --filter"
+		"check:app:fix": "turbo check:fix --filter",
+		"db:push": "pnpm --filter ./apps/api exec drizzle-kit push",
+		"db:migrate": "pnpm --filter ./apps/api exec drizzle-kit migrate",
+		"db:generate": "pnpm --filter ./apps/api exec drizzle-kit generate",
+		"ui:add": "pnpm --filter ./apps/web ui:add"
 	},
 	"keywords": [],
 	"author": "",
