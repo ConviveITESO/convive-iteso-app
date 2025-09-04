@@ -1,0 +1,71 @@
+{
+	"root": false,
+	"extends": "//",
+
+	"files": {
+		"includes": ["!next", "!out", "!build", "!next-env.d.ts", "!node_modules"]
+	},
+
+	"linter": {
+		"domains": {
+			"next": "recommended",
+			"react": "recommended",
+			"project": "recommended",
+			"test": "recommended"
+		},
+		"rules": {
+			"security": {
+				"noDangerouslySetInnerHtml": "error",
+				"noDangerouslySetInnerHtmlWithChildren": "error"
+			},
+			"a11y": {
+				"useAltText": "error",
+				"noSvgWithoutTitle": "warn"
+			},
+			"suspicious": {
+				"noConsole": "warn",
+				"noDebugger": "error",
+				"noUnknownAtRules": "off"
+			},
+			"style": {
+				"useNamingConvention": {
+					"level": "error",
+					"options": {
+						"strictCase": true,
+						"requireAscii": true
+					}
+				},
+
+				"useFilenamingConvention": {
+					"level": "error",
+					"options": {
+						"filenameCases": ["kebab-case"]
+					}
+				}
+			}
+		}
+	},
+
+	"overrides": [
+		{
+			"includes": ["**/*.{test,spec}.{ts,tsx,js,jsx}", "**/__tests__/**"],
+			"linter": {
+				"domains": { "test": "all" },
+				"rules": {
+					"suspicious": { "noConsole": "off" }
+				}
+			}
+		},
+		{
+			"includes": ["src/components/ui/**/*"],
+			"linter": {
+				"rules": {
+					"style": {
+						"useNamingConvention": "off",
+						"useFilenamingConvention": "off"
+					}
+				}
+			}
+		}
+	]
+}

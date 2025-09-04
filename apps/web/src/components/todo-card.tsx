@@ -4,14 +4,7 @@ import type { UpdateTodoSchema } from "@repo/schemas";
 import { useId, useState } from "react";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
-import {
-	Card,
-	CardAction,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "./ui/card";
+import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import {
 	Dialog,
 	DialogContent,
@@ -22,13 +15,7 @@ import {
 } from "./ui/dialog";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "./ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Textarea } from "./ui/textarea";
 
 interface Props {
@@ -77,16 +64,13 @@ export default function TodoCard({
 		setLoading(true);
 
 		try {
-			const response = await fetch(
-				`http://localhost:8080/todos/todo/${id}`,
-				{
-					method: "PATCH",
-					headers: {
-						"Content-Type": "application/json",
-					},
-					body: JSON.stringify(formData),
+			const response = await fetch(`http://localhost:8080/todos/todo/${id}`, {
+				method: "PATCH",
+				headers: {
+					"Content-Type": "application/json",
 				},
-			);
+				body: JSON.stringify(formData),
+			});
 
 			if (response.ok) {
 				setEditOpen(false);
@@ -105,12 +89,9 @@ export default function TodoCard({
 		setLoading(true);
 
 		try {
-			const response = await fetch(
-				`http://localhost:8080/todos/todo/${id}`,
-				{
-					method: "DELETE",
-				},
-			);
+			const response = await fetch(`http://localhost:8080/todos/todo/${id}`, {
+				method: "DELETE",
+			});
 
 			if (response.ok) {
 				setDeleteOpen(false);
@@ -138,16 +119,10 @@ export default function TodoCard({
 						</span>
 					</CardAction>
 					<CardContent className="mt-3 flex w-full justify-between items-center">
-						<Button
-							variant="outline"
-							onClick={() => setEditOpen(true)}
-						>
+						<Button variant="outline" onClick={() => setEditOpen(true)}>
 							Edit
 						</Button>
-						<Button
-							variant="destructive"
-							onClick={() => setDeleteOpen(true)}
-						>
+						<Button variant="destructive" onClick={() => setDeleteOpen(true)}>
 							Delete
 						</Button>
 					</CardContent>
@@ -159,17 +134,12 @@ export default function TodoCard({
 				<DialogContent className="sm:max-w-[425px]">
 					<DialogHeader>
 						<DialogTitle>Edit Todo</DialogTitle>
-						<DialogDescription>
-							Update the todo item details below.
-						</DialogDescription>
+						<DialogDescription>Update the todo item details below.</DialogDescription>
 					</DialogHeader>
 					<form onSubmit={handleUpdate}>
 						<div className="grid gap-4 py-4">
 							<div className="grid grid-cols-4 items-center gap-4">
-								<Label
-									htmlFor={editTitleId}
-									className="text-right"
-								>
+								<Label htmlFor={editTitleId} className="text-right">
 									Title
 								</Label>
 								<Input
@@ -185,10 +155,7 @@ export default function TodoCard({
 								/>
 							</div>
 							<div className="grid grid-cols-4 items-center gap-4">
-								<Label
-									htmlFor={editDescriptionId}
-									className="text-right"
-								>
+								<Label htmlFor={editDescriptionId} className="text-right">
 									Description
 								</Label>
 								<Textarea
@@ -204,10 +171,7 @@ export default function TodoCard({
 								/>
 							</div>
 							<div className="grid grid-cols-4 items-center gap-4">
-								<Label
-									htmlFor="edit-status"
-									className="text-right"
-								>
+								<Label htmlFor="edit-status" className="text-right">
 									Status
 								</Label>
 								<Select
@@ -215,11 +179,7 @@ export default function TodoCard({
 									onValueChange={(value) =>
 										setFormData({
 											...formData,
-											status: value as
-												| "todo"
-												| "in_progress"
-												| "done"
-												| "cancelled",
+											status: value as "todo" | "in_progress" | "done" | "cancelled",
 										})
 									}
 								>
@@ -227,28 +187,16 @@ export default function TodoCard({
 										<SelectValue placeholder="Select status" />
 									</SelectTrigger>
 									<SelectContent>
-										<SelectItem value="todo">
-											To Do
-										</SelectItem>
-										<SelectItem value="in_progress">
-											In Progress
-										</SelectItem>
-										<SelectItem value="done">
-											Done
-										</SelectItem>
-										<SelectItem value="cancelled">
-											Cancelled
-										</SelectItem>
+										<SelectItem value="todo">To Do</SelectItem>
+										<SelectItem value="in_progress">In Progress</SelectItem>
+										<SelectItem value="done">Done</SelectItem>
+										<SelectItem value="cancelled">Cancelled</SelectItem>
 									</SelectContent>
 								</Select>
 							</div>
 						</div>
 						<DialogFooter>
-							<Button
-								type="button"
-								variant="outline"
-								onClick={() => setEditOpen(false)}
-							>
+							<Button type="button" variant="outline" onClick={() => setEditOpen(false)}>
 								Cancel
 							</Button>
 							<Button type="submit" disabled={loading}>
@@ -265,22 +213,14 @@ export default function TodoCard({
 					<DialogHeader>
 						<DialogTitle>Delete Todo</DialogTitle>
 						<DialogDescription>
-							Are you sure you want to delete this todo? This
-							action cannot be undone.
+							Are you sure you want to delete this todo? This action cannot be undone.
 						</DialogDescription>
 					</DialogHeader>
 					<DialogFooter>
-						<Button
-							variant="outline"
-							onClick={() => setDeleteOpen(false)}
-						>
+						<Button variant="outline" onClick={() => setDeleteOpen(false)}>
 							Cancel
 						</Button>
-						<Button
-							variant="destructive"
-							onClick={handleDelete}
-							disabled={loading}
-						>
+						<Button variant="destructive" onClick={handleDelete} disabled={loading}>
 							{loading ? "Deleting..." : "Delete"}
 						</Button>
 					</DialogFooter>

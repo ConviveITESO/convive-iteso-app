@@ -1,7 +1,7 @@
-import { ZodValidationPipe } from './zod-validation.pipe';
+import { ZodValidationPipe } from "./zod-validation.pipe";
 
-describe('ZodValidationPipe', () => {
-  it('should be defined', () => {
-    expect(new ZodValidationPipe()).toBeDefined();
-  });
+describe("ZodValidationPipe", () => {
+	it("should be defined", () => {
+		expect(new ZodValidationPipe()).toBeDefined();
+	});
 });

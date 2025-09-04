@@ -6,9 +6,7 @@ import { todos } from "../database/schemas";
 
 @Injectable()
 export class TodoService {
-	constructor(
-		@Inject(DATABASE_CONNECTION) private readonly db: AppDatabase,
-	) {}
+	constructor(@Inject(DATABASE_CONNECTION) private readonly db: AppDatabase) {}
 
 	/**
 	 * Gets all todos from the database

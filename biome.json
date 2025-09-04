@@ -1,57 +1,109 @@
 {
-	"$schema": "https://biomejs.dev/schemas/2.2.2/schema.json",
+	"$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+
 	"vcs": {
-		"enabled": false,
+		"enabled": true,
 		"clientKind": "git",
-		"useIgnoreFile": true
+		"useIgnoreFile": true,
+		"defaultBranch": "main"
 	},
+
 	"files": {
-		"ignoreUnknown": false,
 		"includes": [
 			"**",
+			"!dist",
 			"!**/dist",
-			"!**/.next",
-			"!**/.turbo",
-			"!**/build",
-			"!**/*.gen.ts",
-			"!**/vite.config.ts.timestamp-*.mjs",
-			"!**/src/codegen"
+			"!coverage",
+			"!**/coverage",
+			"!node_modules",
+			"!**/node_modules"
 		]
 	},
+
 	"formatter": {
 		"enabled": true,
 		"indentStyle": "tab",
-		"indentWidth": 4
+		"indentWidth": 2,
+		"lineWidth": 100
 	},
-	"linter": {
-		"enabled": true,
-		"rules": {
-			"recommended": true
-		}
-	},
-	"javascript": {
-		"formatter": {
-			"quoteStyle": "double"
-		},
-		"parser": {
-			"unsafeParameterDecoratorsEnabled": true
-		}
-	},
+
 	"assist": {
-		"enabled": true,
 		"actions": {
 			"source": {
-				"organizeImports": "on"
+				"organizeImports": {
+					"level": "on",
+					"options": {
+						"groups": [
+							":URL:",
+							":PACKAGE_WITH_PROTOCOL:",
+							":NODE:",
+							":PACKAGE:",
+							":ALIAS:",
+							":PATH:"
+						]
+					}
+				}
 			}
 		}
 	},
+
+	"linter": {
+		"enabled": true,
+		"domains": {
+			"project": "recommended",
+			"test": "recommended"
+		},
+		"rules": {
+			"recommended": true,
+			"correctness": {
+				"noUnusedImports": "error",
+				"noUnusedVariables": "error",
+				"noUndeclaredDependencies": "error"
+			},
+			"suspicious": {
+				"noDebugger": "error"
+			},
+			"security": {
+				"noDangerouslySetInnerHtml": "error",
+				"noDangerouslySetInnerHtmlWithChildren": "error"
+			},
+			"style": {
+				"useNamingConvention": {
+					"level": "error",
+					"options": {
+						"strictCase": true,
+						"requireAscii": true
+					}
+				},
+
+				"useFilenamingConvention": {
+					"level": "error",
+					"options": {
+						"filenameCases": ["kebab-case"]
+					}
+				}
+			}
+		}
+	},
+
 	"overrides": [
 		{
-			"includes": ["apps/api/**"],
+			"includes": ["packages/**"],
 			"linter": {
 				"rules": {
-					"style": { "useImportType": "off" }
+					"style": {
+						"useImportType": "error",
+						"useNodejsImportProtocol": "error"
+					},
+					"suspicious": { "noConsole": "warn" }
 				}
+			}
+		},
+
+		{
+			"includes": ["**/*.{test,spec}.{ts,tsx,js,jsx}", "**/__tests__/**", "e2e/**", "test/**"],
+			"linter": {
+				"domains": { "test": "recommended" }
 			}
 		}
 	]

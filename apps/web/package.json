@@ -6,7 +6,13 @@
 		"dev": "next dev --turbopack",
 		"build": "next build --turbopack",
 		"start": "next start",
-		"ui:add": "pnpm dlx shadcn@latest add"
+		"lint": "biome lint ./src",
+		"lint:fix": "biome lint --write ./src",
+		"test": "vitest --run",
+		"format": "biome format --write ./src",
+		"format:check": "biome format ./src",
+		"check": "biome check ./src",
+		"check:fix": "biome check --write ./src"
 	},
 	"dependencies": {
 		"@hookform/resolvers": "^5.2.1",
