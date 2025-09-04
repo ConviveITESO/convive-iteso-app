@@ -15,7 +15,7 @@ import {
 	UpdateTodoSchema,
 	updateTodoSchema,
 } from "@repo/schemas";
-import { ZodValidationPipe } from "src/pipes/zod-validation/zod-validation.pipe";
+import { ZodValidationPipe } from "@/pipes/zod-validation/zod-validation.pipe";
 import { TodoService } from "./todo.service";
 
 @Controller("todos")

@@ -55,6 +55,17 @@
 					"suspicious": { "noConsole": "off" }
 				}
 			}
+		},
+		{
+			"includes": ["src/components/ui/**/*"],
+			"linter": {
+				"rules": {
+					"style": {
+						"useNamingConvention": "off",
+						"useFilenamingConvention": "off"
+					}
+				}
+			}
 		}
 	]
 }
