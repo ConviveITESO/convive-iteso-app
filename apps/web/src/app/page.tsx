@@ -41,13 +41,7 @@ export default function Home() {
 							No todos found. Create your first todo!
 						</div>
 					) : (
-						todos.map((todo) => (
-							<TodoCard
-								key={todo.id}
-								{...todo}
-								onTodoUpdated={fetchTodos}
-							/>
-						))
+						todos.map((todo) => <TodoCard key={todo.id} {...todo} onTodoUpdated={fetchTodos} />)
 					)}
 				</div>
 			</main>

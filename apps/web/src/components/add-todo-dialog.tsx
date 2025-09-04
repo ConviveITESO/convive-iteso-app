@@ -14,13 +14,7 @@ import {
 } from "./ui/dialog";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "./ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Textarea } from "./ui/textarea";
 
 interface AddTodoDialogProps {
@@ -74,9 +68,7 @@ export default function AddTodoDialog({ onTodoAdded }: AddTodoDialogProps) {
 			<DialogContent className="sm:max-w-[425px]">
 				<DialogHeader>
 					<DialogTitle>Add New Todo</DialogTitle>
-					<DialogDescription>
-						Create a new todo item. Fill in the details below.
-					</DialogDescription>
+					<DialogDescription>Create a new todo item. Fill in the details below.</DialogDescription>
 				</DialogHeader>
 				<form onSubmit={handleSubmit}>
 					<div className="grid gap-4 py-4">
@@ -98,10 +90,7 @@ export default function AddTodoDialog({ onTodoAdded }: AddTodoDialogProps) {
 							/>
 						</div>
 						<div className="grid grid-cols-4 items-center gap-4">
-							<Label
-								htmlFor={descriptionId}
-								className="text-right"
-							>
+							<Label htmlFor={descriptionId} className="text-right">
 								Description
 							</Label>
 							<Textarea
@@ -126,11 +115,7 @@ export default function AddTodoDialog({ onTodoAdded }: AddTodoDialogProps) {
 								onValueChange={(value) =>
 									setFormData({
 										...formData,
-										status: value as
-											| "todo"
-											| "in_progress"
-											| "done"
-											| "cancelled",
+										status: value as "todo" | "in_progress" | "done" | "cancelled",
 									})
 								}
 							>
@@ -139,13 +124,9 @@ export default function AddTodoDialog({ onTodoAdded }: AddTodoDialogProps) {
 								</SelectTrigger>
 								<SelectContent>
 									<SelectItem value="todo">To Do</SelectItem>
-									<SelectItem value="in_progress">
-										In Progress
-									</SelectItem>
+									<SelectItem value="in_progress">In Progress</SelectItem>
 									<SelectItem value="done">Done</SelectItem>
-									<SelectItem value="cancelled">
-										Cancelled
-									</SelectItem>
+									<SelectItem value="cancelled">Cancelled</SelectItem>
 								</SelectContent>
 							</Select>
 						</div>

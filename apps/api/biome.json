@@ -1,0 +1,47 @@
+{
+  "root": false,
+  "extends": "//",
+
+  "files": {
+    "includes": [
+      "**",
+      "!dist",
+      "!**/dist",
+      "!coverage",
+      "!**/coverage",
+      "!node_modules",
+      "!**/node_modules"
+    ]
+  },
+  "javascript": {
+    "parser": {
+      "unsafeParameterDecoratorsEnabled": true
+    }
+  },
+
+  "linter": {
+    "domains": {
+      "project": "recommended",
+      "test": "recommended"
+    },
+    "rules": {
+      "style": {
+        "useImportType": "off",
+        "useNodejsImportProtocol": "error"
+      },
+      "suspicious": {
+        "noExplicitAny": "error",
+        "noImplicitAnyLet": "warn"
+      },
+      "nursery": {
+        "noFloatingPromises": "warn"
+      },
+      "security": {
+        "noGlobalEval": "error"
+      },
+      "correctness": {
+        "noProcessGlobal": "error"
+      }
+    }
+  }
+}

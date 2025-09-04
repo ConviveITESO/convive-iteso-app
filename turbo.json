@@ -14,9 +14,59 @@
 		"//#format-and-lint:fix": {
 			"cache": false
 		},
-
 		"test": {},
-		"test:e2e": {}
+		"test:e2e": {},
+		"format": {
+			"cache": true,
+			"inputs": [
+				"src/**/*.{ts,tsx,js,jsx,json}",
+				"*.{ts,tsx,js,jsx,json}",
+				"biome.json",
+				"package.json"
+			],
+			"outputs": []
+		},
+		"format:check": {
+			"cache": true,
+			"inputs": [
+				"src/**/*.{ts,tsx,js,jsx,json}",
+				"*.{ts,tsx,js,jsx,json}",
+				"biome.json",
+				"package.json"
+			],
+			"outputs": []
+		},
+		"lint": {
+			"dependsOn": ["^build"],
+			"cache": true,
+			"inputs": ["src/**/*.{ts,tsx,js,jsx}", "*.{ts,tsx,js,jsx}", "biome.json", "package.json"],
+			"outputs": []
+		},
+		"lint:check": {
+			"cache": true,
+			"inputs": ["src/**/*.{ts,tsx,js,jsx}", "*.{ts,tsx,js,jsx}", "biome.json", "package.json"],
+			"outputs": []
+		},
+		"check": {
+			"cache": true,
+			"inputs": [
+				"src/**/*.{ts,tsx,js,jsx,json}",
+				"*.{ts,tsx,js,jsx,json}",
+				"biome.json",
+				"package.json"
+			],
+			"outputs": []
+		},
+		"check:fix": {
+			"cache": true,
+			"inputs": [
+				"src/**/*.{ts,tsx,js,jsx,json}",
+				"*.{ts,tsx,js,jsx,json}",
+				"biome.json",
+				"package.json"
+			],
+			"outputs": []
+		}
 	},
 	"ui": "tui"
 }

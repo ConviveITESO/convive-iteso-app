@@ -15,7 +15,7 @@ import {
 	UpdateTodoSchema,
 	updateTodoSchema,
 } from "@repo/schemas";
-import { ZodValidationPipe } from "src/pipes/zod-validation/zod-validation.pipe";
+import { ZodValidationPipe } from "@/pipes/zod-validation/zod-validation.pipe";
 import { TodoService } from "./todo.service";
 
 @Controller("todos")
@@ -40,9 +40,7 @@ export class TodoController {
 	@UsePipes(new ZodValidationPipe(updateTodoSchema))
 	async updateTodo(@Body() data: UpdateTodoSchema, @Param("id") id: string) {
 		if (!data.description && !data.status && !data.title)
-			throw new BadRequestException(
-				"Please provide at least one field to update",
-			);
+			throw new BadRequestException("Please provide at least one field to update");
 		return await this.todosService.updateTodo(id, data);
 	}
 
