@@ -21,7 +21,7 @@ This project is built as a monorepo using [Turborepo](https://turbo.build/) to e
 ### Prerequisites
 
 - Node.js (v18 or higher)
-- pnpm package manager
+- [pnpm package manager](https://pnpm.io/installation)
 - Docker and Docker Compose
 
 ### Getting Started
@@ -39,10 +39,15 @@ This project is built as a monorepo using [Turborepo](https://turbo.build/) to e
 3. **Configure environment variables**
    Create a `.env` file in the `apps/api` directory with your database connection:
    ```bash
-   DATABASE_URL="postgresql://username:password@localhost:5432/convive_db"
+   DATABASE_URL="postgresql://user:unsafe@localhost:5432/convive-iteso-db"
    ```
 
-4. **Start development servers**
+4. **Sync database schema**
+   ```bash
+   pnpm db:push
+   ```
+
+5. **Start development servers**
    ```bash
    pnpm dev
    ```
