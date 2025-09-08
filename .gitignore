@@ -44,10 +44,10 @@ dist
 
 # IDE - VSCode
 .vscode/*
-!.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
+.windsurf/
 
 # Debug
 logs
@@ -64,3 +64,6 @@ pnpm-debug.log*
 # scripts
 .venv
 __pycache__
+
+# drizzle
+drizzle/
