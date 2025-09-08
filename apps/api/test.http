@@ -1,0 +1,46 @@
+@userId = 50f42843-6023-41ed-8c37-2833e61a0d6f
+### GET /user ###
+GET http://localhost:8080/user
+
+### GET /user/:id ###
+GET http://localhost:8080/user/{{userId}}
+
+### POST /user ###
+POST http://localhost:8080/user
+Content-Type: application/json
+
+{
+    "name": "John Doe",
+    "email": "john.doe@example.com",
+    "age": 30,
+    "birthDate": "2000-01-01",
+    "password": "passwoRd123!"
+}
+
+### PUT /user/:id ###
+PUT http://localhost:8080/user/{{userId}}
+Content-Type: application/json
+
+{
+    "name": "John Doe2",
+    "email": "john.doe2@example.com",
+    "age": 32,
+    "birthDate": "2002-01-01",
+    "password": "passwoRd124!"
+}
+
+### PATCH /user/:id ###
+PATCH http://localhost:8080/user/{{userId}}
+Content-Type: application/json
+
+{
+    "name": "John Doe",
+    "email": "john.doe@example.com",
+    "age": 30,
+    "birthDate": "2000-01-01",
+    "password": "Password123!"
+}
+
+### DELETE /user/:id ###
+DELETE http://localhost:8080/user/{{userId}}
+
