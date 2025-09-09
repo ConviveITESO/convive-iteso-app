@@ -67,3 +67,14 @@ __pycache__
 
 # drizzle
 drizzle/
+
+# Terraform
+*/*.tfstate
+*/*.tfstate.*
+.terraform/
+crash.log
+*.tfvars
+terraform.tfvars
+override.tf
+override.tf.json
+*.pem
