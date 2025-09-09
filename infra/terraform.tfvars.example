@@ -1,0 +1,18 @@
+# terraform.tfvars.example
+# Copy this file to terraform.tfvars and fill in the actual secrets before applying
+
+project_name = ""
+
+# RDS database configuration
+db_name     = ""
+db_username = ""
+db_password = ""
+
+availability_zone =
+instance_type     = "t4g.micro" # or t4g.small
+ami_id            = ""
+key_name          = ""
+
+github_user   =
+github_token  =
+admin_email   =
