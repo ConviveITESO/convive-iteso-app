@@ -1,0 +1,8 @@
+{
+	"recommendations": [
+		"biomejs.biome",
+		"vivaxy.vscode-conventional-commits",
+		"bradlc.vscode-tailwindcss",
+		"wayou.vscode-todo-highlight"
+	]
+}
