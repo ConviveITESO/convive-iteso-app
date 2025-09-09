@@ -10,6 +10,8 @@
 		"commitlint": "commitlint",
 		"dev": "turbo dev",
 		"dev:app": "turbo dev --filter",
+		"build": "turbo build",
+		"build:app": "turbo build --filter",
 		"lint": "turbo lint",
 		"lint:app": "turbo lint --filter",
 		"lint:fix": "turbo lint:fix",
