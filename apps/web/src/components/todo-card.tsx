@@ -2,6 +2,7 @@
 
 import type { UpdateTodoSchema } from "@repo/schemas";
 import { useId, useState } from "react";
+import { getApiUrl } from "@/lib/api";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
@@ -64,7 +65,7 @@ export default function TodoCard({
 		setLoading(true);
 
 		try {
-			const response = await fetch(`http://localhost:8080/todos/todo/${id}`, {
+			const response = await fetch(`${getApiUrl()}/todos/todo/${id}`, {
 				method: "PATCH",
 				headers: {
 					"Content-Type": "application/json",
@@ -89,7 +90,7 @@ export default function TodoCard({
 		setLoading(true);
 
 		try {
-			const response = await fetch(`http://localhost:8080/todos/todo/${id}`, {
+			const response = await fetch(`${getApiUrl()}/todos/todo/${id}`, {
 				method: "DELETE",
 			});
 
