@@ -44,10 +44,10 @@ dist
 
 # IDE - VSCode
 .vscode/*
-!.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
+.windsurf/
 
 # Debug
 logs
@@ -64,3 +64,17 @@ pnpm-debug.log*
 # scripts
 .venv
 __pycache__
+
+# drizzle
+drizzle/
+
+# Terraform
+*/*.tfstate
+*/*.tfstate.*
+.terraform/
+crash.log
+*.tfvars
+terraform.tfvars
+override.tf
+override.tf.json
+*.pem
