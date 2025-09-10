@@ -41,7 +41,23 @@ This project is built as a monorepo using [Turborepo](https://turbo.build/) with
 
 ### Getting Started
 
-1. **Install dependencies**
+1. **Clone the repository**
+
+   ```bash
+   git clone https://github.com/ConviveITESO/convive-iteso-app.git
+   cd convive-iteso-app
+   ```
+
+2. **Open in VS Code with workspace (Optional but Recommended)**
+   For optimal IDE support with Biome linting and formatting in the monorepo structure:
+
+   ```bash
+   code convive-iteso.code-workspace
+   ```
+
+   This workspace configuration enables Biome to work properly across all packages and applications.
+
+3. **Install dependencies**
 
    ```bash
    pnpm install
@@ -49,13 +65,13 @@ This project is built as a monorepo using [Turborepo](https://turbo.build/) with
 
    this will install all dependencies for all packages and build the packages of the monorepo
 
-2. **Start the database**
+4. **Start the database**
 
    ```bash
    docker compose up -d
    ```
 
-3. **Configure environment variables**
+5. **Configure environment variables**
 
    - Create a `.env` file in the `apps/api` directory with your database connection:
 
@@ -69,13 +85,13 @@ This project is built as a monorepo using [Turborepo](https://turbo.build/) with
      NEXT_PUBLIC_API_URL="http://localhost:8080"
      ```
 
-4. **Sync database schema**
+6. **Sync database schema**
 
    ```bash
    pnpm run db:push
    ```
 
-5. **Start development servers**
+7. **Start development servers**
    ```bash
    pnpm run dev
    ```
@@ -128,6 +144,69 @@ The project includes a production-ready Docker configuration with `docker-compos
 - **Database**: External PostgreSQL (AWS RDS) - not containerized for production
 
 ## 🛠️ Development Tools
+
+### Git Hooks & Commit Standards
+
+The project uses **Lefthook** for Git hooks management and **Commitlint** for enforcing commit message standards.
+
+#### Git Hooks Configuration
+
+**Pre-commit hooks:**
+
+- Automatically formats code using Biome before each commit
+- Ensures code consistency across the team
+
+**Pre-push hooks:**
+
+- Runs full Biome check (lint + format) before pushing
+- Prevents broken code from reaching the repository
+
+**Commit message hooks:**
+
+- Validates commit messages using Commitlint
+- Ensures all commits follow the project's standards
+
+#### Commit Message Format
+
+All commit messages must follow this pattern:
+
+```
+type[scope]: description
+```
+
+or
+
+```
+type([scope]): description
+```
+
+**Available Types:**
+
+- `feat` - New feature
+- `fix` - Bug fix
+- `docs` - Documentation changes
+- `style` - Code style changes (formatting, etc.)
+- `refactor` - Code refactoring
+- `perf` - Performance improvements
+- `test` - Adding or updating tests
+- `build` - Build system changes
+- `ci` - CI/CD changes
+- `chore` - Maintenance tasks
+- `revert` - Reverting changes
+
+**Examples:**
+
+```bash
+feat[auth]: add user login functionality
+fix[database]: resolve connection timeout issue
+docs[readme]: update installation instructions
+refactor[services]: extract common API logic
+perf[queries]: optimize database queries
+```
+
+#### Setup Git Hooks
+
+Git hooks are automatically installed when you run `pnpm install` thanks to the `postinstall` script. No manual setup required!
 
 ### API Module Generator
 

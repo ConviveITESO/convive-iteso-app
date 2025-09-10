@@ -4,7 +4,7 @@
 	"description": "",
 	"main": "index.js",
 	"scripts": {
-		"postinstall": "turbo build --filter=@repo/schemas",
+		"postinstall": "turbo build --filter=@repo/schemas && lefthook install",
 		"format-and-lint": "biome check .",
 		"format-and-lint:fix": "biome check . --write",
 		"commitlint": "commitlint",
