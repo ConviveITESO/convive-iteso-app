@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/suspicious/noConsole: main file not logger  */
 import process from "node:process";
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";

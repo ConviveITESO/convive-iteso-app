@@ -2,6 +2,7 @@
 
 import type { CreateTodoSchema } from "@repo/schemas";
 import { useId, useState } from "react";
+import { getApiUrl } from "@/lib/api";
 import { Button } from "./ui/button";
 import {
 	Dialog,
@@ -38,7 +39,7 @@ export default function AddTodoDialog({ onTodoAdded }: AddTodoDialogProps) {
 		setLoading(true);
 
 		try {
-			const response = await fetch("http://localhost:8080/todos/todo", {
+			const response = await fetch(`${getApiUrl()}/todos/todo`, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",

@@ -61,7 +61,9 @@
 				"noUndeclaredDependencies": "error"
 			},
 			"suspicious": {
-				"noDebugger": "error"
+				"noDebugger": "error",
+				"noConsole": "error",
+				"noExplicitAny": "error"
 			},
 			"security": {
 				"noDangerouslySetInnerHtml": "error",

@@ -4,6 +4,7 @@ import type { SelectTodoSchema } from "@repo/schemas";
 import { useCallback, useEffect, useState } from "react";
 import AddTodoDialog from "@/components/add-todo-dialog";
 import TodoCard from "@/components/todo-card";
+import { getApiUrl } from "@/lib/api";
 
 export default function Home() {
 	const [todos, setTodos] = useState<SelectTodoSchema[]>([]);
@@ -12,7 +13,7 @@ export default function Home() {
 	const fetchTodos = useCallback(async () => {
 		try {
 			setLoading(true);
-			const response = await fetch("http://localhost:8080/todos");
+			const response = await fetch(`${getApiUrl()}/todos`);
 			const data = (await response.json()) as SelectTodoSchema[];
 			setTodos(data);
 		} catch (error) {
