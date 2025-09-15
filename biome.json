@@ -62,6 +62,7 @@
 			},
 			"suspicious": {
 				"noDebugger": "error",
+				"noConsole": "error",
 				"noExplicitAny": "error"
 			},
 			"security": {

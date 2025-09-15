@@ -2,8 +2,14 @@
 
 # Dependencies
 node_modules
-.pnp
+/.pnp
+.pnp.*
 .pnp.js
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
 
 # Local env files
 .env
@@ -11,11 +17,13 @@ node_modules
 .env.development.local
 .env.test.local
 .env.production.local
+.env.prod
 
 # Testing
 .nyc_output
 blob-report/
 coverage
+/coverage
 test-results/
 playwright/.cache/
 playwright-report/
@@ -29,8 +37,11 @@ playwright-report/
 
 # Build Outputs
 .next/
+/.next/
 out/
+/out/
 build
+/build
 dist
 
 # IDEs and editors
@@ -44,10 +55,13 @@ dist
 
 # IDE - VSCode
 .vscode/*
+**/.vscode/*
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
+!.vscode/settings.example.json
 .windsurf/
+WARP.md
 
 # Debug
 logs
@@ -60,6 +74,10 @@ pnpm-debug.log*
 # Misc
 .DS_Store
 *.pem
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
 
 # scripts
 .venv
@@ -78,3 +96,6 @@ terraform.tfvars
 override.tf
 override.tf.json
 *.pem
+
+# docker
+docker-compose.override.yaml
