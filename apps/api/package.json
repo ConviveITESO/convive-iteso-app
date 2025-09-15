@@ -24,11 +24,13 @@
 		"check:fix": "biome check --write ./src ./test"
 	},
 	"dependencies": {
-		"@repo/schemas": "workspace:*",
+		"@anatine/zod-openapi": "^2.2.8",
 		"@nestjs/common": "^11.0.1",
 		"@nestjs/config": "^4.0.2",
 		"@nestjs/core": "^11.0.1",
 		"@nestjs/platform-express": "^11.0.1",
+		"@nestjs/swagger": "^11.2.0",
+		"@repo/schemas": "workspace:*",
 		"dotenv": "^17.2.2",
 		"drizzle-orm": "^0.44.5",
 		"pg": "^8.16.3",
