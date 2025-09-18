@@ -1,0 +1,111 @@
+name: Validate Code
+
+on: [push, pull_request]
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+
+  security-sast:
+    needs: [lint-and-test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Copy .env.example to .env
+        run: cp apps/api/.env.example apps/api/.env
+
+      - name: Download RDS cert
+        run: |
+          mkdir -p config/certs
+          curl -sSL https://truststore.pki.rds.amazonaws.com/us-east-2/us-east-2-bundle.pem -o config/certs/global-bundle.pem
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - run: npm ci
+
+      - name: Install Snyk CLI
+        run: npm install -g snyk
+
+      - name: Run Snyk test
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: snyk test
+
+      - name: Monitor project with Snyk (optional)
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: snyk monitor
+
+  security-dast:
+    needs: [lint-and-test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Copy .env.example to .env
+        run: cp apps/api/.env.example apps/api/.env
+
+      - name: Download RDS cert
+        run: |
+          mkdir -p config/certs
+          curl -sSL https://truststore.pki.rds.amazonaws.com/us-east-2/us-east-2-bundle.pem -o config/certs/global-bundle.pem
+
+      - name: Start services with Docker Compose
+        run: docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+
+      - name: Wait for API healthcheck
+        run: |
+          echo "Waiting for API to become healthy..."
+          container_id=$(docker compose -f docker-compose.yml -f docker-compose.dev.yml ps -q api)
+          if [ -z "$container_id" ]; then
+            echo "❌ Could not find container ID for service 'api'"
+            exit 1
+          fi
+
+          for i in {1..15}; do
+            status=$(docker inspect -f '{{.State.Health.Status}}' "$container_id")
+            if [ "$status" = "healthy" ]; then
+              echo "✅ API is healthy."
+              break
+            fi
+            echo "⏳ Current status: $status. Retrying in 5s..."
+            sleep 5
+          done
+      - name: Prepare ZAP reports folder
+        run: |
+          mkdir -p reports
+          chmod -R a+rw reports
+      - name: Run OWASP ZAP Baseline Scan manually
+        run: |
+          docker pull ghcr.io/zaproxy/zaproxy:stable
+          docker run --network=host \
+            --rm \
+            -v "${{ github.workspace }}/reports":/zap/wrk:rw \
+            ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
+              --autooff \
+              -t http://localhost:1337 \
+              -a \
+              -J /zap/wrk/report_json.json \
+              -w /zap/wrk/report_md.md \
+              -r /zap/wrk/report_html.html
+
+      - name: Shut down containers
+        if: always()
+        run: docker compose -f docker-compose.yml -f docker-compose.dev.yml down
