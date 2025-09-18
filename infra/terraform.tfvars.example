@@ -14,5 +14,6 @@ ami_id            = ""
 key_name          = ""
 
 github_user   =
+github_org    =
 github_token  =
 admin_email   =

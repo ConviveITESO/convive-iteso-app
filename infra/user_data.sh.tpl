@@ -38,15 +38,14 @@ sudo chown -R ubuntu:ubuntu /home/ubuntu/${project_name}
 git config --global --add safe.directory /home/ubuntu/${project_name}
 
 # === Create .env file ===
-cat <<EOF > .env
+
+cat <<EOF > apps/api/.env
 # === Environment variables ===
 NODE_ENV=production
+BACKEND_URL=http://conviveitesoback.ricardonavarro.mx
+FRONTEND_URL=http://conviveitesofront.ricardonavarro.mx
 # === Database ===
-DB_HOST=${db_host}
-DB_PORT=5432
-DB_USER=${db_username}
-DB_PASSWORD=${db_password}
-DB_NAME=${db_name}
+DATABASE_URL=postgresql://${db_username}:${db_password}@${db_host}:5432/${db_name}
 EOF
 
 # === Start container ===

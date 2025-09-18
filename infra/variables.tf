@@ -1,5 +1,5 @@
 variable "project_name" {
-  description = "The project name prefix for resources"
+  description = "The project name prefix for resources and the github repo"
   type        = string
 }
 
@@ -42,6 +42,11 @@ variable "availability_zone" {
 
 variable "github_user" {
   description = "Your GitHub username or org name"
+  type        = string
+}
+
+variable "github_org" {
+  description = "Your GitHub Organization name"
   type        = string
 }
 
