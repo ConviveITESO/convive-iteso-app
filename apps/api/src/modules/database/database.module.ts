@@ -5,6 +5,7 @@ import { Pool } from "pg";
 import { DATABASE_CONNECTION } from "./connection";
 import { DatabaseHealthService } from "./database-health.service";
 import * as schemas from "./schemas";
+import { InitialDataService } from "./seed/initial-data.service";
 
 @Module({
 	providers: [
@@ -28,6 +29,7 @@ import * as schemas from "./schemas";
 			},
 			inject: [ConfigService],
 		},
+		InitialDataService,
 	],
 	exports: [DATABASE_CONNECTION],
 })

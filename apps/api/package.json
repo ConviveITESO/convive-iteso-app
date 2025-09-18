@@ -22,7 +22,8 @@
 		"format": "biome format --write ./src ./test",
 		"format:check": "biome format ./src ./test",
 		"check": "biome check ./src ./test",
-		"check:fix": "biome check --write ./src ./test"
+		"check:fix": "biome check --write ./src ./test",
+		"db:seed": "tsx src/modules/database/seed/index.ts"
 	},
 	"dependencies": {
 		"@asteasolutions/zod-to-openapi": "^8.1.0",
