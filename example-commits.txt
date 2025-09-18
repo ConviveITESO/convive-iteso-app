@@ -1,0 +1,62 @@
+# Test Commits for Commitlint Validation
+# All commits must have scope in [] brackets
+
+# 1. feat - New feature with short description
+feat[auth]: add user login functionality
+
+# 2. feat - New feature with gitmoji
+feat[api]: ✨ implement JWT token validation
+
+# 3. feat - New feature with long description
+feat[dashboard]: add comprehensive analytics dashboard with real-time data visualization and export capabilities
+
+# 4. fix - Bug fix with short description
+fix[database]: resolve connection timeout issue
+
+# 5. fix - Bug fix with gitmoji
+fix[ui]: 🐛 correct button alignment in mobile view
+
+# 6. fix - Bug fix with parentheses format
+fix([validation]): handle edge case for empty form fields
+
+# 7. docs - Documentation update
+docs[readme]: update installation instructions
+
+# 8. docs - Documentation with gitmoji
+docs[api]: 📝 add comprehensive endpoint documentation
+
+# 9. style - Code style changes
+style[components]: format code according to prettier rules
+
+# 10. style - Style with gitmoji
+style[css]: 💄 improve responsive design for tablet devices
+
+# 11. refactor - Code refactoring
+refactor[services]: extract common API logic into base service class
+
+# 12. refactor - Refactor with gitmoji
+refactor[auth]: ♻️ simplify user authentication flow
+
+# 13. perf - Performance improvement
+perf[queries]: optimize database queries for user dashboard
+
+# 14. perf - Performance with gitmoji
+perf[images]: ⚡ implement lazy loading for gallery components
+
+# 15. test - Adding tests
+test[utils]: add unit tests for date formatting functions
+
+# 16. test - Tests with gitmoji
+test[api]: ✅ add integration tests for user endpoints
+
+# 17. build - Build system changes
+build[webpack]: update configuration for production optimization
+
+# 18. ci - CI/CD changes
+ci[github]: add automated security scanning workflow
+
+# 19. chore - Maintenance tasks
+chore[deps]: update dependencies to latest versions
+
+# 20. revert - Reverting changes
+revert[feature]: revert user profile redesign due to performance issues

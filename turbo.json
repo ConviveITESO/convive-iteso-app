@@ -10,10 +10,6 @@
 			"dependsOn": ["^build"],
 			"outputs": ["dist/**", ".next/**", "!.next/cache/**"]
 		},
-		"//#format-and-lint": {},
-		"//#format-and-lint:fix": {
-			"cache": false
-		},
 		"test": {},
 		"test:e2e": {},
 		"format": {
