@@ -33,7 +33,7 @@ sudo ln -sf /snap/bin/certbot /usr/bin/certbot
 
 # === Clone private repo using GitHub token ===
 cd /home/ubuntu
-git clone https://${github_user}:${github_token}@github.com/${github_user}/${project_name}.git
+git clone https://${github_user}:${github_token}@github.com/${github_org}/${project_name}.git
 sudo chown -R ubuntu:ubuntu /home/ubuntu/${project_name}
 git config --global --add safe.directory /home/ubuntu/${project_name}
 
