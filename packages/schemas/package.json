@@ -7,6 +7,7 @@
 		"dev": "tsc -p ."
 	},
 	"dependencies": {
+		"@asteasolutions/zod-to-openapi": "^8.1.0",
 		"zod": "^4.1.5"
 	},
 	"main": "./dist/index.js",

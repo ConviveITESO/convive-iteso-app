@@ -62,6 +62,8 @@ dist
 !.vscode/settings.example.json
 .windsurf/
 WARP.md
+AGENTS.md
+CLAUDE.md
 
 # Debug
 logs
