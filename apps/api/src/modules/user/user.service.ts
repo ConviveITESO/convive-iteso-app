@@ -1,6 +1,11 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { CreateUserSchema, UpdateUserSchema } from "@repo/schemas";
-import { eq } from "drizzle-orm";
+import {
+	CreateUserSchema,
+	UpdateUserSchema,
+	UserIdParamSchema,
+	UserQuerySchema,
+} from "@repo/schemas";
+import { and, eq, like, SQL } from "drizzle-orm";
 import { AppDatabase, DATABASE_CONNECTION } from "@/modules/database/connection";
 import { users } from "../database/schemas";
 
@@ -9,19 +14,40 @@ export class UserService {
 	constructor(@Inject(DATABASE_CONNECTION) private readonly db: AppDatabase) {}
 
 	/**
-	 * Gets all users from the database
-	 * @returns all users
+	 * Gets all users from the database with optional filtering
+	 * @param query Query parameters for filtering
+	 * @returns all users matching the criteria
 	 */
-	async getUsers() {
-		return await this.db.query.users.findMany();
+	async getUsers(query?: UserQuerySchema) {
+		if (!query || Object.keys(query).length === 0) {
+			return await this.db.query.users.findMany();
+		}
+
+		const conditions: SQL[] = [];
+		if (query.name) {
+			conditions.push(like(users.name, `%${query.name}%`));
+		}
+		if (query.email) {
+			conditions.push(like(users.email, `%${query.email}%`));
+		}
+		if (query.age) {
+			conditions.push(eq(users.age, query.age));
+		}
+		if (query.birthDate) {
+			conditions.push(eq(users.birthDate, new Date(query.birthDate)));
+		}
+
+		return await this.db.query.users.findMany({
+			where: conditions.length > 0 ? and(...conditions) : undefined,
+		});
 	}
 
 	/**
 	 * Gets a single user by its id
-	 * @param userId The id of the user
+	 * @param userId The UUID of the user
 	 * @returns The user or undefined
 	 */
-	async getUserById(userId: string) {
+	async getUserById(userId: UserIdParamSchema) {
 		return await this.db.query.users.findFirst({
 			where: eq(users.id, userId),
 		});
@@ -42,11 +68,11 @@ export class UserService {
 
 	/**
 	 * Updates a single user
-	 * @param userId The id of the user
+	 * @param userId The UUID of the user
 	 * @param data The data for update
 	 * @returns The updated user or undefined
 	 */
-	async updateUser(userId: string, data: UpdateUserSchema) {
+	async updateUser(userId: UserIdParamSchema, data: UpdateUserSchema) {
 		const result = await this.db
 			.update(users)
 			.set({ ...data })
@@ -57,10 +83,10 @@ export class UserService {
 
 	/**
 	 * Deletes a user by its id
-	 * @param userId The id of the user
+	 * @param userId The UUID of the user
 	 * @returns The deleted user or undefined
 	 */
-	async deleteUser(userId: string) {
+	async deleteUser(userId: UserIdParamSchema) {
 		const user = await this.getUserById(userId);
 		if (!user) return undefined;
 		await this.db.delete(users).where(eq(users.id, userId));

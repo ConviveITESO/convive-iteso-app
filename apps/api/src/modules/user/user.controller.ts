@@ -1,18 +1,37 @@
-import { Body, Controller, Delete, Get, Logger, Param, Patch, Post, Put } from "@nestjs/common";
+import {
+	Body,
+	Controller,
+	Delete,
+	Get,
+	Logger,
+	Param,
+	Patch,
+	Post,
+	Put,
+	Query,
+} from "@nestjs/common";
+import { ApiTags } from "@nestjs/swagger";
 import {
 	CreateUserSchema,
 	createUserSchema,
 	UpdateUserSchema,
+	UserIdParamSchema,
+	UserQuerySchema,
 	updateUserSchema,
+	userIdParamSchema,
+	userQuerySchema,
+	userResponseArraySchema,
+	userResponseSchema,
 } from "@repo/schemas";
 import {
-	ZodValidationPipe,
 	ZodBody,
-	ZodOk,
 	ZodCreated,
+	ZodOk,
+	ZodParam,
+	ZodQuery,
+	ZodValidationPipe,
 } from "@/pipes/zod-validation/zod-validation.pipe";
 import { UserService } from "./user.service";
-import { ApiParam, ApiTags } from "@nestjs/swagger";
 
 @ApiTags("User")
 @Controller("user")
@@ -21,96 +40,48 @@ export class UserController {
 
 	// GET /user
 	@Get()
-	@ZodOk(updateUserSchema, [
-		{
-			id: "uuid-v4-string",
-			name: "John Doe",
-			email: "john@example.com",
-			age: 25,
-			birthDate: "2000-01-01",
-			password: "Password123!",
-			createdAt: "20XX-01-01T12:00:00Z",
-		},
-	])
-	async getAllUsers() {
-		return await this.userService.getUsers();
+	@ZodQuery(userQuerySchema, "search")
+	@ZodOk(userResponseArraySchema)
+	async getAllUsers(@Query() query?: UserQuerySchema) {
+		return await this.userService.getUsers(query);
 	}
 
 	// GET /user/:id
 	@Get(":id")
-	@ZodOk(updateUserSchema, {
-		id: "uuid-v4-string",
-		name: "John Doe",
-		email: "john@example.com",
-		age: 25,
-		birthDate: "2000-01-01",
-		password: "Password123!",
-		createdAt: "20XX-01-01T12:00:00Z",
-	})
-	async getUserById(@Param("id") id: string) {
+	@ZodParam(userIdParamSchema, "id")
+	@ZodOk(userResponseSchema)
+	async getUserById(@Param(new ZodValidationPipe(userIdParamSchema)) id: UserIdParamSchema) {
 		return await this.userService.getUserById(id);
 	}
 
 	// POST /user
 	@Post()
-	@ZodBody(createUserSchema, {
-		name: "John Doe",
-		email: "john@example.com",
-		age: 25,
-		birthDate: "2000-01-01",
-		password: "Password123!",
-	})
-	@ZodCreated(createUserSchema, {
-		id: "uuid-v4-string",
-		name: "John Doe",
-		email: "john@example.com",
-		age: 25,
-		birthDate: "2000-01-01",
-		password: "Password123!",
-		createdAt: "20XX-01-01T12:00:00Z",
-	})
+	@ZodBody(createUserSchema)
+	@ZodCreated(userResponseSchema)
 	async createUser(@Body(new ZodValidationPipe(createUserSchema)) data: CreateUserSchema) {
 		return await this.userService.createUser(data);
 	}
 
 	//  UPDATE /user/:id
 	@Put(":id")
-	@ZodBody(createUserSchema, {
-		name: "John Doe",
-	})
-	@ZodOk(createUserSchema, {
-		id: "uuid-v4-string",
-		name: "John Doe",
-		email: "john@example.com",
-		age: 25,
-		birthDate: "2000-01-01",
-		password: "Password123!",
-		createdAt: "20XX-01-01T12:00:00Z",
-	})
+	@ZodParam(userIdParamSchema, "id")
+	@ZodBody(createUserSchema)
+	@ZodOk(userResponseSchema)
 	async updateFullUser(
 		@Body(new ZodValidationPipe(createUserSchema)) data: CreateUserSchema,
-		@Param("id") id: string,
+		@Param(new ZodValidationPipe(userIdParamSchema)) id: UserIdParamSchema,
 	) {
 		return await this.userService.updateUser(id, data);
 	}
 
 	// PATCH /user/:id
 	@Patch(":id")
-	@ZodBody(updateUserSchema, {
-		name: "John Doe",
-	})
-	@ZodOk(updateUserSchema, {
-		id: "uuid-v4-string",
-		name: "John Doe",
-		email: "john@example.com",
-		age: 25,
-		birthDate: "2000-01-01",
-		password: "Password123!",
-		createdAt: "20XX-01-01T12:00:00Z",
-	})
+	@ZodParam(userIdParamSchema, "id")
+	@ZodBody(updateUserSchema)
+	@ZodOk(userResponseSchema)
 	async updateUser(
 		@Body(new ZodValidationPipe(updateUserSchema)) data: UpdateUserSchema,
-		@Param("id") id: string,
+		@Param(new ZodValidationPipe(userIdParamSchema)) id: UserIdParamSchema,
 	) {
 		const logger = new Logger(UserController.name);
 		logger.debug(`PATCH /user/${id} - Raw body received: ${JSON.stringify(data)}`);
@@ -120,16 +91,9 @@ export class UserController {
 
 	// DELETE /user/:id
 	@Delete(":id")
-	@ZodOk(updateUserSchema, {
-		id: "uuid-v4-string",
-		name: "John Doe",
-		email: "john@example.com",
-		age: 25,
-		birthDate: "2000-01-01",
-		password: "Password123!",
-		createdAt: "20XX-01-01T12:00:00Z",
-	})
-	async deleteUser(@Param("id") id: string) {
+	@ZodParam(userIdParamSchema, "id")
+	@ZodOk(userResponseSchema)
+	async deleteUser(@Param(new ZodValidationPipe(userIdParamSchema)) id: UserIdParamSchema) {
 		return await this.userService.deleteUser(id);
 	}
 }
