@@ -1,7 +1,7 @@
 import { pgEnum, pgTable, serial, varchar } from "drizzle-orm/pg-core";
 import { timestampColumns } from "./default-columns";
 
-export const userStatus = pgEnum("status", ["new", "active", "deleted"]);
+export const userStatus = pgEnum("user_status", ["new", "active", "deleted"]);
 
 export const users = pgTable("users", {
 	id: serial("id").primaryKey(),
