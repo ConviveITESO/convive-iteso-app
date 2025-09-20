@@ -1,13 +1,15 @@
-import { date, integer, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { pgEnum, pgTable, serial, varchar } from "drizzle-orm/pg-core";
+import { timestampColumns } from "./default-columns";
+
+export const userStatus = pgEnum("user_status", ["new", "active", "deleted"]);
 
 export const users = pgTable("users", {
-	id: uuid().defaultRandom().primaryKey().notNull(),
-	name: text().notNull(),
-	email: text().notNull().unique(),
-	age: integer().notNull(),
-	birthDate: date({ mode: "date" }).notNull(),
-	password: text().notNull(),
-	createdAt: timestamp("created_at").defaultNow().notNull(),
+	id: serial("id").primaryKey(),
+	email: varchar("email", { length: 256 }).notNull().unique(),
+	firstName: varchar("first_name", { length: 256 }).notNull(),
+	lastName: varchar("last_name", { length: 256 }).notNull(),
+	status: userStatus().default("new").notNull(),
+	...timestampColumns,
 });
 
 export type User = typeof users.$inferSelect;
