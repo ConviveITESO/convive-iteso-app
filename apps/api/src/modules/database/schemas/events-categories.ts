@@ -1,12 +1,12 @@
-import { integer, pgTable, primaryKey } from "drizzle-orm/pg-core";
+import { pgTable, primaryKey, uuid } from "drizzle-orm/pg-core";
 import { categories } from "./categories";
 import { events } from "./events";
 
 export const eventsCategories = pgTable(
 	"events_categories",
 	{
-		eventId: integer("event_id").references(() => events.id),
-		categoryId: integer("category_id").references(() => categories.id),
+		eventId: uuid("event_id").references(() => events.id),
+		categoryId: uuid("category_id").references(() => categories.id),
 	},
 	(t) => ({
 		pk: primaryKey({ columns: [t.eventId, t.categoryId] }),
