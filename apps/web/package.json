@@ -13,7 +13,8 @@
 		"format:check": "biome format ./src",
 		"check": "biome check ./src",
 		"check:fix": "biome check --write ./src",
-		"ui:add": "pnpm dlx shadcn@latest add"
+		"ui:add": "pnpm dlx shadcn@latest add",
+		"type-check": "tsc --noEmit"
 	},
 	"dependencies": {
 		"@hookform/resolvers": "^5.2.1",
