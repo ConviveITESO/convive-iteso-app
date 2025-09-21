@@ -7,6 +7,7 @@ export * from "./categories";
 export * from "./events";
 export * from "./groups";
 export * from "./locations";
+export * from "./subscriptions";
 export * from "./todo";
 export * from "./users";
 export { z } from "./zod-openapi";

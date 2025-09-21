@@ -6,5 +6,6 @@ export * from "./events-categories";
 export * from "./groups";
 export * from "./locations";
 export * from "./relations";
+export * from "./subscriptions";
 export * from "./todos";
 export * from "./users";
