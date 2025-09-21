@@ -1,0 +1,317 @@
+import { ForbiddenException, Inject, Injectable, NotFoundException } from "@nestjs/common";
+import {
+	CreateSubscriptionSchema,
+	SubscriptionIdParamSchema,
+	SubscriptionQuerySchema,
+	SubscriptionResponseSchema,
+	UpdateSubscriptionSchema,
+} from "@repo/schemas";
+import { and, eq, gte, max, SQL, sql } from "drizzle-orm";
+import { AppDatabase, DATABASE_CONNECTION, Transaction } from "../database/connection";
+import { events, Subscription, subscriptions } from "../database/schemas";
+
+@Injectable()
+export class SubscriptionsService {
+	constructor(@Inject(DATABASE_CONNECTION) private readonly db: AppDatabase) {}
+
+	/**
+	 * Converts a subscription to a subscription response
+	 * @param subscription The subscription to convert
+	 * @returns The subscription response
+	 */
+	private toSubscriptionResponse(subscription: Subscription): SubscriptionResponseSchema {
+		return {
+			id: subscription.id,
+			userId: subscription.userId,
+			eventId: subscription.eventId,
+			status: subscription.status,
+			position: subscription.position,
+		};
+	}
+
+	/**
+	 * Promotes the next user from waitlist to registered
+	 * @param tx Database transaction
+	 * @param eventId The event ID
+	 */
+	private async promoteFromWaitlist(tx: Transaction, eventId: string) {
+		// Get next user in waitlist
+		const [nextWaitlisted] = await tx
+			.select()
+			.from(subscriptions)
+			.where(and(eq(subscriptions.eventId, eventId), eq(subscriptions.status, "waitlisted")))
+			.orderBy(subscriptions.position)
+			.limit(1);
+
+		if (!nextWaitlisted) {
+			return;
+		}
+
+		if (!nextWaitlisted.position) {
+			throw new Error("Next waitlisted user has no position");
+		}
+
+		// Promote to registered
+		await tx
+			.update(subscriptions)
+			.set({
+				status: "registered",
+				position: null,
+				updatedAt: new Date(),
+			})
+			.where(eq(subscriptions.id, nextWaitlisted.id));
+
+		// Update positions for remaining waitlisted users
+		await tx
+			.update(subscriptions)
+			.set({
+				position: sql`${subscriptions.position} - 1`,
+				updatedAt: new Date(),
+			})
+			.where(
+				and(
+					eq(subscriptions.eventId, eventId),
+					eq(subscriptions.status, "waitlisted"),
+					gte(subscriptions.position, nextWaitlisted.position),
+				),
+			);
+	}
+
+	/**
+	 * Gets all subscriptions for a user with optional filtering
+	 * @param userId The user ID
+	 * @param query Query parameters for filtering
+	 * @returns all subscriptions matching the criteria
+	 */
+	async getUserSubscriptions(userId: string, query?: SubscriptionQuerySchema) {
+		const conditions: SQL[] = [eq(subscriptions.userId, userId)];
+
+		if (query?.status) {
+			conditions.push(eq(subscriptions.status, query.status));
+		}
+		if (query?.eventId) {
+			conditions.push(eq(subscriptions.eventId, query.eventId));
+		}
+
+		const result = await this.db
+			.select()
+			.from(subscriptions)
+			.where(and(...conditions));
+
+		if (!result) {
+			throw new NotFoundException("Subscriptions not found");
+		}
+
+		return result;
+	}
+
+	/**
+	 * Gets a single subscription by its id
+	 * @param subscriptionId The ID of the subscription
+	 * @param userId The user ID (for authorization)
+	 * @returns The subscription or undefined
+	 */
+	async getSubscriptionById(subscriptionId: SubscriptionIdParamSchema, userId: string) {
+		const [subscription] = await this.db
+			.select()
+			.from(subscriptions)
+			.where(and(eq(subscriptions.id, subscriptionId), eq(subscriptions.userId, userId)))
+			.limit(1);
+
+		if (!subscription) {
+			throw new NotFoundException("Subscription not found");
+		}
+
+		return subscription;
+	}
+
+	/**
+	 * Creates a new subscription (registers user for event)
+	 * @param userId The user ID
+	 * @param data Subscription data
+	 * @returns The created subscription
+	 */
+	async createSubscription(
+		userId: string,
+		data: CreateSubscriptionSchema,
+	): Promise<SubscriptionResponseSchema> {
+		return await this.db.transaction(async (tx): Promise<SubscriptionResponseSchema> => {
+			// Check if user is already registered for this event
+			const [existingSubscription] = await tx
+				.select()
+				.from(subscriptions)
+				.where(and(eq(subscriptions.userId, userId), eq(subscriptions.eventId, data.eventId)))
+				.limit(1);
+
+			if (existingSubscription) {
+				// Idempotent - return existing subscription
+				return this.toSubscriptionResponse(existingSubscription);
+			}
+
+			// Get event details with lock
+			const [event] = await tx.select().from(events).where(eq(events.id, data.eventId)).limit(1);
+
+			if (!event) {
+				throw new NotFoundException("Event not found");
+			}
+
+			// Check registration window
+			const now = new Date();
+			if (event.opensAt && now < event.opensAt) {
+				throw new ForbiddenException("Registration not yet open");
+			}
+			if (event.closesAt && now > event.closesAt) {
+				throw new ForbiddenException("Registration has closed");
+			}
+
+			// Check current registration count
+			let registrationCount = await tx.$count(
+				subscriptions,
+				and(eq(subscriptions.eventId, data.eventId), eq(subscriptions.status, "registered")),
+			);
+
+			let status: "registered" | "waitlisted" = "registered";
+			let position: number | null = null;
+			if (!registrationCount) {
+				registrationCount = 0;
+			}
+
+			// If event is full, add to waitlist
+			if (registrationCount >= event.quota) {
+				status = "waitlisted";
+				// Get next position in waitlist
+				const [maxPosition] = await tx
+					.select({ max: max(subscriptions.position) })
+					.from(subscriptions)
+					.where(
+						and(eq(subscriptions.eventId, data.eventId), eq(subscriptions.status, "waitlisted")),
+					)
+					.limit(1);
+
+				position = (maxPosition?.max || 0) + 1;
+			}
+
+			// Create subscription
+			const [result] = await tx
+				.insert(subscriptions)
+				.values({
+					userId,
+					eventId: data.eventId,
+					status,
+					position,
+				})
+				.returning();
+
+			if (!result) {
+				throw new Error("Failed to create subscription");
+			}
+
+			return this.toSubscriptionResponse(result);
+		});
+	}
+
+	/**
+	 * Updates a subscription (mainly for cancellation)
+	 * @param subscriptionId The subscription ID
+	 * @param userId The user ID (for authorization)
+	 * @param data The data for update
+	 * @returns The updated subscription or undefined
+	 */
+	async updateSubscription(
+		subscriptionId: SubscriptionIdParamSchema,
+		userId: string,
+		data: UpdateSubscriptionSchema,
+	): Promise<SubscriptionResponseSchema> {
+		return await this.db.transaction(async (tx): Promise<SubscriptionResponseSchema> => {
+			// Get existing subscription
+			const [subscription] = await tx
+				.select({
+					subscription: subscriptions,
+					event: events,
+				})
+				.from(subscriptions)
+				.innerJoin(events, eq(events.id, subscriptions.eventId))
+				.where(and(eq(subscriptions.id, subscriptionId), eq(subscriptions.userId, userId)))
+				.limit(1);
+
+			if (!subscription) {
+				throw new NotFoundException("Subscription not found");
+			}
+
+			// Check if cancellation is allowed
+			if (data.status === "cancelled") {
+				const now = new Date();
+				if (subscription.event.unregisterClosesAt && now > subscription.event.unregisterClosesAt) {
+					throw new ForbiddenException("Unregistration period has closed");
+				}
+
+				// If user was registered, promote next waitlisted user
+				if (subscription.subscription.status === "registered") {
+					await this.promoteFromWaitlist(tx, subscription.subscription.eventId);
+				}
+			}
+
+			// Update subscription
+			const [result] = await tx
+				.update(subscriptions)
+				.set({ ...data, updatedAt: new Date() })
+				.where(and(eq(subscriptions.id, subscriptionId), eq(subscriptions.userId, userId)))
+				.returning();
+
+			if (!result) {
+				throw new NotFoundException("Failed to update subscription");
+			}
+
+			return this.toSubscriptionResponse(result);
+		});
+	}
+
+	/**
+	 * Soft deletes a subscription (unregisters user)
+	 * @param subscriptionId The subscription ID
+	 * @param userId The user ID (for authorization)
+	 * @returns The deleted subscription or undefined
+	 */
+	async deleteSubscription(
+		subscriptionId: SubscriptionIdParamSchema,
+		userId: string,
+	): Promise<string> {
+		return await this.db.transaction(async (tx) => {
+			const [subscription] = await tx
+				.select({
+					subscription: subscriptions,
+					event: events,
+				})
+				.from(subscriptions)
+				.innerJoin(events, eq(events.id, subscriptions.eventId))
+				.where(and(eq(subscriptions.id, subscriptionId), eq(subscriptions.userId, userId)))
+				.limit(1);
+
+			if (!subscription) {
+				throw new NotFoundException("Subscription not found");
+			}
+
+			// Check if cancellation is allowed
+			const now = new Date();
+			if (subscription.event.unregisterClosesAt && now > subscription.event.unregisterClosesAt) {
+				throw new ForbiddenException("Unregistration period has closed");
+			}
+
+			// If user was registered, promote next waitlisted user
+			if (subscription.subscription.status === "registered") {
+				await this.promoteFromWaitlist(tx, subscription.subscription.eventId);
+			}
+
+			// Soft delete by updating status to cancelled
+			await tx
+				.update(subscriptions)
+				.set({
+					status: "cancelled",
+					updatedAt: new Date(),
+				})
+				.where(eq(subscriptions.id, subscriptionId));
+
+			return "Subscription cancelled successfully";
+		});
+	}
+}
