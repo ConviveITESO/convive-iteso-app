@@ -1,5 +1,4 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
-import { sql } from "drizzle-orm";
 import { AppDatabase, DATABASE_CONNECTION } from "../connection";
 import { categories, locations } from "../schemas";
 
@@ -15,8 +14,8 @@ export class InitialDataService {
 	}
 
 	private async loadCategories() {
-		const categoriesCount = await this.db.select({ count: sql<number>`count(*)` }).from(categories);
-		if (categoriesCount[0]?.count !== 0) {
+		const categoriesCount = await this.db.$count(categories);
+		if (categoriesCount !== 0) {
 			this.logger.debug("Categories already loaded");
 			return;
 		}
@@ -37,8 +36,8 @@ export class InitialDataService {
 	}
 
 	private async loadLocations() {
-		const locationsCount = await this.db.select({ count: sql<number>`count(*)` }).from(locations);
-		if (locationsCount[0]?.count !== 0) {
+		const locationsCount = await this.db.$count(locations);
+		if (locationsCount !== 0) {
 			this.logger.debug("Locations already loaded");
 			return;
 		}
