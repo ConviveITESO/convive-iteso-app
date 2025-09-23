@@ -1,8 +1,8 @@
-import { pgTable, serial, varchar } from "drizzle-orm/pg-core";
+import { pgTable, uuid, varchar } from "drizzle-orm/pg-core";
 import { defaultColumns } from "./default-columns";
 
 export const badges = pgTable("badges", {
-	id: serial("id").primaryKey(),
+	id: uuid("id").defaultRandom().primaryKey().notNull(),
 	name: varchar("name", { length: 256 }).notNull().unique(),
 	description: varchar("description", { length: 1024 }).notNull(),
 	...defaultColumns,

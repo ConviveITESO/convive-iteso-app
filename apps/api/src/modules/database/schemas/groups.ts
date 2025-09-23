@@ -1,12 +1,12 @@
-import { boolean, integer, pgTable, serial, varchar } from "drizzle-orm/pg-core";
+import { boolean, pgTable, uuid, varchar } from "drizzle-orm/pg-core";
 import { defaultColumns } from "./default-columns";
 import { users } from "./users";
 
 export const groups = pgTable("groups", {
-	id: serial("id").primaryKey(),
+	id: uuid("id").defaultRandom().primaryKey().notNull(),
 	name: varchar("name", { length: 256 }).notNull(),
 	description: varchar("description", { length: 1024 }).notNull(),
-	createdBy: integer("created_by").references(() => users.id),
+	createdBy: uuid("created_by").references(() => users.id),
 	wasCreatedAuto: boolean("was_created_auto").notNull(),
 	...defaultColumns,
 });
