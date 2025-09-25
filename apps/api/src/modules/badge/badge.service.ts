@@ -15,7 +15,7 @@ export class BadgeService {
 			.where(and(inArray(badges.id, ids), eq(badges.status, "active")));
 		// biome-ignore lint/style/noNonNullAssertion: <>
 		const badgesCount = result[0]!.count;
-		if (ids.length !== badgesCount) throw new NotFoundException("Badge not found"); // TODO: error handling in services
+		if (ids.length !== badgesCount) throw new NotFoundException("Badge not found");
 	}
 
 	formatBadge(badge: Badge): BadgeResponseSchema {

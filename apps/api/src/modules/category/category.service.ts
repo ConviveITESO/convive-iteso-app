@@ -15,7 +15,7 @@ export class CategoryService {
 			.where(and(inArray(categories.id, ids), eq(categories.status, "active")));
 		// biome-ignore lint/style/noNonNullAssertion: <>
 		const categoriesCount = result[0]!.count;
-		if (ids.length !== categoriesCount) throw new NotFoundException("Category not found"); // TODO: error handling in services
+		if (ids.length !== categoriesCount) throw new NotFoundException("Category not found");
 	}
 
 	formatCategory(category: Category): CategoryResponseSchema {

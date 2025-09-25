@@ -22,7 +22,7 @@ export class EventController {
 	async createEvent(
 		@Body(new ZodValidationPipe(createEventSchema)) data: CreateEventSchema,
 	): Promise<EventResponseSchema> {
-		const userId = "3968439e-282a-408d-ad9e-1760a1b90bcb";
+		const userId = "";
 		const eventId = await this.eventsService.createEvent(data, userId);
 		const event = await this.eventsService.getEventByIdOrThrow(eventId);
 		return event;

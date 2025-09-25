@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { UserResponseSchema } from "@repo/schemas";
 import { User } from "../database/schemas";
 
-// TODO: getUserByIdOrThrow function
+// TODO: formatUser function
 @Injectable()
 export class UserService {
 	formatUser(user: User): UserResponseSchema {
