@@ -106,7 +106,7 @@ jobs:
         run: docker compose -f docker-compose.yaml up -d --build 
 
       - name: Seed and start project with pnpm
-        run: pnpm db:push && pnpm run dev
+        run: pnpm db:push && pnpm run dev &
 
       - name: Wait for API healthcheck
         run: |
@@ -121,11 +121,15 @@ jobs:
             status=$(docker inspect -f '{{.State.Health.Status}}' "$container_id")
             if [ "$status" = "healthy" ]; then
               echo "✅ API is healthy."
-              break
+              exit 0
             fi
             echo "⏳ Current status: $status. Retrying in 5s..."
             sleep 5
           done
+
+          echo "❌ API did not become healthy in time"
+          docker logs "$container_id"
+          exit 1
       - name: Prepare ZAP reports folder
         run: |
           mkdir -p reports
