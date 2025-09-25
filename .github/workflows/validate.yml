@@ -52,13 +52,14 @@ jobs:
 
       - uses: pnpm/action-setup@v2
         with:
-          version: 8
+          version: 10.15.1
           run_install: false
 
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: 'pnpm'
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Install dependencies
         shell: bash
@@ -94,8 +95,11 @@ jobs:
           mkdir -p config/certs
           curl -sSL https://truststore.pki.rds.amazonaws.com/us-east-2/us-east-2-bundle.pem -o config/certs/global-bundle.pem
 
-      - name: Start services with Docker Compose
-        run: docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+      - name: Start DB with Docker Compose
+        run: docker compose -f docker-compose.yml up -d --build 
+
+      - name: Seed and start project with pnpm
+        run: pnpm db:push && pnpm run dev
 
       - name: Wait for API healthcheck
         run: |
