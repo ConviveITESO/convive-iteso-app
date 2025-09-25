@@ -1,6 +1,11 @@
 # Production Docker Compose configuration for ConviveITESO
-# Database: AWS RDS PostgreSQL (external)
+# Database: AWS RDS PostgreSQL (external) or dev database (CI mode)
 version: '3.8'
+
+networks:
+  convive-network:
+    external: ${CI:-false}
+    name: ${COMPOSE_PROJECT_NAME:-convive-iteso-app}_default
 
 services:
   # NestJS API Backend
@@ -15,6 +20,8 @@ services:
       DATABASE_URL: ${DATABASE_URL}
     ports:
       - "${API_PORT:-8080}:8080"
+    networks:
+      - convive-network
     healthcheck:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1"]
       interval: 30s
@@ -34,6 +41,8 @@ services:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080}
     ports:
       - "${WEB_PORT:-3000}:3000"
+    networks:
+      - convive-network
     depends_on:
       - api
     healthcheck:
