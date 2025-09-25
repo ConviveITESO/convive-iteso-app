@@ -18,7 +18,7 @@ export class LocationService {
 
 	async getLocationByIdOrThrow(id: string): Promise<LocationResponseSchema> {
 		const location = await this.getLocationById(id);
-		if (!location) throw new NotFoundException("Location not found"); // TODO: error handling in services
+		if (!location) throw new NotFoundException("Location not found");
 		return location;
 	}
 

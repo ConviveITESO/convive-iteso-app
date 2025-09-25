@@ -1,6 +1,6 @@
 import { Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { CreateEventSchema, EventResponseSchema } from "@repo/schemas";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { BadgeService } from "../badge/badge.service";
 import { CategoryService } from "../category/category.service";
 import { AppDatabase, DATABASE_CONNECTION } from "../database/connection";
@@ -36,44 +36,62 @@ export class EventService {
 	) {}
 
 	async getEventById(id: string): Promise<EventResponseSchema | undefined> {
-		const event = await this.db.query.events.findFirst({
-			with: {
-				creator: true,
-				group: true,
-				location: true,
-				eventsCategories: {
-					with: { category: true },
-				},
-				eventsBadges: {
-					with: { badge: true },
-				},
-			},
-			where: and(
-				eq(events.id, id),
-				eq(events.status, "active"),
-				eq(users.status, "active"),
-				eq(groups.status, "active"),
-				eq(locations.status, "active"),
-				eq(categories.status, "active"),
-				eq(badges.status, "active"),
-			),
-		});
+		const [event] = await this.db
+			.select({
+				event: events,
+				creator: users,
+				group: groups,
+				location: locations,
+				categories: sql<Category[]>`COALESCE(
+					json_agg(
+						distinct jsonb_build_object(
+							'id', ${categories.id},
+							'name', ${categories.name}
+						)
+					) filter (where ${categories.id} is not null),
+					'[]'::json
+				)`,
+				badges: sql<Badge[]>`COALESCE(
+					json_agg(
+						distinct jsonb_build_object(
+							'id', ${badges.id},
+							'name', ${badges.name},
+							'description', ${badges.description}
+						)
+					) filter (where ${badges.id} is not null),
+					'[]'::json
+				)`,
+			})
+			.from(events)
+			.where(and(eq(events.id, id), eq(events.status, "active")))
+			.innerJoin(users, and(eq(users.id, events.createdBy), eq(users.status, "active")))
+			.innerJoin(groups, and(eq(groups.id, events.groupId), eq(groups.status, "active")))
+			.innerJoin(
+				locations,
+				and(eq(locations.id, events.locationId), eq(locations.status, "active")),
+			)
+			.leftJoin(eventsCategories, eq(eventsCategories.eventId, events.id))
+			.leftJoin(
+				categories,
+				and(eq(eventsCategories.categoryId, categories.id), eq(categories.status, "active")),
+			)
+			.leftJoin(eventsBadges, eq(eventsBadges.eventId, events.id))
+			.leftJoin(badges, and(eq(eventsBadges.badgeId, badges.id), eq(badges.status, "active")))
+			.groupBy(events.id, users.id, groups.id, locations.id);
 		if (!event) return event;
-		const categoriesFound = event.eventsCategories.map((register) => register.category);
-		const badgesFound = event.eventsBadges.map((register) => register.badge);
 		return this.formatEvent(
-			event,
+			event.event,
 			event.creator,
 			event.group,
 			event.location,
-			categoriesFound,
-			badgesFound,
+			event.categories,
+			event.badges,
 		);
 	}
 
 	async getEventByIdOrThrow(id: string): Promise<EventResponseSchema> {
 		const event = await this.getEventById(id);
-		if (!event) throw new NotFoundException("Event not found"); // TODO: error handling in services
+		if (!event) throw new NotFoundException("Event not found");
 		return event;
 	}
 
