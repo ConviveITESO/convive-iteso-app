@@ -103,32 +103,23 @@ jobs:
         run: cp apps/api/.env.example apps/api/.env
 
       - name: Start DB with Docker Compose
-        run: docker compose -f docker-compose.yaml up -d --build 
+        run: docker compose -f docker-compose.yaml -f docker-compose.prod.yaml up -d --build 
 
       - name: Seed and start project with pnpm
         run: pnpm db:push && pnpm run dev &
 
-      - name: Wait for API healthcheck
+      - name: Wait for API readiness (HTTP)
         run: |
-          echo "Waiting for API to become healthy..."
-          container_id=$(docker compose -f docker-compose.yaml ps -q api)
-          if [ -z "$container_id" ]; then
-            echo "❌ Could not find container ID for service 'api'"
-            exit 1
-          fi
-
-          for i in {1..15}; do
-            status=$(docker inspect -f '{{.State.Health.Status}}' "$container_id")
-            if [ "$status" = "healthy" ]; then
-              echo "✅ API is healthy."
+          echo "Waiting for API (http://localhost:8080/health)..."
+          for i in {1..30}; do
+            if curl -sSf http://localhost:8080/health >/dev/null; then
+              echo "✅ API is responding."
               exit 0
             fi
-            echo "⏳ Current status: $status. Retrying in 5s..."
+            echo "⏳ Not ready yet, retrying in 5s..."
             sleep 5
           done
-
-          echo "❌ API did not become healthy in time"
-          docker logs "$container_id"
+          echo "❌ API did not become ready in time"
           exit 1
       - name: Prepare ZAP reports folder
         run: |
@@ -150,4 +141,4 @@ jobs:
 
       - name: Shut down containers
         if: always()
-        run: docker compose -f docker-compose.yaml down
+        run: docker compose -f docker-compose.yaml -f docker-compose.prod.yaml down
