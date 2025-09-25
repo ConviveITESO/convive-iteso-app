@@ -103,13 +103,9 @@ jobs:
         run: cp apps/api/.env.example apps/api/.env
 
       - name: Start DB with Docker Compose
-        run: docker compose -f docker-compose.yaml up -d --build 
-
+        run: make prod-up-ci
       - name: Seed project
         run: pnpm db:push
-
-      - name: Start Server with Docker Compose
-        run: docker compose -f docker-compose.prod.yaml up -d --build 
       - name: Start Server with Docker Compose
         run: docker ps -a
       - name: Wait for API readiness (HTTP)
