@@ -141,4 +141,4 @@ jobs:
 
       - name: Shut down containers
         if: always()
-        run: docker compose -f docker-compose.yaml -f docker-compose.prod.yaml down
+        run: make prod-down-ci
