@@ -1,4 +1,4 @@
-import { boolean, pgTable, uuid, varchar } from "drizzle-orm/pg-core";
+import { pgTable, uuid, varchar } from "drizzle-orm/pg-core";
 import { defaultColumns } from "./default-columns";
 import { users } from "./users";
 
@@ -7,7 +7,6 @@ export const groups = pgTable("groups", {
 	name: varchar("name", { length: 256 }).notNull(),
 	description: varchar("description", { length: 1024 }).notNull(),
 	createdBy: uuid("created_by").references(() => users.id),
-	wasCreatedAuto: boolean("was_created_auto").notNull(),
 	...defaultColumns,
 });
 
