@@ -32,7 +32,7 @@ COPY apps/api ./apps/api
 RUN pnpm --filter @repo/schemas build
 
 # Build the backend application
-RUN pnpm --filter @repo/api build
+RUN pnpm --filter api build
 
 # Production stage
 FROM node:22-alpine AS runner
