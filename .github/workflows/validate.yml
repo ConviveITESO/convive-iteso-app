@@ -12,13 +12,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
       - uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 22
+          cache: 'pnpm'
 
-      - run: npm ci
-      - run: npm run lint
-      - run: npm test
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run lint
+        run: pnpm run lint
+
+      - name: Run tests
+        run: pnpm test
 
   security-sast:
     needs: [lint-and-test]
@@ -34,14 +44,20 @@ jobs:
           mkdir -p config/certs
           curl -sSL https://truststore.pki.rds.amazonaws.com/us-east-2/us-east-2-bundle.pem -o config/certs/global-bundle.pem
 
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
       - uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 22
+          cache: 'pnpm'
 
-      - run: npm ci
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Install Snyk CLI
-        run: npm install -g snyk
+        run: pnpm add -g snyk
 
       - name: Run Snyk test
         env:
