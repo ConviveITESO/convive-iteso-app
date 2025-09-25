@@ -110,7 +110,8 @@ jobs:
 
       - name: Start Server with Docker Compose
         run: docker compose -f docker-compose.prod.yaml up -d --build 
-
+      - name: Start Server with Docker Compose
+        run: docker ps -a
       - name: Wait for API readiness (HTTP)
         run: |
           echo "Waiting for API (http://localhost:8080/health)..."
