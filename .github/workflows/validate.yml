@@ -14,15 +14,21 @@ jobs:
 
       - uses: pnpm/action-setup@v2
         with:
-          version: 8
+          version: 10.15.1
+          run_install: false
 
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: 'pnpm'
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        shell: bash
+        run: |
+          echo "node version: $(node -v)"
+          echo "pnpm version: $(pnpm -v)"
+          pnpm install --frozen-lockfile # Second run to ensure everything is locked
 
       - name: Run lint
         run: pnpm run lint
@@ -47,6 +53,7 @@ jobs:
       - uses: pnpm/action-setup@v2
         with:
           version: 8
+          run_install: false
 
       - uses: actions/setup-node@v4
         with:
@@ -54,7 +61,11 @@ jobs:
           cache: 'pnpm'
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        shell: bash
+        run: |
+          echo "node version: $(node -v)"
+          echo "pnpm version: $(pnpm -v)"
+          pnpm install --frozen-lockfile # Second run to ensure everything is locked
 
       - name: Install Snyk CLI
         run: pnpm add -g snyk
