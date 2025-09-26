@@ -13,11 +13,6 @@ jobs:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "18"
-
       - name: Set up SSH
         run: |
           mkdir -p ~/.ssh
@@ -30,6 +25,6 @@ jobs:
           ssh ubuntu@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
             cd ~/convive-iteso-app
             git pull origin main
-            docker compose down
-            docker compose up --build -d
+            make prod-down
+            make prod-up
           EOF
