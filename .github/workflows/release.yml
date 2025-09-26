@@ -18,7 +18,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.workflow_run.head_branch }}
           fetch-depth: 0
+          fetch-tags: true
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -37,26 +39,31 @@ jobs:
       - name: Determine bump type
         id: bump
         run: |
-          msg="${{ steps.commit_msg.outputs.msg }}"
-          if [[ "$msg" == *"[HOTFIX]"* ]]; then
-            echo "type=patch" >> $GITHUB_OUTPUT
-          elif [[ "${{ github.ref_name }}" == feature/* ]]; then
-            echo "type=minor" >> $GITHUB_OUTPUT
+          msg='${{ steps.commit_msg.outputs.msg }}'
+          if [[ "$msg" =~ ^fix\[SCRUM-[0-9]+\]: ]]; then
+            echo "type=patch" >> "$GITHUB_OUTPUT"
+          elif [[ "$msg" =~ ^feat\[SCRUM-[0-9]+\]: ]]; then
+            echo "type=minor" >> "$GITHUB_OUTPUT"
           else
-            echo "type=" >> $GITHUB_OUTPUT
+            echo "type=" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Bump version with npm
         if: steps.bump.outputs.type != ''
+        id: bump_and_tag
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           npm version ${{ steps.bump.outputs.type }} -m "chore: bump version to %s"
-          git push origin HEAD --follow-tags
+          git push origin "${{ github.event.workflow_run.head_branch }}"
+          git push origin --tags
+
+          NEW_TAG="$(git describe --tags --abbrev=0)"
+          echo "tag=${NEW_TAG}" >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub Release
         if: steps.bump.outputs.type != ''
         uses: ncipollo/release-action@v1
         with:
-          tag: ${{ github.ref_name }}
+          tag: ${{ steps.bump_and_tag.outputs.tag }}
           generateReleaseNotes: true
