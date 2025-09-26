@@ -1,4 +1,5 @@
 import { Test, TestingModule } from "@nestjs/testing";
+import { DATABASE_CONNECTION } from "../database/connection";
 import { TodoService } from "./todo.service";
 
 describe("TodoService", () => {
@@ -6,7 +7,13 @@ describe("TodoService", () => {
 
 	beforeEach(async () => {
 		const module: TestingModule = await Test.createTestingModule({
-			providers: [TodoService],
+			providers: [
+				TodoService,
+				{
+					provide: DATABASE_CONNECTION,
+					useValue: undefined,
+				},
+			],
 		}).compile();
 
 		service = module.get<TodoService>(TodoService);
