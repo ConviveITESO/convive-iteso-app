@@ -166,7 +166,7 @@ export class EventService {
 				createdBy: userId,
 				groupId,
 			})
-			.returning();
+			.returning({ id: events.id });
 		// biome-ignore lint/style/noNonNullAssertion: <>
 		return event!.id;
 	}
