@@ -1,9 +1,13 @@
 import { pgTable, uuid, varchar } from "drizzle-orm/pg-core";
 import { defaultColumns } from "./default-columns";
+import { users } from "./users";
 
 export const categories = pgTable("categories", {
 	id: uuid("id").defaultRandom().primaryKey().notNull(),
 	name: varchar("name", { length: 256 }).notNull().unique(),
+	createdBy: uuid("created_by")
+		.notNull()
+		.references(() => users.id),
 	...defaultColumns,
 });
 

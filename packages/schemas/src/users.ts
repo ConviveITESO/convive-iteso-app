@@ -114,6 +114,16 @@ export const updateUserSchema = createUserSchema
 // RESPONSE schemas
 // ==========================================================
 
+export const userResponseSchemaExample = {
+	id: "550e8400-e29b-41d4-a716-446655440000",
+	name: "John Doe",
+	email: "john@example.com",
+	age: 25,
+	birthDate: "2000-01-01",
+	password: "Password123!",
+	createdAt: "20XX-01-01T12:00:00Z",
+};
+
 export const userResponseSchema = z
 	.object({
 		id: z.string(),
@@ -125,15 +135,7 @@ export const userResponseSchema = z
 		createdAt: z.string(),
 	})
 	.openapi("UserResponseSchema", {
-		example: {
-			id: "550e8400-e29b-41d4-a716-446655440000",
-			name: "John Doe",
-			email: "john@example.com",
-			age: 25,
-			birthDate: "2000-01-01",
-			password: "Password123!",
-			createdAt: "20XX-01-01T12:00:00Z",
-		},
+		example: userResponseSchemaExample,
 	});
 
 export const userResponseArraySchema = z

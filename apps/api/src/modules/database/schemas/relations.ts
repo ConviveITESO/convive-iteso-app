@@ -11,6 +11,9 @@ import { users } from "./users";
 export const usersRelations = relations(users, ({ many }) => ({
 	createdEvents: many(events),
 	createdGroups: many(groups),
+	createdBadges: many(badges),
+	createdCategories: many(categories),
+	createdLocations: many(locations),
 }));
 
 export const eventsRelations = relations(events, ({ one, many }) => ({
@@ -30,23 +33,34 @@ export const eventsRelations = relations(events, ({ one, many }) => ({
 	eventsCategories: many(eventsCategories),
 }));
 
-export const groupsRelations = relations(groups, ({ one, many }) => ({
+export const groupsRelations = relations(groups, ({ one }) => ({
 	creator: one(users, {
 		fields: [groups.createdBy],
+		references: [users.id],
+	}),
+}));
+
+export const locationsRelations = relations(locations, ({ one, many }) => ({
+	creator: one(users, {
+		fields: [locations.createdBy],
 		references: [users.id],
 	}),
 	events: many(events),
 }));
 
-export const locationsRelations = relations(locations, ({ many }) => ({
-	events: many(events),
-}));
-
-export const badgesRelations = relations(badges, ({ many }) => ({
+export const badgesRelations = relations(badges, ({ one, many }) => ({
+	creator: one(users, {
+		fields: [badges.createdBy],
+		references: [users.id],
+	}),
 	eventsBadges: many(eventsBadges),
 }));
 
-export const categoriesRelations = relations(categories, ({ many }) => ({
+export const categoriesRelations = relations(categories, ({ one, many }) => ({
+	creator: one(users, {
+		fields: [categories.createdBy],
+		references: [users.id],
+	}),
 	eventsCategories: many(eventsCategories),
 }));
 

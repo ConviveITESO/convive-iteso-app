@@ -5,8 +5,12 @@ import { events } from "./events";
 export const eventsCategories = pgTable(
 	"events_categories",
 	{
-		eventId: uuid("event_id").references(() => events.id),
-		categoryId: uuid("category_id").references(() => categories.id),
+		eventId: uuid("event_id")
+			.notNull()
+			.references(() => events.id),
+		categoryId: uuid("category_id")
+			.notNull()
+			.references(() => categories.id),
 	},
 	(t) => ({
 		pk: primaryKey({ columns: [t.eventId, t.categoryId] }),
