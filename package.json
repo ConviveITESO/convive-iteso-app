@@ -34,7 +34,7 @@
 		"test:cov": "pnpm run --filter ./apps/api test:cov",
 		"test:debug": "pnpm run --filter ./apps/api test:debug",
 		"test:e2e": "pnpm run --filter ./apps/api test:e2e",
-		"test:ci": "(pnpm run test --silent || true) && pnpm run test:e2e --silent",
+		"ci": "(pnpm run test --silent || true) && pnpm run test:e2e --silent",
 		"ui:add": "pnpm --filter ./apps/web ui:add"
 	},
 	"keywords": [],

@@ -6,7 +6,20 @@ import { AppModule } from "./app.module";
 
 async function bootstrap() {
 	const app = await NestFactory.create(AppModule);
-	app.enableCors(); // TODO: Add correct CORS configuration
+
+	// Remove X-Powered-By header for security
+	app.getHttpAdapter().getInstance().disable("x-powered-by");
+
+	// Configure CORS properly
+	app.enableCors({
+		origin:
+			process.env.NODE_ENV === "production"
+				? ["https://your-production-domain.com"] // Replace with actual production domain
+				: ["http://localhost:3000", "http://localhost:3001"], // Development origins
+		credentials: true,
+		methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+		allowedHeaders: ["Content-Type", "Authorization"],
+	});
 
 	// Swagger setup
 	const config = new DocumentBuilder()
