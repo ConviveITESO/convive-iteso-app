@@ -1,4 +1,10 @@
-import { ForbiddenException, Inject, Injectable, NotFoundException } from "@nestjs/common";
+import {
+	ForbiddenException,
+	Inject,
+	Injectable,
+	InternalServerErrorException,
+	NotFoundException,
+} from "@nestjs/common";
 import {
 	CreateSubscriptionSchema,
 	SubscriptionIdParamSchema,
@@ -48,7 +54,7 @@ export class SubscriptionsService {
 		}
 
 		if (!nextWaitlisted.position) {
-			throw new Error("Next waitlisted user has no position");
+			throw new InternalServerErrorException("Next waitlisted user has no position");
 		}
 
 		// Promote to registered
@@ -203,7 +209,7 @@ export class SubscriptionsService {
 				.returning();
 
 			if (!result) {
-				throw new Error("Failed to create subscription");
+				throw new InternalServerErrorException("Failed to create subscription");
 			}
 
 			return this.toSubscriptionResponse(result);
