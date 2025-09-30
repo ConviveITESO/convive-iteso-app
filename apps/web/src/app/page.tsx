@@ -2,10 +2,9 @@
 
 import type { SelectTodoSchema } from "@repo/schemas";
 import { useCallback, useEffect, useState } from "react";
-import AddTodoDialog from "@/components/add-todo-dialog";
+import AppHeader from "@/components/app-header";
 import TodoCard from "@/components/todo-card";
 import { getApiUrl } from "@/lib/api";
-import AppHeader from "@/components/app-header";
 
 export default function Home() {
 	const [todos, setTodos] = useState<SelectTodoSchema[]>([]);

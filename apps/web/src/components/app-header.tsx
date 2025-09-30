@@ -1,8 +1,8 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
+import { ArrowLeft, Home, LogOut, Menu, SettingsIcon } from "lucide-react";
 import { useState } from "react";
-import { Menu, ArrowLeft, Home, LogOut, SettingsIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default function AppHeader() {
 	const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -18,11 +18,11 @@ export default function AppHeader() {
 		setPageTitle("Event Name");
 	};
 
-	const navigateTo = (title: any) => {
-		setPageTitle(title);
-		setShowBackButton(true);
-		setIsMenuOpen(false);
-	};
+	/* const navigateTo = (title: string) => {
+        setPageTitle(title);
+        setShowBackButton(true);
+        setIsMenuOpen(false);
+    }; */
 
 	return (
 		<>
@@ -55,7 +55,20 @@ export default function AppHeader() {
 				</div>
 			</div>
 			{isMenuOpen && (
-				<div className="fixed inset-0 bg-black/50 z-40 transition-opacity" onClick={toggleMenu} />
+				<button
+					type="button"
+					aria-label="Cerrar menú"
+					className="fixed inset-0 z-40 bg-black/50 transition-opacity
+               p-0 m-0 border-0 appearance-none cursor-pointer
+               focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+					onClick={toggleMenu}
+					onKeyDown={(e) => {
+						if (e.key === "Escape") {
+							e.preventDefault();
+							toggleMenu();
+						}
+					}}
+				/>
 			)}
 			<div
 				className={`fixed top-0 left-0 h-full bg-background shadow-2xl z-50 transition-transform duration-300 ease-in-out rounded-br-4xl ${
