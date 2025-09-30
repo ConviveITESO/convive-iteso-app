@@ -15,6 +15,8 @@ describe("EventService", () => {
 	const mockDb = {
 		select: jest.fn(),
 		insert: jest.fn(),
+		update: jest.fn(),
+		delete: jest.fn(),
 		transaction: jest.fn((cb) => cb()),
 	};
 	const mockUserService = { formatUser: jest.fn() };
@@ -223,6 +225,69 @@ describe("EventService", () => {
 				badgeIds.map((badgeId) => ({ badgeId, eventId: id })),
 			);
 			expect(result).toBe(id);
+		});
+	});
+
+	describe("updateEvent", () => {
+		it("should call required services and update event", async () => {
+			const id = "eventId";
+			const name = "Updated event";
+			const description = "Updated description";
+			const startDate = new Date();
+			const endDate = new Date();
+			const quota = 20;
+			const categoryIds = ["categoryId3", "categoryId4"];
+			const badgeIds = ["badgeId3", "badgeId4"];
+			const locationId = "newLocationId";
+
+			jest.spyOn(service, "getEventByIdOrThrow").mockResolvedValue({ id } as EventResponseSchema);
+			mockLocationService.getLocationByIdOrThrow.mockResolvedValue({ locationId });
+			mockCategoryService.assertCategoriesExist.mockResolvedValue(undefined);
+			mockBadgeService.assertBadgesExist.mockResolvedValue(undefined);
+			mockDb.update = jest.fn().mockReturnValue({
+				set: jest.fn().mockReturnThis(),
+				where: jest.fn().mockResolvedValue(undefined),
+			});
+			mockDb.delete = jest.fn().mockReturnValue({
+				where: jest.fn().mockResolvedValue(undefined),
+			});
+			mockDb.insert.mockReturnValue({
+				values: jest.fn().mockResolvedValue(undefined),
+			});
+
+			await service.updateEvent(
+				{
+					name,
+					description,
+					startDate: startDate.toISOString(),
+					endDate: endDate.toISOString(),
+					quota,
+					locationId,
+					categoryIds,
+					badgeIds,
+				},
+				id,
+			);
+
+			expect(service.getEventByIdOrThrow).toHaveBeenCalledWith(id);
+			expect(mockLocationService.getLocationByIdOrThrow).toHaveBeenCalledWith(locationId);
+			expect(mockCategoryService.assertCategoriesExist).toHaveBeenCalledWith(categoryIds);
+			expect(mockBadgeService.assertBadgesExist).toHaveBeenCalledWith(badgeIds);
+			expect(mockDb.update().set).toHaveBeenCalledWith({
+				name,
+				description,
+				startDate,
+				endDate,
+				quota,
+				locationId,
+			});
+			expect(mockDb.delete().where).toHaveBeenCalledTimes(2);
+			expect(mockDb.insert().values).toHaveBeenCalledWith(
+				categoryIds.map((categoryId) => ({ categoryId, eventId: id })),
+			);
+			expect(mockDb.insert().values).toHaveBeenCalledWith(
+				badgeIds.map((badgeId) => ({ badgeId, eventId: id })),
+			);
 		});
 	});
 });
