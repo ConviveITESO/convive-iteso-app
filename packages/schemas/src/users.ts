@@ -29,12 +29,6 @@ export const userQuerySchema = z
 		status: z.string().optional().openapi({
 			description: "User status",
 		}),
-		// age: z.number().optional().openapi({
-		// 	description: "User age",
-		// }),
-		// birthDate: z.string().optional().openapi({
-		// 	description: "User birth date",
-		// }),
 	})
 	.openapi("UserQuerySchema");
 
@@ -57,57 +51,21 @@ export const createUserSchema = z
 					return "The email is required";
 				},
 			})
+			.refine((val) => val.split("@")[1] === "iteso.mx", {
+				message: "Email must end with @iteso.mx",
+			})
 			.openapi({
 				description: "User email",
 			}),
 		status: z.enum(["active", "deleted"]).openapi({
 			description: "User status",
 		}),
-		// age: z.coerce.number().min(18, "The age must be at least 18").openapi({
-		// 	description: "User age",
-		// }),
-		// birthDate: z
-		// 	.codec(
-		// 		z.iso.date({
-		// 			error: (issue) => {
-		// 				if (issue.input) return "The birth date is an invalid date";
-		// 				return "The birth date is required";
-		// 			},
-		// 		}),
-		// 		z.date(),
-		// 		{
-		// 			decode: (value) => new Date(value),
-		// 			encode: (value) => {
-		// 				const date = value.toISOString();
-		// 				const isoDate = date.split("T")[0];
-		// 				return isoDate || date;
-		// 			},
-		// 		},
-		// 	)
-		// 	.openapi({
-		// 		description: "User birth date",
-		// 	}),
-
-		// password: z
-		// 	.string()
-		// 	.min(8, "The password must be at least 8 characters long")
-		// 	.max(100, "The password cannot exceed 100 characters")
-		// 	.regex(/[a-z]/, "The password must contain at least one lowercase letter")
-		// 	.regex(/[A-Z]/, "The password must contain at least one uppercase letter")
-		// 	.regex(/[0-9]/, "The password must contain at least one number")
-		// 	.regex(/[^a-zA-Z0-9]/, "The password must contain at least one special character")
-		// 	.openapi({
-		// 		description: "User password",
-		// 	}),
 	})
 	.openapi("CreateUserSchema", {
 		example: {
 			name: "Doe, John",
 			email: "john@example.com",
 			status: "active",
-			// age: 25,
-			// birthDate: "2000-01-01",
-			// password: "Password123!",
 		},
 	});
 

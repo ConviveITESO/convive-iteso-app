@@ -51,13 +51,14 @@ export default function UserCard({
 		try {
 			const response = await fetch(`http://localhost:8080/user/${id}`, {
 				method: "DELETE",
+				credentials: "include",
 			});
 
 			if (response.ok) {
 				setDeleteOpen(false);
 				onUserDeleted();
 			} else {
-				// Handle error appropriately in production
+				window.location.href = "/";
 			}
 		} catch {
 			// Handle error appropriately in production

@@ -98,6 +98,7 @@ export default function AddUserDialog({ onUserAdded }: AddUserDialogProps) {
 				headers: {
 					"Content-Type": "application/json",
 				},
+				credentials: "include",
 				body: JSON.stringify(createUserSchema.encode(validatedData)),
 			});
 
@@ -114,6 +115,7 @@ export default function AddUserDialog({ onUserAdded }: AddUserDialogProps) {
 			} else {
 				// Handle error appropriately in production
 				await response.json();
+				window.location.href = "/";
 			}
 		} catch {
 			// Handle error appropriately in production

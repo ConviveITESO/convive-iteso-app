@@ -28,7 +28,7 @@ export class AuthController {
 			.cookie("refreshToken", result.refreshToken, { httpOnly: true, secure: true });
 
 		// Redirect to Frontend
-		res.redirect("http://localhost:3000/");
+		res.redirect("http://localhost:3000/users");
 	}
 
 	@Post("refresh")
