@@ -14,6 +14,13 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 
 interface AddUserDialogProps {
 	onUserAdded: () => void;
@@ -22,17 +29,15 @@ interface AddUserDialogProps {
 interface FormData {
 	name: string;
 	email: string;
-	age: string;
-	birthDate: string;
-	password: string;
+	role: string;
+	status: string;
 }
 
 interface FormErrors {
 	name?: string;
 	email?: string;
-	age?: string;
-	birthDate?: string;
-	password?: string;
+	role?: string;
+	status?: string;
 }
 
 export default function AddUserDialog({ onUserAdded }: AddUserDialogProps) {
@@ -42,16 +47,14 @@ export default function AddUserDialog({ onUserAdded }: AddUserDialogProps) {
 
 	const nameId = useId();
 	const emailId = useId();
-	const ageId = useId();
-	const birthDateId = useId();
-	const passwordId = useId();
+	const roleId = useId();
+	const statusId = useId();
 
 	const [formData, setFormData] = useState<FormData>({
 		name: "",
 		email: "",
-		age: "",
-		birthDate: "",
-		password: "",
+		role: "",
+		status: "",
 	});
 
 	const validateForm = () => {
@@ -59,9 +62,8 @@ export default function AddUserDialog({ onUserAdded }: AddUserDialogProps) {
 			const validatedData = createUserSchema.parse({
 				name: formData.name,
 				email: formData.email,
-				age: formData.age,
-				birthDate: formData.birthDate, // HTML date input already provides YYYY-MM-DD format
-				password: formData.password,
+				role: formData.role,
+				status: formData.status,
 			});
 			setErrors({});
 			return validatedData;
@@ -104,9 +106,8 @@ export default function AddUserDialog({ onUserAdded }: AddUserDialogProps) {
 				setFormData({
 					name: "",
 					email: "",
-					age: "",
-					birthDate: "",
-					password: "",
+					role: "",
+					status: "",
 				});
 				setErrors({});
 				onUserAdded();
@@ -177,67 +178,53 @@ export default function AddUserDialog({ onUserAdded }: AddUserDialogProps) {
 						</div>
 
 						<div className="grid grid-cols-4 items-center gap-4">
-							<Label htmlFor={ageId} className="text-right">
-								Age
+							<Label htmlFor={roleId} className="text-right">
+								Role
 							</Label>
 							<div className="col-span-3">
-								<Input
-									id={ageId}
-									type="number"
-									value={formData.age}
-									onChange={(e) =>
+								<Select
+									value={formData.role}
+									onValueChange={(value) =>
 										setFormData({
 											...formData,
-											age: e.target.value,
+											role: value,
 										})
 									}
-									className={errors.age ? "border-red-500" : ""}
-								/>
-								{errors.age && <p className="text-sm text-red-500 mt-1">{errors.age}</p>}
+								>
+									<SelectTrigger id={roleId} className={errors.role ? "border-red-500" : ""}>
+										<SelectValue placeholder="Select a role" />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="student">Student</SelectItem>
+									</SelectContent>
+								</Select>
+								{errors.role && <p className="text-sm text-red-500 mt-1">{errors.role}</p>}
 							</div>
 						</div>
 
 						<div className="grid grid-cols-4 items-center gap-4">
-							<Label htmlFor={birthDateId} className="text-right">
-								Birth Date
+							<Label htmlFor={statusId} className="text-right">
+								Status
 							</Label>
 							<div className="col-span-3">
-								<Input
-									id={birthDateId}
-									type="date"
-									value={formData.birthDate}
-									onChange={(e) =>
+								<Select
+									value={formData.status}
+									onValueChange={(value) =>
 										setFormData({
 											...formData,
-											birthDate: e.target.value,
+											status: value,
 										})
 									}
-									className={errors.birthDate ? "border-red-500" : ""}
-								/>
-								{errors.birthDate && (
-									<p className="text-sm text-red-500 mt-1">{errors.birthDate}</p>
-								)}
-							</div>
-						</div>
-
-						<div className="grid grid-cols-4 items-center gap-4">
-							<Label htmlFor={passwordId} className="text-right">
-								Password
-							</Label>
-							<div className="col-span-3">
-								<Input
-									id={passwordId}
-									type="password"
-									value={formData.password}
-									onChange={(e) =>
-										setFormData({
-											...formData,
-											password: e.target.value,
-										})
-									}
-									className={errors.password ? "border-red-500" : ""}
-								/>
-								{errors.password && <p className="text-sm text-red-500 mt-1">{errors.password}</p>}
+								>
+									<SelectTrigger id={statusId} className={errors.status ? "border-red-500" : ""}>
+										<SelectValue placeholder="Select a status" />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="active">Active</SelectItem>
+										<SelectItem value="deleted">Deleted</SelectItem>
+									</SelectContent>
+								</Select>
+								{errors.status && <p className="text-sm text-red-500 mt-1">{errors.status}</p>}
 							</div>
 						</div>
 					</div>
