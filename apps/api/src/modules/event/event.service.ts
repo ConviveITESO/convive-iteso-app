@@ -1,5 +1,5 @@
 import { Inject, Injectable, NotFoundException } from "@nestjs/common";
-import { CreateEventSchema, EventResponseSchema } from "@repo/schemas";
+import { CreateEventSchema, EventResponseSchema, UpdateEventSchema } from "@repo/schemas";
 import { and, eq, sql } from "drizzle-orm";
 import { BadgeService } from "../badge/badge.service";
 import { CategoryService } from "../category/category.service";
@@ -105,6 +105,15 @@ export class EventService {
 		});
 	}
 
+	async updateEvent(data: UpdateEventSchema, id: string): Promise<void> {
+		return this.db.transaction(async () => {
+			await this.getEventByIdOrThrow(id);
+			await this.assertLocationCategoriesBadgesExist(data);
+			await this._updateEvent(data, id);
+			await this.updateCategoryBadgeRelations(data, id);
+		});
+	}
+
 	formatEvent(
 		event: Event,
 		creator: User,
@@ -135,10 +144,20 @@ export class EventService {
 		};
 	}
 
-	private async assertLocationCategoriesBadgesExist(data: CreateEventSchema): Promise<void> {
-		await this.locationService.getLocationByIdOrThrow(data.locationId);
-		await this.categoryService.assertCategoriesExist(data.categoryIds);
-		await this.badgeService.assertBadgesExist(data.badgeIds);
+	private async assertLocationCategoriesBadgesExist(data: {
+		locationId?: string;
+		categoryIds?: string[];
+		badgeIds?: string[];
+	}): Promise<void> {
+		if (data.locationId) {
+			await this.locationService.getLocationByIdOrThrow(data.locationId);
+		}
+		if (data.categoryIds) {
+			await this.categoryService.assertCategoriesExist(data.categoryIds);
+		}
+		if (data.badgeIds) {
+			await this.badgeService.assertBadgesExist(data.badgeIds);
+		}
 	}
 
 	private async createEventGroup(data: CreateEventSchema): Promise<string> {
@@ -171,6 +190,21 @@ export class EventService {
 		return event!.id;
 	}
 
+	private async _updateEvent(data: UpdateEventSchema, eventId: string): Promise<void> {
+		const updateData: Partial<typeof events.$inferInsert> = {};
+
+		if (data.name) updateData.name = data.name;
+		if (data.description) updateData.description = data.description;
+		if (data.startDate) updateData.startDate = new Date(data.startDate);
+		if (data.endDate) updateData.endDate = new Date(data.endDate);
+		if (data.quota) updateData.quota = data.quota;
+		if (data.locationId) updateData.locationId = data.locationId;
+
+		if (Object.keys(updateData).length > 0) {
+			await this.db.update(events).set(updateData).where(eq(events.id, eventId));
+		}
+	}
+
 	private async createCategoryBadgeRelations(data: CreateEventSchema, eventId: string) {
 		if (data.categoryIds.length > 0)
 			await this.db
@@ -180,6 +214,26 @@ export class EventService {
 			await this.db
 				.insert(eventsBadges)
 				.values(data.badgeIds.map((badgeId) => ({ eventId, badgeId })));
+	}
+
+	private async updateCategoryBadgeRelations(data: UpdateEventSchema, eventId: string) {
+		//promise void if not works
+		if (data.categoryIds) {
+			await this.db.delete(eventsCategories).where(eq(eventsCategories.eventId, eventId));
+			if (data.categoryIds.length > 0) {
+				await this.db
+					.insert(eventsCategories)
+					.values(data.categoryIds.map((categoryId) => ({ eventId, categoryId })));
+			}
+		}
+		if (data.badgeIds) {
+			await this.db.delete(eventsBadges).where(eq(eventsBadges.eventId, eventId));
+			if (data.badgeIds.length > 0) {
+				await this.db
+					.insert(eventsBadges)
+					.values(data.badgeIds.map((badgeId) => ({ eventId, badgeId })));
+			}
+		}
 	}
 
 	// TODO: centralize the allowed length of strings, also check zod and drizzle schemas
