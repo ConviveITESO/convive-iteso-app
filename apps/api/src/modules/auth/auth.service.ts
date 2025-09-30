@@ -1,14 +1,11 @@
 /** biome-ignore-all lint/style/useNamingConvention: <External object to the API being received and handled> */
 import crypto from "node:crypto";
-import fetch from "node-fetch";
 import process from "node:process";
-import jwt, { JwtPayload } from "jsonwebtoken";
-
-import { eq } from "drizzle-orm";
 import { ForbiddenException, Inject, Injectable } from "@nestjs/common";
-
 import { UserResponseSchema } from "@repo/schemas";
-
+import { eq } from "drizzle-orm";
+import jwt, { JwtPayload } from "jsonwebtoken";
+import fetch from "node-fetch";
 import { AppDatabase, DATABASE_CONNECTION } from "../database/connection";
 import { users } from "../database/schemas";
 

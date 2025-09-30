@@ -46,7 +46,7 @@ export class AuthMiddleware implements NestMiddleware {
 			req.user = user;
 			next();
 		} catch {
-			return res.status(401).json({ message: "Invalid token", redirectTo: "/login" });
+			return res.status(401).json({ message: "Invalid token", redirectTo: "/" });
 		}
 	}
 }
