@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import AddTodoDialog from "@/components/add-todo-dialog";
 import TodoCard from "@/components/todo-card";
 import { getApiUrl } from "@/lib/api";
+import AppHeader from "@/components/app-header";
 
 export default function Home() {
 	const [todos, setTodos] = useState<SelectTodoSchema[]>([]);
@@ -29,10 +30,7 @@ export default function Home() {
 
 	return (
 		<div className="flex flex-col h-screen">
-			<header className="p-3 bg-black text-white flex justify-between items-center">
-				<h1 className="text-lg font-bold">TODO APP</h1>
-				<AddTodoDialog onTodoAdded={fetchTodos} />
-			</header>
+			<AppHeader />
 			<main className="grow py-4 px-5 mt-10">
 				<div className="mx-auto block w-full max-w-100 space-y-10">
 					{loading ? (
