@@ -25,6 +25,7 @@ import { SubscriptionsService } from "./subscriptions.service";
 @ApiTags("Subscriptions")
 @Controller("subscriptions")
 export class SubscriptionsController {
+	private readonly testUser = "7d098d5f-430c-4a4b-a6dc-22f3c5135cdf";
 	constructor(private readonly subscriptionsService: SubscriptionsService) {}
 
 	// GET /subscriptions
@@ -36,7 +37,7 @@ export class SubscriptionsController {
 		@Req() req?: { user: { id: string } },
 	) {
 		// TODO: Replace with actual user ID from authentication
-		const userId = req?.user?.id || "";
+		const userId = req?.user?.id || this.testUser;
 		return await this.subscriptionsService.getUserSubscriptions(userId, query);
 	}
 
@@ -49,7 +50,7 @@ export class SubscriptionsController {
 		@Req() req?: { user: { id: string } },
 	) {
 		// TODO: Replace with actual user ID from authentication
-		const userId = req?.user?.id || "";
+		const userId = req?.user?.id || this.testUser;
 		return await this.subscriptionsService.getSubscriptionById(id, userId);
 	}
 
@@ -62,7 +63,7 @@ export class SubscriptionsController {
 		@Req() req?: { user: { id: string } },
 	) {
 		// TODO: Replace with actual user ID from authentication
-		const userId = req?.user?.id || "";
+		const userId = req?.user?.id || this.testUser;
 		return await this.subscriptionsService.createSubscription(userId, data);
 	}
 
@@ -77,7 +78,7 @@ export class SubscriptionsController {
 		@Req() req?: { user: { id: string } },
 	) {
 		// TODO: Replace with actual user ID from authentication
-		const userId = req?.user?.id || "";
+		const userId = req?.user?.id || this.testUser;
 		return await this.subscriptionsService.updateSubscription(id, userId, data);
 	}
 
@@ -90,7 +91,7 @@ export class SubscriptionsController {
 		@Req() req?: { user: { id: string } },
 	) {
 		// TODO: Replace with actual user ID from authentication
-		const userId = req?.user?.id || "";
+		const userId = req?.user?.id || this.testUser;
 		return await this.subscriptionsService.deleteSubscription(id, userId);
 	}
 }
