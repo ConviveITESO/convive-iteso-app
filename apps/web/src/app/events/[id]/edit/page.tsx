@@ -96,6 +96,6 @@ export default function EditEventPage() {
 			)}
 		</div>
 
-		//TODO: Remove once redirect is possible
+		//TODO: Remove errorMessage and savedData display once redirect is possible
 	);
 }
