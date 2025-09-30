@@ -53,7 +53,6 @@ const EventForm = ({
 	onSave,
 	onCancel,
 }: EventFormProps) => {
-	// Initialize form with existing data if editing
 	const [formData, setFormData] = useState<EventFormData>(() => {
 		if (initialData) {
 			const startDateTime = initialData.startDate ? new Date(initialData.startDate) : null;
@@ -128,14 +127,12 @@ const EventForm = ({
 
 	const combineDateTime = (date: string, time: string): string => {
 		if (!date || !time) return "";
-		// Combine date and time into ISO 8601 format
 		return `${date}T${time}:00Z`;
 	};
 
 	const validateForm = (): boolean => {
 		const newErrors: Partial<Record<keyof EventFormData, string>> = {};
 
-		// Prepare data for Zod validation
 		const dataToValidate = {
 			name: formData.name,
 			description: formData.description,
@@ -147,15 +144,12 @@ const EventForm = ({
 			badgeIds: formData.badgeIds,
 		};
 
-		// Use Zod schema for validation
 		const result = createEventSchema.safeParse(dataToValidate);
 
 		if (!result.success) {
-			// Map Zod errors to form errors
 			result.error.issues.forEach((issue) => {
 				const path = issue.path[0] as string;
 
-				// Handle date/time field errors specially
 				if (path === "startDate") {
 					if (!formData.startDate || !formData.startTime) {
 						newErrors.startDate = "The start date and time are required";
@@ -169,7 +163,6 @@ const EventForm = ({
 						newErrors.endDate = issue.message;
 					}
 				} else {
-					// Map other field errors directly
 					const field = path as keyof EventFormData;
 					newErrors[field] = issue.message;
 				}
@@ -203,8 +196,7 @@ const EventForm = ({
 				await onSave(eventData);
 			}
 		} catch (error) {
-			// Handle error appropriately (e.g., show toast notification)
-			// You can add your error handling logic here
+			// Handle error appropriately
 			if (error instanceof Error) {
 				// Handle typed error
 			}
