@@ -91,7 +91,13 @@ This project is built as a monorepo using [Turborepo](https://turbo.build/) with
    pnpm run db:push
    ```
 
-7. **Start development servers**
+7. **Insert mock data**
+
+   ```bash
+   pnpm run db:seed
+   ```
+
+8. **Start development servers**
    ```bash
    pnpm run dev
    ```

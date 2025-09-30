@@ -85,6 +85,17 @@ export const updateUserSchema = createUserSchema
 // RESPONSE schemas
 // ==========================================================
 
+export const userResponseSchemaExample = {
+  id: "550e8400-e29b-41d4-a716-446655440000",
+  name: "Doe, John",
+  email: "john@example.com",
+  status: "active",
+  role: "student",
+  createdAt: "20XX-01-01T12:00:00Z",
+  updatedAt: "20XX-01-02T12:00:00Z",
+  deletedAt: "20XX-03-01T12:00:00Z",
+};
+
 export const userResponseSchema = z
 	.object({
 		id: z.string(),
@@ -97,17 +108,7 @@ export const userResponseSchema = z
 		deletedAt: z.string(),
 	})
 	.openapi("UserResponseSchema", {
-		example: {
-			id: "550e8400-e29b-41d4-a716-446655440000",
-			name: "Doe, John",
-			email: "john@example.com",
-			//birthDate: "2000-01-01",
-			status: "active",
-			role: "student",
-			createdAt: "20XX-01-01T12:00:00Z",
-			updatedAt: "20XX-01-02T12:00:00Z",
-			deletedAt: "20XX-03-01T12:00:00Z",
-		},
+		example: userResponseSchemaExample,
 	});
 
 export const userResponseArraySchema = z
@@ -118,7 +119,6 @@ export const userResponseArraySchema = z
 				id: "550e8400-e29b-41d4-a716-446655440000",
 				name: "Doe, John",
 				email: "john@example.com",
-				// birthDate: "2000-01-01",
 				status: "active",
 				role: "student",
 				createdAt: "2024-01-01T12:00:00Z",
@@ -129,7 +129,6 @@ export const userResponseArraySchema = z
 				id: "550e8400-e29b-41d4-a716-446655440001",
 				name: "Smith, Jane",
 				email: "jane@example.com",
-				// birthDate: "1996-05-15",
 				status: "active",
 				role: "student",
 				createdAt: "2024-01-02T10:30:00Z",
