@@ -1,5 +1,6 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { DATABASE_CONNECTION } from "../database/connection";
+import { User } from "../database/schemas";
 import { UserService } from "./user.service";
 
 describe("UserService", () => {
@@ -14,7 +15,6 @@ describe("UserService", () => {
 		},
 		insert: jest.fn().mockReturnThis(),
 		update: jest.fn().mockReturnThis(),
-		delete: jest.fn().mockReturnThis(),
 		values: jest.fn().mockReturnThis(),
 		set: jest.fn().mockReturnThis(),
 		where: jest.fn().mockReturnThis(),
@@ -36,7 +36,18 @@ describe("UserService", () => {
 
 	describe("getUsers", () => {
 		it("should return all users if no query provided", async () => {
-			const users = [{ id: "1" }, { id: "2" }];
+			const users: User[] = [
+				{
+					id: "1",
+					name: "Alice",
+					email: "alice@iteso.mx",
+					role: "student",
+					status: "active",
+					createdAt: new Date(),
+					updatedAt: new Date(),
+					deletedAt: null,
+				},
+			];
 			mockDb.query.users.findMany.mockResolvedValueOnce(users);
 
 			const result = await service.getUsers();
@@ -45,7 +56,18 @@ describe("UserService", () => {
 		});
 
 		it("should apply filters when query provided", async () => {
-			const filtered = [{ id: "1" }];
+			const filtered: User[] = [
+				{
+					id: "2",
+					name: "Alice",
+					email: "alice@iteso.mx",
+					role: "student",
+					status: "active",
+					createdAt: new Date(),
+					updatedAt: new Date(),
+					deletedAt: null,
+				},
+			];
 			mockDb.query.users.findMany.mockResolvedValueOnce(filtered);
 
 			const query = { name: "Alice", email: "alice@iteso.mx" };
@@ -60,7 +82,16 @@ describe("UserService", () => {
 
 	describe("getUserById", () => {
 		it("should return a single user by id", async () => {
-			const user = { id: "1", name: "Alice" };
+			const user: User = {
+				id: "1",
+				name: "Alice",
+				email: "alice@iteso.mx",
+				role: "student",
+				status: "active",
+				createdAt: new Date(),
+				updatedAt: new Date(),
+				deletedAt: null,
+			};
 			mockDb.query.users.findFirst.mockResolvedValueOnce(user);
 
 			const result = await service.getUserById("1");
@@ -73,7 +104,16 @@ describe("UserService", () => {
 
 	describe("createUser", () => {
 		it("should insert a user and return it", async () => {
-			const newUser = { id: "1", name: "Bob" };
+			const newUser: User = {
+				id: "1",
+				name: "Bob",
+				email: "bob@iteso.mx",
+				role: "student",
+				status: "active",
+				createdAt: new Date(),
+				updatedAt: new Date(),
+				deletedAt: null,
+			};
 			mockDb.returning.mockResolvedValueOnce([newUser]);
 
 			const result = await service.createUser({
@@ -94,7 +134,16 @@ describe("UserService", () => {
 
 	describe("updateUser", () => {
 		it("should update a user and return it", async () => {
-			const updated = { id: "1", name: "Charlie" };
+			const updated: User = {
+				id: "1",
+				name: "Charlie",
+				email: "charlie@iteso.mx",
+				role: "student",
+				status: "active",
+				createdAt: new Date(),
+				updatedAt: new Date(),
+				deletedAt: null,
+			};
 			mockDb.returning.mockResolvedValueOnce([updated]);
 
 			const result = await service.updateUser("1", { name: "Charlie" });
@@ -107,24 +156,26 @@ describe("UserService", () => {
 	});
 
 	describe("deleteUser", () => {
-		it("should delete a user and return it if exists", async () => {
-			const user = {
+		it("should soft delete a user and return it if exists", async () => {
+			const user: User = {
 				id: "1",
 				name: "Dave",
 				email: "dave@iteso.mx",
-				status: "active" as const,
+				status: "active",
 				role: "student",
 				createdAt: new Date(),
 				updatedAt: new Date(),
 				deletedAt: null,
 			};
 			jest.spyOn(service, "getUserById").mockResolvedValueOnce(user);
-			mockDb.delete.mockReturnThis();
-			mockDb.where.mockReturnThis();
 
 			const result = await service.deleteUser("1");
 			expect(result).toEqual(user);
-			expect(mockDb.delete).toHaveBeenCalledWith(expect.anything());
+			expect(mockDb.update).toHaveBeenCalledWith(expect.anything());
+			expect(mockDb.set).toHaveBeenCalledWith({
+				status: "deleted",
+				deletedAt: expect.any(Date),
+			});
 			expect(mockDb.where).toHaveBeenCalledWith(expect.anything());
 		});
 
@@ -133,7 +184,35 @@ describe("UserService", () => {
 
 			const result = await service.deleteUser("nonexistent");
 			expect(result).toBeUndefined();
-			expect(mockDb.delete).not.toHaveBeenCalled();
+			expect(mockDb.update).not.toHaveBeenCalled();
+		});
+	});
+
+	describe("formatUser", () => {
+		it("should format a User entity into a response schema", () => {
+			const user: User = {
+				id: "1",
+				name: "Eve",
+				email: "eve@iteso.mx",
+				status: "active",
+				role: "student",
+				createdAt: new Date("2023-01-01T00:00:00Z"),
+				updatedAt: new Date("2023-01-02T00:00:00Z"),
+				deletedAt: null,
+			};
+
+			const result = service.formatUser(user);
+
+			expect(result).toEqual({
+				id: "1",
+				name: "Eve",
+				email: "eve@iteso.mx",
+				status: "active",
+				role: "student",
+				createdAt: "2023-01-01T00:00:00.000Z",
+				updatedAt: "2023-01-02T00:00:00.000Z",
+				deletedAt: null,
+			});
 		});
 	});
 });
