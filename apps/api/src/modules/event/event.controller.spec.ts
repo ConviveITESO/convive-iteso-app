@@ -1,5 +1,5 @@
 import { Test, TestingModule } from "@nestjs/testing";
-import { CreateEventSchema } from "@repo/schemas";
+import { CreateEventSchema, UpdateEventSchema } from "@repo/schemas";
 import { EventController } from "./event.controller";
 import { EventService } from "./event.service";
 
@@ -7,6 +7,7 @@ describe("EventController", () => {
 	let controller: EventController;
 	const mockEventService = {
 		createEvent: jest.fn(),
+		updateEvent: jest.fn(),
 		getEventByIdOrThrow: jest.fn(),
 	};
 
@@ -33,6 +34,23 @@ describe("EventController", () => {
 			expect(mockEventService.createEvent).toHaveBeenCalledWith(mockEventCreated, "");
 			expect(mockEventService.getEventByIdOrThrow).toHaveBeenCalledWith(id);
 			expect(result).toEqual(mockEvent);
+		});
+	});
+
+	describe("updateEvent", () => {
+		it("should call service and return updated event", async () => {
+			const id = "eventId";
+			const mockUpdatedEvent = { name: "Updated event" };
+			const mockUpdateData = { name: "Updated event name" };
+
+			mockEventService.updateEvent = jest.fn().mockResolvedValue(undefined);
+			mockEventService.getEventByIdOrThrow.mockResolvedValue(mockUpdatedEvent);
+
+			const result = await controller.updateEvent(id, mockUpdateData as UpdateEventSchema);
+
+			expect(mockEventService.updateEvent).toHaveBeenCalledWith(mockUpdateData, id);
+			expect(mockEventService.getEventByIdOrThrow).toHaveBeenCalledWith(id);
+			expect(result).toEqual(mockUpdatedEvent);
 		});
 	});
 });
