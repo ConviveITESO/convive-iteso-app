@@ -25,9 +25,8 @@ async function seedUsers(db: AppDatabase, count: number): Promise<string[]> {
 	for (let i = 0; i < count; i++) {
 		await db.insert(schemas.users).values({
 			email: `user${i}@iteso.mx`,
-			firstName: `User${i} First Name`,
-			lastName: `User${i} Last Name`,
-			status: selectRandomFromArray(["new", "active", "deleted"]) as UserStatus,
+			name: `User${i} Name`,
+			status: selectRandomFromArray(["active", "deleted"]) as UserStatus,
 		});
 	}
 	return (
@@ -121,7 +120,7 @@ async function main() {
 	await pool.end();
 }
 
-type UserStatus = "new" | "active" | "deleted";
+type UserStatus = "active" | "deleted";
 
 type RegisterStatus = "active" | "deleted";
 
