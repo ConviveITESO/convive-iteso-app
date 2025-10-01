@@ -5,7 +5,6 @@ import { ForbiddenException, Inject, Injectable } from "@nestjs/common";
 import { UserResponseSchema } from "@repo/schemas";
 import { eq } from "drizzle-orm";
 import jwt, { JwtPayload } from "jsonwebtoken";
-import fetch from "node-fetch";
 import { AppDatabase, DATABASE_CONNECTION } from "../database/connection";
 import { users } from "../database/schemas";
 
