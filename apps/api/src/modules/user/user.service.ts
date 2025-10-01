@@ -6,7 +6,7 @@ import {
 	UserQuerySchema,
 } from "@repo/schemas";
 import { and, eq, like, SQL } from "drizzle-orm";
-import { AppDatabase, DATABASE_CONNECTION } from "@/modules/database/connection";
+import { AppDatabase, DATABASE_CONNECTION } from "../database/connection";
 import { users } from "../database/schemas";
 
 @Injectable()
