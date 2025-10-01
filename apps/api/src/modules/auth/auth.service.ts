@@ -1,10 +1,11 @@
 /** biome-ignore-all lint/style/useNamingConvention: <External object to the API being received and handled> */
-import crypto from "node:crypto";
 import process from "node:process";
 import { ForbiddenException, Inject, Injectable } from "@nestjs/common";
 import { UserResponseSchema } from "@repo/schemas";
 import { eq } from "drizzle-orm";
 import jwt, { JwtPayload } from "jsonwebtoken";
+import { randomBytes, sha256 } from "../../utils/crypto";
+import { base64UrlEncode } from "../../utils/encoding";
 import { AppDatabase, DATABASE_CONNECTION } from "../database/connection";
 import { users } from "../database/schemas";
 
@@ -25,18 +26,10 @@ export class AuthService {
 	private clientSecret = process.env.CLIENT_SECRET ?? "";
 	private redirectUri = process.env.REDIRECT_URI ?? "http://localhost:8080/auth/oauth-callback";
 
-	private stateCode = this.base64UrlEncode(crypto.randomBytes(16));
-	private nonce = this.base64UrlEncode(crypto.randomBytes(16));
-	private codeVerifier = this.base64UrlEncode(crypto.randomBytes(32));
-	private codeChallenge = this.base64UrlEncode(this.sha256(this.codeVerifier));
-
-	private base64UrlEncode(str: Buffer): string {
-		return str.toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-	}
-
-	private sha256(buffer: string): Buffer {
-		return crypto.createHash("sha256").update(buffer).digest();
-	}
+	private stateCode = base64UrlEncode(randomBytes(16));
+	private nonce = base64UrlEncode(randomBytes(16));
+	private codeVerifier = base64UrlEncode(randomBytes(32));
+	private codeChallenge = base64UrlEncode(sha256(this.codeVerifier));
 
 	getAuthUrl(): string {
 		return `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${
