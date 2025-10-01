@@ -2,10 +2,20 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { DATABASE_CONNECTION } from "@/modules/database/connection";
 import { AuthMiddleware } from "./auth.middleware";
 
+jest.mock("jose", () => ({
+	// biome-ignore lint/style/useNamingConvention: external library name
+	createRemoteJWKSet: jest.fn(),
+	jwtVerify: jest.fn(),
+}));
+
 describe("AuthMiddleware", () => {
 	let middleware: AuthMiddleware;
 	const mockDb = {
-		findFirst: jest.fn(),
+		query: {
+			users: {
+				findFirst: jest.fn(),
+			},
+		},
 	};
 
 	beforeEach(async () => {
