@@ -8,7 +8,7 @@ import { JwtPayload } from "jsonwebtoken";
 import { AppDatabase, DATABASE_CONNECTION } from "@/modules/database/connection";
 import { users } from "@/modules/database/schemas/users";
 
-interface AuthRequest extends Request {
+export interface AuthRequest extends Request {
 	user?: CreateUserSchema;
 }
 
