@@ -4,10 +4,11 @@ import {
 	UpdateUserSchema,
 	UserIdParamSchema,
 	UserQuerySchema,
+	UserResponseSchema,
 } from "@repo/schemas";
 import { and, eq, like, SQL } from "drizzle-orm";
 import { AppDatabase, DATABASE_CONNECTION } from "../database/connection";
-import { users } from "../database/schemas";
+import { User, users } from "../database/schemas";
 
 @Injectable()
 export class UserService {
@@ -79,14 +80,33 @@ export class UserService {
 	}
 
 	/**
-	 * Deletes a user by its id
+	 * Soft deletes a user by its id
 	 * @param userId The UUID of the user
 	 * @returns The deleted user or undefined
 	 */
 	async deleteUser(userId: UserIdParamSchema) {
 		const user = await this.getUserById(userId);
 		if (!user) return undefined;
-		await this.db.delete(users).where(eq(users.id, userId));
+		await this.db
+			.update(users)
+			.set({
+				status: "deleted",
+				deletedAt: new Date(),
+			})
+			.where(eq(users.id, userId));
 		return user;
+	}
+
+	formatUser(user: User): UserResponseSchema {
+		return {
+			id: user.id,
+			name: user.name,
+			email: user.email,
+			role: user.role,
+			status: user.status,
+			createdAt: user.createdAt.toISOString(),
+			updatedAt: user.updatedAt ? user.updatedAt.toISOString() : null,
+			deletedAt: user.deletedAt ? user.deletedAt.toISOString() : null,
+		};
 	}
 }

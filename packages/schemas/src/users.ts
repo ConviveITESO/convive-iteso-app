@@ -9,7 +9,7 @@ export const userIdParamSchema = z.uuid().openapi("UserIdParamSchema", {
 	example: "550e8400-e29b-41d4-a716-446655440000",
 });
 
-export const userEmailParamSchema = z.string().email().openapi("UserEmailParamSchema", {
+export const userEmailParamSchema = z.email().openapi("UserEmailParamSchema", {
 	description: "User email",
 	example: "john@example.com",
 });
@@ -26,7 +26,7 @@ export const userQuerySchema = z
 		email: z.string().optional().openapi({
 			description: "User email",
 		}),
-		status: z.string().optional().openapi({
+		status: z.enum(["active", "deleted"]).optional().openapi({
 			description: "User status",
 		}),
 	})
@@ -87,12 +87,13 @@ export const updateUserSchema = createUserSchema
 
 export const userResponseSchemaExample = {
 	id: "550e8400-e29b-41d4-a716-446655440000",
-	name: "John Doe",
+	name: "Doe, John",
 	email: "john@example.com",
-	age: 25,
-	birthDate: "2000-01-01",
-	password: "Password123!",
+	status: "active",
+	role: "student",
 	createdAt: "20XX-01-01T12:00:00Z",
+	updatedAt: "20XX-01-02T12:00:00Z",
+	deletedAt: "20XX-03-01T12:00:00Z",
 };
 
 export const userResponseSchema = z
@@ -103,8 +104,8 @@ export const userResponseSchema = z
 		status: z.string(),
 		role: z.string(),
 		createdAt: z.string(),
-		updatedAt: z.string(),
-		deletedAt: z.string(),
+		updatedAt: z.string().nullable(),
+		deletedAt: z.string().nullable(),
 	})
 	.openapi("UserResponseSchema", {
 		example: {
