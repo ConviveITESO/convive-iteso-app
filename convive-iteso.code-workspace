@@ -47,7 +47,10 @@
 		},
 		"[css]": {
 			"editor.defaultFormatter": "biomejs.biome"
-		}
+		},
+		"conventionalCommits.scopes": [
+			"[SCRUM-69]"
+		]
 	},
 	"extensions": {
 		"recommendations": [
