@@ -1,4 +1,4 @@
-import process from "node:process";
+/** biome-ignore-all lint/style/noProcessEnv: reading environment variables */
 export default () => ({
 	nodeEnv: process.env.NODE_ENV || "development",
 	port: Number.parseInt(process.env.PORT || "8080", 10),

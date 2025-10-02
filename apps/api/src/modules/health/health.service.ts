@@ -1,4 +1,3 @@
-import process from "node:process";
 import { Inject, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { ConfigSchema } from "../config/config.schema";
