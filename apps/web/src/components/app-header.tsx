@@ -46,10 +46,8 @@ export default function AppHeader() {
 							)}
 						</Button>
 
-						{/* Título */}
 						<h1 className="text-white text-xl font-bold">{pageTitle}</h1>
 
-						{/* Espaciador para centrar el título */}
 						<div className="w-10"></div>
 					</div>
 				</div>
