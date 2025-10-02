@@ -1,10 +1,12 @@
 "use client";
 
-import { ArrowLeft, Home, LogOut, Menu, SettingsIcon } from "lucide-react";
+import { ArrowLeft, Calendar, CalendarCheck, Home, LogOut, Menu, SettingsIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 
 export default function AppHeader() {
+	const router = useRouter();
 	const [isMenuOpen, setIsMenuOpen] = useState(false);
 	const [showBackButton, setShowBackButton] = useState(false);
 	const [pageTitle, setPageTitle] = useState("Event Name");
@@ -18,11 +20,10 @@ export default function AppHeader() {
 		setPageTitle("Event Name");
 	};
 
-	/* const navigateTo = (title: string) => {
-        setPageTitle(title);
-        setShowBackButton(true);
-        setIsMenuOpen(false);
-    }; */
+	const navigateTo = (route: string) => {
+		router.push(route);
+		setIsMenuOpen(false);
+	};
 
 	return (
 		<>
@@ -32,7 +33,7 @@ export default function AppHeader() {
 					style={{ boxShadow: "0px 2px 8px 0px rgba(99, 99, 99, 0.2)" }}
 				>
 					<div className="flex items-center justify-between">
-						{/* Botón de menú/back */}
+						{/* menu button/back */}
 						<Button
 							variant="ghost"
 							size="icon"
@@ -55,7 +56,7 @@ export default function AppHeader() {
 			{isMenuOpen && (
 				<button
 					type="button"
-					aria-label="Cerrar menú"
+					aria-label="Close menu"
 					className="fixed inset-0 z-40 bg-black/50 transition-opacity
                p-0 m-0 border-0 appearance-none cursor-pointer
                focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
@@ -78,24 +79,44 @@ export default function AppHeader() {
 					<h1 className="text-black text-xl font-bold">Menu</h1>
 				</div>
 				<div className="px-4">
-					<div
-						className="flex py-2 px-4 my-2 rounded-2xl transition duration-200 ease-in-out hover:scale-110 hover:bg-primary"
+					<button
+						type="button"
+						onClick={() => navigateTo("/feed")}
+						className="flex w-full py-2 px-4 my-2 rounded-2xl transition duration-200 ease-in-out hover:scale-110 hover:bg-primary hover:text-primary-foreground cursor-pointer"
 						style={{ boxShadow: "0px 2px 8px 0px rgba(99, 99, 99, 0.2)" }}
 					>
-						<Home className="mr-2" /> Home
-					</div>
-					<div
-						className="flex py-2 px-4 my-2 rounded-2xl transition duration-200 ease-in-out hover:scale-110 hover:bg-primary"
+						<Home className="mr-2" /> Feed
+					</button>
+					<button
+						type="button"
+						onClick={() => navigateTo("/my-events")}
+						className="flex w-full py-2 px-4 my-2 rounded-2xl transition duration-200 ease-in-out hover:scale-110 hover:bg-primary hover:text-primary-foreground cursor-pointer"
+						style={{ boxShadow: "0px 2px 8px 0px rgba(99, 99, 99, 0.2)" }}
+					>
+						<CalendarCheck className="mr-2" /> My Events
+					</button>
+					<button
+						type="button"
+						onClick={() => navigateTo("/manage-events")}
+						className="flex w-full py-2 px-4 my-2 rounded-2xl transition duration-200 ease-in-out hover:scale-110 hover:bg-primary hover:text-primary-foreground cursor-pointer"
+						style={{ boxShadow: "0px 2px 8px 0px rgba(99, 99, 99, 0.2)" }}
+					>
+						<Calendar className="mr-2" /> Manage Events
+					</button>
+					<button
+						type="button"
+						onClick={() => navigateTo("/settings")}
+						className="flex w-full py-2 px-4 my-2 rounded-2xl transition duration-200 ease-in-out hover:scale-110 hover:bg-primary hover:text-primary-foreground cursor-pointer"
 						style={{ boxShadow: "0px 2px 8px 0px rgba(99, 99, 99, 0.2)" }}
 					>
 						<SettingsIcon className="mr-2" /> Settings
-					</div>
+					</button>
 				</div>
 
 				{/* MENU FOOTER */}
 				<div className="absolute bottom-0 left-0 right-0 px-4 py-6 border-t">
 					<Button variant="secondary" size="sm" className="rounded-2xl font-medium">
-						<LogOut /> Cerrar Sesion
+						<LogOut /> Logout
 					</Button>
 				</div>
 			</div>
