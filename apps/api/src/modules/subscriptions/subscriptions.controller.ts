@@ -25,7 +25,7 @@ import { SubscriptionsService } from "./subscriptions.service";
 @ApiTags("Subscriptions")
 @Controller("subscriptions")
 export class SubscriptionsController {
-	private readonly testUser = "7d098d5f-430c-4a4b-a6dc-22f3c5135cdf";
+	private readonly testUser = "ff41c1ab-3ea8-4e6a-a37a-58a9c1bec612";
 	constructor(private readonly subscriptionsService: SubscriptionsService) {}
 
 	// GET /subscriptions
