@@ -7,7 +7,7 @@ import jwt, { JwtPayload } from "jsonwebtoken";
 import { randomBytes, sha256 } from "../../utils/crypto";
 import { base64UrlEncode } from "../../utils/encoding";
 import { AppDatabase, DATABASE_CONNECTION } from "../database/connection";
-import { users } from "../database/schemas";
+import { User, users } from "../database/schemas";
 
 interface TokenResponse {
 	access_token: string;
@@ -43,6 +43,19 @@ export class AuthService {
 		}&code_challenge_method=S256`;
 	}
 
+	private formatUser(user: User): UserResponseSchema {
+		return {
+			id: user.id,
+			name: user.name,
+			email: user.email,
+			role: user.role,
+			status: user.status,
+			createdAt: user.createdAt.toISOString(),
+			updatedAt: user.updatedAt ? user.updatedAt.toISOString() : null,
+			deletedAt: user.deletedAt ? user.deletedAt.toISOString() : null,
+		};
+	}
+
 	async handleCallback(code: string, state: string) {
 		if (state !== this.stateCode) throw new ForbiddenException("Invalid state");
 
@@ -67,11 +80,8 @@ export class AuthService {
 		if (!tokens.id_token) throw new ForbiddenException("No id_token returned");
 
 		const idTokenDecoded = jwt.decode(tokens.id_token) as JwtPayload;
-
 		if (!idTokenDecoded) throw new ForbiddenException("Invalid id_token");
-
 		if (idTokenDecoded.nonce !== this.nonce) throw new ForbiddenException("Invalid nonce");
-
 		if (!idTokenDecoded.email || !idTokenDecoded.email.endsWith("@iteso.mx"))
 			throw new ForbiddenException("Email domain not allowed");
 
@@ -81,21 +91,25 @@ export class AuthService {
 
 		let user: UserResponseSchema;
 		if (existingUser) {
-			user = (await this.db
+			const updatedUser = await this.db
 				.update(users)
 				.set({ updatedAt: new Date() })
 				.where(eq(users.id, existingUser.id))
 				.returning()
-				.then((res) => res[0])) as UserResponseSchema;
+				.then((res) => res[0]);
+			if (!updatedUser) throw new Error("Failed to update user");
+			user = this.formatUser(updatedUser);
 		} else {
-			user = (await this.db
+			const newUser = await this.db
 				.insert(users)
 				.values({
 					email: idTokenDecoded.email,
 					name: idTokenDecoded.name,
 				})
 				.returning()
-				.then((res) => res[0])) as UserResponseSchema;
+				.then((res) => res[0]);
+			if (!newUser) throw new Error("Failed to create user");
+			user = this.formatUser(newUser);
 		}
 
 		return {

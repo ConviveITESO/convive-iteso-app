@@ -2,6 +2,7 @@
 
 import { ForbiddenException } from "@nestjs/common";
 import { Test, TestingModule } from "@nestjs/testing";
+import { UserResponseSchema } from "@repo/schemas";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { DATABASE_CONNECTION } from "../database/connection";
 import { AuthService } from "./auth.service";
@@ -61,12 +62,16 @@ describe("AuthService", () => {
 
 		let validJwt: JwtPayload;
 		let stateCode: string;
+		let nonce: string;
 
 		beforeEach(() => {
-			// service is already instantiated here, so read its generated state/nonce
-			stateCode = (service as unknown as { stateCode: string }).stateCode;
+			// cast through unknown to access private fields safely
+			const privateFields = service as unknown as { stateCode: string; nonce: string };
+			stateCode = privateFields.stateCode;
+			nonce = privateFields.nonce;
+
 			validJwt = {
-				nonce: (service as unknown as { nonce: string }).nonce,
+				nonce,
 				email: "test@iteso.mx",
 				name: "Test User",
 			};
@@ -85,7 +90,6 @@ describe("AuthService", () => {
 		});
 
 		it("should throw if no id_token returned", async () => {
-			// return empty tokens once
 			(global.fetch as jest.Mock).mockResolvedValueOnce({
 				json: jest.fn().mockResolvedValue({}),
 			});
@@ -125,39 +129,78 @@ describe("AuthService", () => {
 		});
 
 		it("should update existing user", async () => {
-			mockDb.query.users.findFirst.mockResolvedValueOnce({
+			// existing user returned from findFirst (entity with Dates)
+			const existingEntity = {
 				id: "123",
 				email: validJwt.email,
-			});
+				name: validJwt.name,
+				role: "student",
+				status: "active" as const,
+				createdAt: new Date("2020-01-01T00:00:00Z"),
+				updatedAt: new Date("2020-01-02T00:00:00Z"),
+				deletedAt: null,
+			};
 
-			mockDb.returning.mockResolvedValueOnce([
-				{ id: "123", email: validJwt.email, name: "Updated" },
-			]);
+			mockDb.query.users.findFirst.mockResolvedValueOnce(existingEntity);
+
+			// the DB update returning() should return the entity (with Date fields)
+			mockDb.returning.mockResolvedValueOnce([existingEntity]);
 
 			const result = await service.handleCallback("code", stateCode);
+
+			const expectedUser: UserResponseSchema = {
+				id: existingEntity.id,
+				name: existingEntity.name,
+				email: existingEntity.email,
+				role: existingEntity.role,
+				status: existingEntity.status,
+				createdAt: existingEntity.createdAt.toISOString(),
+				updatedAt: existingEntity.updatedAt.toISOString(),
+				deletedAt: null,
+			};
 
 			expect(result).toMatchObject({
 				idToken: validTokens.id_token,
 				refreshToken: validTokens.refresh_token,
 				expiresIn: validTokens.expires_in,
-				user: { id: "123", email: validJwt.email, name: "Updated" },
+				user: expectedUser,
 			});
 		});
 
 		it("should insert new user if not exists", async () => {
 			mockDb.query.users.findFirst.mockResolvedValueOnce(null);
 
-			mockDb.returning.mockResolvedValueOnce([
-				{ id: "456", email: validJwt.email, name: validJwt.name },
-			]);
+			const newEntity = {
+				id: "456",
+				email: validJwt.email,
+				name: validJwt.name,
+				role: "student",
+				status: "active" as const,
+				createdAt: new Date("2021-02-01T00:00:00Z"),
+				updatedAt: new Date("2021-02-02T00:00:00Z"),
+				deletedAt: null,
+			};
+
+			mockDb.returning.mockResolvedValueOnce([newEntity]);
 
 			const result = await service.handleCallback("code", stateCode);
+
+			const expectedUser: UserResponseSchema = {
+				id: newEntity.id,
+				name: newEntity.name,
+				email: newEntity.email,
+				role: newEntity.role,
+				status: newEntity.status,
+				createdAt: newEntity.createdAt.toISOString(),
+				updatedAt: newEntity.updatedAt.toISOString(),
+				deletedAt: null,
+			};
 
 			expect(result).toMatchObject({
 				idToken: validTokens.id_token,
 				refreshToken: validTokens.refresh_token,
 				expiresIn: validTokens.expires_in,
-				user: { id: "456", email: validJwt.email, name: validJwt.name },
+				user: expectedUser,
 			});
 		});
 	});
