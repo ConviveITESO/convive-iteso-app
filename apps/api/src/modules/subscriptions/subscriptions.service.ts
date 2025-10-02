@@ -163,10 +163,10 @@ export class SubscriptionsService {
 
 			// Check registration window
 			const now = new Date();
-			if (event.opensAt && now < event.opensAt) {
+			if (now < event.startDate) {
 				throw new ForbiddenException("Registration not yet open");
 			}
-			if (event.closesAt && now > event.closesAt) {
+			if (now > event.endDate) {
 				throw new ForbiddenException("Registration has closed");
 			}
 
