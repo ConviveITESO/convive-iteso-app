@@ -2,7 +2,6 @@
 
 import type { SelectTodoSchema } from "@repo/schemas";
 import { useCallback, useEffect, useState } from "react";
-import AppHeader from "@/components/app-header";
 import TodoCard from "@/components/todo-card";
 import { getApiUrl } from "@/lib/api";
 
@@ -16,8 +15,7 @@ export default function Home() {
 			const response = await fetch(`${getApiUrl()}/todos`);
 			const data = (await response.json()) as SelectTodoSchema[];
 			setTodos(data);
-		} catch (error) {
-			console.error("Error fetching todos:", error);
+		} catch (_error) {
 		} finally {
 			setLoading(false);
 		}
@@ -29,7 +27,6 @@ export default function Home() {
 
 	return (
 		<div className="flex flex-col h-screen">
-			<AppHeader />
 			<main className="grow py-4 px-5 mt-10">
 				<div className="mx-auto block w-full max-w-100 space-y-10">
 					{loading ? (
