@@ -11,6 +11,9 @@ export const events = pgTable("events", {
 	startDate: timestamp("start_date", { mode: "date" }).notNull(),
 	endDate: timestamp("end_date", { mode: "date" }).notNull(),
 	quota: integer("quota").notNull(),
+	// REVIEW: check with team if this is correct
+	opensAt: timestamp("opens_at", { mode: "date" }),
+	closesAt: timestamp("closes_at", { mode: "date" }),
 	unregisterClosesAt: timestamp("unregister_closes_at", { mode: "date" }),
 	createdBy: uuid("created_by")
 		.notNull()
