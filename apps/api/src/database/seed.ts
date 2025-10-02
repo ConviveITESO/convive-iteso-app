@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import { AppDatabase } from "@/modules/database/connection";
-import * as schemas from "../src/modules/database/schemas";
+import * as schemas from "../modules/database/schemas";
 
 function selectRandomFromArray<T>(array: T[]): T {
 	const randomIndex = Math.floor(Math.random() * array.length);
@@ -109,7 +109,7 @@ async function seedLocations(db: AppDatabase, userIds: string[]): Promise<string
 }
 
 async function main() {
-	// biome-ignore lint/correctness/noProcessGlobal: <>
+	// biome-ignore lint/style/noProcessEnv: false positive
 	const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 	const db = drizzle(pool, { schema: schemas });
 	await resetDatabase(db);
@@ -125,5 +125,8 @@ type UserStatus = "active" | "deleted";
 type RegisterStatus = "active" | "deleted";
 
 config();
-// biome-ignore lint/nursery/noFloatingPromises: <>
-main();
+main().catch((error) => {
+	// biome-ignore lint/suspicious/noConsole: false positive
+	console.error(error);
+	process.exit(1);
+});

@@ -1,8 +1,8 @@
 import { Module } from "@nestjs/common";
-import { ConfigModule } from "@nestjs/config";
 import { AuthModule } from "./modules/auth/auth.module";
 import { BadgeModule } from "./modules/badge/badge.module";
 import { CategoryModule } from "./modules/category/category.module";
+import { ConfigModule } from "./modules/config";
 import { DatabaseModule } from "./modules/database/database.module";
 import { EventModule } from "./modules/event/event.module";
 import { GroupModule } from "./modules/group/group.module";
@@ -12,8 +12,8 @@ import { UserModule } from "./modules/user/user.module";
 
 @Module({
 	imports: [
+		ConfigModule,
 		DatabaseModule,
-		ConfigModule.forRoot({ isGlobal: true }),
 		HealthModule,
 		UserModule,
 		AuthModule,

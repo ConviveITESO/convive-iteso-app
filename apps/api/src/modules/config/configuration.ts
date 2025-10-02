@@ -1,0 +1,17 @@
+import process from "node:process";
+export default () => ({
+	nodeEnv: process.env.NODE_ENV || "development",
+	port: Number.parseInt(process.env.PORT || "8080", 10),
+	app: {
+		backendUrl: process.env.BACKEND_URL,
+		frontendUrl: process.env.FRONTEND_URL,
+	},
+	database: {
+		url: process.env.DATABASE_URL,
+	},
+	auth: {
+		clientId: process.env.CLIENT_ID,
+		clientSecret: process.env.CLIENT_SECRET,
+		redirectUri: process.env.REDIRECT_URI,
+	},
+});
