@@ -1,5 +1,5 @@
 /** biome-ignore-all lint/suspicious/noConsole: main file not logger  */
-import process from "node:process";
+/** biome-ignore-all lint/style/noProcessEnv: main doesn't use the config module */
 import { NestFactory } from "@nestjs/core";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import cookieParser from "cookie-parser";

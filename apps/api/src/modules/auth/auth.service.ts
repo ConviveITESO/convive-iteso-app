@@ -1,11 +1,12 @@
 /** biome-ignore-all lint/style/useNamingConvention: <External object to the API being received and handled> */
-import process from "node:process";
 import { ForbiddenException, Inject, Injectable } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { UserResponseSchema } from "@repo/schemas";
 import { eq } from "drizzle-orm";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { randomBytes, sha256 } from "../../utils/crypto";
 import { base64UrlEncode } from "../../utils/encoding";
+import { ConfigSchema } from "../config";
 import { AppDatabase, DATABASE_CONNECTION } from "../database/connection";
 import { User, users } from "../database/schemas";
 
@@ -20,11 +21,19 @@ interface TokenResponse {
 
 @Injectable()
 export class AuthService {
-	constructor(@Inject(DATABASE_CONNECTION) private readonly db: AppDatabase) {}
+	constructor(
+		@Inject(DATABASE_CONNECTION) private readonly db: AppDatabase,
+		private readonly configService: ConfigService<ConfigSchema>,
+	) {
+		this.clientId = this.configService.getOrThrow("CLIENT_ID");
+		this.clientSecret = this.configService.getOrThrow("CLIENT_SECRET");
+		this.redirectUri = this.configService.getOrThrow("REDIRECT_URI");
+	}
 
-	private clientId = process.env.CLIENT_ID ?? "";
-	private clientSecret = process.env.CLIENT_SECRET ?? "";
-	private redirectUri = process.env.REDIRECT_URI ?? "http://localhost:8080/auth/oauth-callback";
+	private readonly clientId: string;
+
+	private readonly clientSecret: string;
+	private readonly redirectUri: string;
 
 	private stateCode = base64UrlEncode(randomBytes(16));
 	private nonce = base64UrlEncode(randomBytes(16));
