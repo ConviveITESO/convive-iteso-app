@@ -124,13 +124,16 @@ describe("EventService", () => {
 				startDate,
 				endDate,
 				quota,
+				opensAt: new Date(),
+				closesAt: new Date(),
+				unregisterClosesAt: new Date(),
 				createdBy: "userId",
 				groupId: "groupId",
 				locationId: "locationId",
 				status: "active",
 				createdAt: new Date(),
 				updatedAt: new Date(),
-				deletedAt: new Date(),
+				deletedAt: null,
 			};
 			const mockUser = { id: "userId" } as User;
 			const mockGroup = { id: "groupId" } as Group;

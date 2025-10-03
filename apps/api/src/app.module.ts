@@ -7,6 +7,7 @@ import { EventModule } from "./modules/event/event.module";
 import { GroupModule } from "./modules/group/group.module";
 import { HealthModule } from "./modules/health/health.module";
 import { LocationModule } from "./modules/location/location.module";
+import { SubscriptionsModule } from "./modules/subscriptions/subscriptions.module";
 import { UserModule } from "./modules/user/user.module";
 
 @Module({
@@ -20,6 +21,7 @@ import { UserModule } from "./modules/user/user.module";
 		BadgeModule,
 		GroupModule,
 		LocationModule,
+		SubscriptionsModule,
 	],
 	controllers: [],
 	providers: [],

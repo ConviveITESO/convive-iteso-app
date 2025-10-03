@@ -18,6 +18,10 @@
 		}
 	],
 	"settings": {
+		"files.associations": {
+			"*.css": "tailwindcss"
+		},
+		"material-icon-theme.activeIconPack": "nest",
 		"biome.enabled": true,
 		"biome.requireConfiguration": true,
 		"biome.lsp.trace.server": "verbose",
@@ -47,11 +51,10 @@
 		},
 		"[css]": {
 			"editor.defaultFormatter": "biomejs.biome"
-		}
+		},
+		"cSpell.words": ["treeify", "unregisters", "Unregistration", "waitlist", "waitlisted"]
 	},
 	"extensions": {
-		"recommendations": [
-			"biomejs.biome"
-		]
+		"recommendations": ["biomejs.biome"]
 	}
 }
