@@ -45,7 +45,6 @@ interface EventFormProps {
 
 const EventForm = ({
 	mode = "create",
-	eventId,
 	initialData,
 	categories = [],
 	badges = [],
@@ -470,7 +469,9 @@ const EventForm = ({
 									<Checkbox
 										id={`category-${category.id}`}
 										checked={formData.categoryIds.includes(category.id)}
-										onCheckedChange={(checked) => handleCategoriesChange(category.id, !!checked)}
+										onCheckedChange={(checked: boolean) =>
+											handleCategoriesChange(category.id, !!checked)
+										}
 									/>
 									<Label
 										htmlFor={`category-${category.id}`}
@@ -513,7 +514,7 @@ const EventForm = ({
 									<Checkbox
 										id={`badge-${badge.id}`}
 										checked={formData.badgeIds.includes(badge.id)}
-										onCheckedChange={(checked) => handleBadgesChange(badge.id, !!checked)}
+										onCheckedChange={(checked: boolean) => handleBadgesChange(badge.id, !!checked)}
 									/>
 									<div className="flex-1">
 										<Label

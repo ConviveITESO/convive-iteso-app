@@ -1,14 +1,14 @@
 import { pgEnum, pgTable, uuid, varchar } from "drizzle-orm/pg-core";
 import { timestampColumns } from "./default-columns";
 
-export const userStatus = pgEnum("user_status", ["new", "active", "deleted"]);
+export const userStatus = pgEnum("user_status", ["active", "deleted"]);
 
 export const users = pgTable("users", {
 	id: uuid("id").defaultRandom().primaryKey().notNull(),
 	email: varchar("email", { length: 256 }).notNull().unique(),
-	firstName: varchar("first_name", { length: 256 }).notNull(),
-	lastName: varchar("last_name", { length: 256 }).notNull(),
-	status: userStatus().default("new").notNull(),
+	name: varchar("name", { length: 256 }).notNull(),
+	role: varchar("role", { length: 50 }).notNull().default("student"),
+	status: userStatus().default("active").notNull(),
 	...timestampColumns,
 });
 

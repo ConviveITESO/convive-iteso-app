@@ -9,6 +9,11 @@ export const userIdParamSchema = z.uuid().openapi("UserIdParamSchema", {
 	example: "550e8400-e29b-41d4-a716-446655440000",
 });
 
+export const userEmailParamSchema = z.email().openapi("UserEmailParamSchema", {
+	description: "User email",
+	example: "john@example.com",
+});
+
 // ==========================================================
 // QUERY schemas
 // ==========================================================
@@ -21,11 +26,8 @@ export const userQuerySchema = z
 		email: z.string().optional().openapi({
 			description: "User email",
 		}),
-		age: z.number().optional().openapi({
-			description: "User age",
-		}),
-		birthDate: z.string().optional().openapi({
-			description: "User birth date",
+		status: z.enum(["active", "deleted"]).optional().openapi({
+			description: "User status",
 		}),
 	})
 	.openapi("UserQuerySchema");
@@ -49,52 +51,21 @@ export const createUserSchema = z
 					return "The email is required";
 				},
 			})
+			.refine((val) => val.split("@")[1] === "iteso.mx", {
+				message: "Email must end with @iteso.mx",
+			})
 			.openapi({
 				description: "User email",
 			}),
-		age: z.coerce.number().min(18, "The age must be at least 18").openapi({
-			description: "User age",
+		status: z.enum(["active", "deleted"]).openapi({
+			description: "User status",
 		}),
-		birthDate: z
-			.codec(
-				z.iso.date({
-					error: (issue) => {
-						if (issue.input) return "The birth date is an invalid date";
-						return "The birth date is required";
-					},
-				}),
-				z.date(),
-				{
-					decode: (value) => new Date(value),
-					encode: (value) => {
-						const date = value.toISOString();
-						const isoDate = date.split("T")[0];
-						return isoDate || date;
-					},
-				},
-			)
-			.openapi({
-				description: "User birth date",
-			}),
-		password: z
-			.string()
-			.min(8, "The password must be at least 8 characters long")
-			.max(100, "The password cannot exceed 100 characters")
-			.regex(/[a-z]/, "The password must contain at least one lowercase letter")
-			.regex(/[A-Z]/, "The password must contain at least one uppercase letter")
-			.regex(/[0-9]/, "The password must contain at least one number")
-			.regex(/[^a-zA-Z0-9]/, "The password must contain at least one special character")
-			.openapi({
-				description: "User password",
-			}),
 	})
 	.openapi("CreateUserSchema", {
 		example: {
-			name: "John Doe",
+			name: "Doe, John",
 			email: "john@example.com",
-			age: 25,
-			birthDate: "2000-01-01",
-			password: "Password123!",
+			status: "active",
 		},
 	});
 
@@ -105,7 +76,7 @@ export const updateUserSchema = createUserSchema
 	})
 	.openapi("UpdateUserSchema", {
 		example: {
-			name: "Jane Smith",
+			name: "Smith, Jane",
 			email: "jane@example.com",
 		},
 	});
@@ -116,12 +87,13 @@ export const updateUserSchema = createUserSchema
 
 export const userResponseSchemaExample = {
 	id: "550e8400-e29b-41d4-a716-446655440000",
-	name: "John Doe",
+	name: "Doe, John",
 	email: "john@example.com",
-	age: 25,
-	birthDate: "2000-01-01",
-	password: "Password123!",
+	status: "active",
+	role: "student",
 	createdAt: "20XX-01-01T12:00:00Z",
+	updatedAt: "20XX-01-02T12:00:00Z",
+	deletedAt: "20XX-03-01T12:00:00Z",
 };
 
 export const userResponseSchema = z
@@ -129,13 +101,24 @@ export const userResponseSchema = z
 		id: z.string(),
 		name: z.string(),
 		email: z.string(),
-		age: z.number(),
-		birthDate: z.string(),
-		password: z.string(),
+		status: z.string(),
+		role: z.string(),
 		createdAt: z.string(),
+		updatedAt: z.string().nullable(),
+		deletedAt: z.string().nullable(),
 	})
 	.openapi("UserResponseSchema", {
-		example: userResponseSchemaExample,
+		example: {
+			id: "550e8400-e29b-41d4-a716-446655440000",
+			name: "Doe, John",
+			email: "john@example.com",
+			//birthDate: "2000-01-01",
+			status: "active",
+			role: "student",
+			createdAt: "20XX-01-01T12:00:00Z",
+			updatedAt: "20XX-01-02T12:00:00Z",
+			deletedAt: "20XX-03-01T12:00:00Z",
+		},
 	});
 
 export const userResponseArraySchema = z
@@ -144,21 +127,25 @@ export const userResponseArraySchema = z
 		example: [
 			{
 				id: "550e8400-e29b-41d4-a716-446655440000",
-				name: "John Doe",
+				name: "Doe, John",
 				email: "john@example.com",
-				age: 25,
-				birthDate: "2000-01-01",
-				password: "Password123!",
+				// birthDate: "2000-01-01",
+				status: "active",
+				role: "student",
 				createdAt: "2024-01-01T12:00:00Z",
+				updatedAt: "2024-01-02T12:00:00Z",
+				deletedAt: "2024-03-01T12:00:00Z",
 			},
 			{
 				id: "550e8400-e29b-41d4-a716-446655440001",
-				name: "Jane Smith",
+				name: "Smith, Jane",
 				email: "jane@example.com",
-				age: 28,
-				birthDate: "1996-05-15",
-				password: "Password456!",
+				// birthDate: "1996-05-15",
+				status: "active",
+				role: "student",
 				createdAt: "2024-01-02T10:30:00Z",
+				updatedAt: "2024-01-03T10:30:00Z",
+				deletedAt: "2024-03-02T10:30:00Z",
 			},
 		],
 	});

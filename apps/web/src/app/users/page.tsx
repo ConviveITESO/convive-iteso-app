@@ -11,6 +11,7 @@ interface User {
 	age: number;
 	birthDate: string;
 	createdAt?: string;
+	redirectTo?: string;
 }
 
 export default function UsersPage() {
@@ -20,9 +21,15 @@ export default function UsersPage() {
 	const fetchUsers = useCallback(async () => {
 		try {
 			setLoading(true);
-			const response = await fetch("http://localhost:8080/user");
-			const data = (await response.json()) as User[];
-			setUsers(data);
+			const response = await fetch("http://localhost:8080/user", {
+				credentials: "include",
+			});
+			const data = await response.json();
+			if (data.redirectTo) {
+				window.location.href = data.redirectTo;
+			} else {
+				setUsers(data as User[]);
+			}
 		} catch {
 			// Handle error appropriately in production
 		} finally {

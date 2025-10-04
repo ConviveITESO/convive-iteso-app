@@ -5,6 +5,12 @@ import { App } from "supertest/types";
 import { AppModule } from "./../src/app.module";
 import { DatabaseHealthService } from "../src/modules/database/database-health.service";
 
+jest.mock("jose", () => ({
+	// biome-ignore lint/style/useNamingConvention: external library name
+	createRemoteJWKSet: jest.fn(),
+	jwtVerify: jest.fn(),
+}));
+
 describe("AppController (e2e)", () => {
 	let app: INestApplication<App>;
 

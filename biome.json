@@ -83,7 +83,8 @@
 					"options": {
 						"filenameCases": ["kebab-case"]
 					}
-				}
+				},
+				"noProcessEnv": "error"
 			}
 		}
 	},

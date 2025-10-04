@@ -1,4 +1,5 @@
 import { NotFoundException } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { Test, TestingModule } from "@nestjs/testing";
 import { EventResponseSchema } from "@repo/schemas";
 import { BadgeService } from "../badge/badge.service";
@@ -24,6 +25,8 @@ describe("EventService", () => {
 	const mockLocationService = { formatLocation: jest.fn(), getLocationByIdOrThrow: jest.fn() };
 	const mockCategoryService = { formatCategory: jest.fn(), assertCategoriesExist: jest.fn() };
 	const mockBadgeService = { formatBadge: jest.fn(), assertBadgesExist: jest.fn() };
+	const mockConfigService = { get: jest.fn() };
+	const mockCloudinaryService = { uploadImage: jest.fn() };
 
 	beforeEach(async () => {
 		const module: TestingModule = await Test.createTestingModule({
@@ -35,6 +38,8 @@ describe("EventService", () => {
 				{ provide: LocationService, useValue: mockLocationService },
 				{ provide: CategoryService, useValue: mockCategoryService },
 				{ provide: BadgeService, useValue: mockBadgeService },
+				{ provide: ConfigService, useValue: mockConfigService },
+				{ provide: "CloudinaryService", useValue: mockCloudinaryService },
 			],
 		}).compile();
 		service = module.get<EventService>(EventService);
