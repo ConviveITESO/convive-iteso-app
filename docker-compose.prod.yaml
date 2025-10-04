@@ -13,11 +13,9 @@ services:
     build:
       context: .
       dockerfile: ./apps/api/Dockerfile
+      args:
+        ENV_FILE: ${ENV_FILE:-.env.prod}
     restart: unless-stopped
-    environment:
-      NODE_ENV: production
-      PORT: 8080
-      DATABASE_URL: ${DATABASE_URL}
     ports:
       - "${API_PORT:-8080}:8080"
     networks:
@@ -33,12 +31,9 @@ services:
     build:
       context: .
       dockerfile: ./apps/web/Dockerfile
+      args:
+        ENV_FILE: ${ENV_FILE:-.env.prod}
     restart: unless-stopped
-    environment:
-      NODE_ENV: production
-      PORT: 3000
-      HOSTNAME: 0.0.0.0
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080}
     ports:
       - "${WEB_PORT:-3000}:3000"
     networks:
