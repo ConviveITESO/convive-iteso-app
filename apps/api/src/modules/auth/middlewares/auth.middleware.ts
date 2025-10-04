@@ -36,7 +36,7 @@ export class AuthMiddleware implements NestMiddleware {
 			})) as JwtPayload;
 
 			if (!payload.email) {
-				res.status(403).json({ message: "No email received in the token", redirectTo: "/" });
+				return res.status(403).json({ message: "No email received in the token", redirectTo: "/" });
 			}
 
 			const user = await this.db.query.users.findFirst({

@@ -1,3 +1,4 @@
+import { ConfigService } from "@nestjs/config";
 import { Test, TestingModule } from "@nestjs/testing";
 import { DATABASE_CONNECTION } from "../database/connection";
 import { HealthService } from "./health.service";
@@ -9,6 +10,10 @@ describe("HealthService", () => {
 		execute: jest.fn(),
 	};
 
+	const mockConfigService = {
+		get: jest.fn(),
+	};
+
 	beforeEach(async () => {
 		const module: TestingModule = await Test.createTestingModule({
 			providers: [
@@ -16,6 +21,10 @@ describe("HealthService", () => {
 				{
 					provide: DATABASE_CONNECTION,
 					useValue: mockDatabase,
+				},
+				{
+					provide: ConfigService,
+					useValue: mockConfigService,
 				},
 			],
 		}).compile();

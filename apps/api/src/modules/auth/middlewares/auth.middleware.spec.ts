@@ -1,3 +1,4 @@
+import { ConfigService } from "@nestjs/config";
 import { Test, TestingModule } from "@nestjs/testing";
 import { Response } from "express";
 import { DATABASE_CONNECTION } from "@/modules/database/connection";
@@ -23,6 +24,16 @@ describe("AuthMiddleware", () => {
 		},
 	};
 
+	const mockConfigService = {
+		getOrThrow: jest.fn((key: string) => {
+			const config: Record<string, string> = {
+				// biome-ignore lint/style/useNamingConvention: environment variable name
+				CLIENT_ID: "test-client-id",
+			};
+			return config[key];
+		}),
+	};
+
 	const mockResponse = () => {
 		const res: Partial<Response> = {};
 		res.status = jest.fn().mockReturnValue(res);
@@ -32,7 +43,11 @@ describe("AuthMiddleware", () => {
 
 	beforeEach(async () => {
 		const module: TestingModule = await Test.createTestingModule({
-			providers: [AuthMiddleware, { provide: DATABASE_CONNECTION, useValue: mockDb }],
+			providers: [
+				AuthMiddleware,
+				{ provide: DATABASE_CONNECTION, useValue: mockDb },
+				{ provide: ConfigService, useValue: mockConfigService },
+			],
 		}).compile();
 
 		middleware = module.get<AuthMiddleware>(AuthMiddleware);

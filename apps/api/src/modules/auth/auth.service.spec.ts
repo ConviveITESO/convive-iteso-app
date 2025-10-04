@@ -1,6 +1,7 @@
 /** biome-ignore-all lint/style/useNamingConvention: <External object to the API being emulated> */
 
 import { ForbiddenException } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { Test, TestingModule } from "@nestjs/testing";
 import { UserResponseSchema } from "@repo/schemas";
 import jwt, { JwtPayload } from "jsonwebtoken";
@@ -26,9 +27,24 @@ describe("AuthService", () => {
 		returning: jest.fn(),
 	};
 
+	const mockConfigService = {
+		getOrThrow: jest.fn((key: string) => {
+			const config: Record<string, string> = {
+				CLIENT_ID: "test-client-id",
+				CLIENT_SECRET: "test-client-secret",
+				REDIRECT_URI: "http://localhost:8080/auth/callback",
+			};
+			return config[key];
+		}),
+	};
+
 	beforeEach(async () => {
 		const module: TestingModule = await Test.createTestingModule({
-			providers: [AuthService, { provide: DATABASE_CONNECTION, useValue: mockDb }],
+			providers: [
+				AuthService,
+				{ provide: DATABASE_CONNECTION, useValue: mockDb },
+				{ provide: ConfigService, useValue: mockConfigService },
+			],
 		}).compile();
 
 		service = module.get<AuthService>(AuthService);
