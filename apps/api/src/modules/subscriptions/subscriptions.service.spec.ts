@@ -1,7 +1,7 @@
 import { ForbiddenException, NotFoundException } from "@nestjs/common";
 import { Test, TestingModule } from "@nestjs/testing";
+import { SubscriptionResponseSchema } from "@repo/schemas";
 import { DATABASE_CONNECTION } from "../database/connection";
-import { Subscription } from "../database/schemas";
 import { SubscriptionsService } from "./subscriptions.service";
 
 describe("SubscriptionsService", () => {
@@ -23,15 +23,12 @@ describe("SubscriptionsService", () => {
 		transaction: jest.fn(),
 	};
 
-	const mockSubscription: Subscription = {
+	const mockSubscription: SubscriptionResponseSchema = {
 		id: "sub-123",
 		userId: "user-123",
 		eventId: "event-123",
 		status: "registered",
 		position: null,
-		createdAt: new Date("2024-01-01"),
-		updatedAt: new Date("2024-01-01"),
-		deletedAt: null,
 	};
 
 	const mockEvent = {
@@ -423,7 +420,7 @@ describe("SubscriptionsService", () => {
 
 			const result = await service.deleteSubscription("sub-123", "user-123");
 
-			expect(result).toBe("Subscription cancelled successfully");
+			expect(result).toStrictEqual({ message: "Subscription cancelled successfully" });
 			expect(mockTransaction.update).toHaveBeenCalled();
 		});
 
@@ -448,7 +445,7 @@ describe("SubscriptionsService", () => {
 
 			const result = await service.deleteSubscription("sub-123", "user-123");
 
-			expect(result).toBe("Subscription cancelled successfully");
+			expect(result).toStrictEqual({ message: "Subscription cancelled successfully" });
 		});
 
 		it("should throw NotFoundException when subscription not found", async () => {

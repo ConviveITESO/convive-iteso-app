@@ -12,7 +12,7 @@ import {
 	SubscriptionResponseSchema,
 	UpdateSubscriptionSchema,
 } from "@repo/schemas";
-import { and, eq, gte, max, SQL, sql } from "drizzle-orm";
+import { and, eq, gte, isNull, max, SQL, sql } from "drizzle-orm";
 import { AppDatabase, DATABASE_CONNECTION, Transaction } from "../database/connection";
 import { events, Subscription, subscriptions } from "../database/schemas";
 
@@ -36,6 +36,56 @@ export class SubscriptionsService {
 	}
 
 	/**
+	 * Determines subscription status and position based on event quota
+	 * @param tx Database transaction
+	 * @param eventId The event ID
+	 * @returns Object with status and position
+	 */
+	private async determineSubscriptionStatus(
+		tx: Transaction,
+		eventId: string,
+		eventQuota: number,
+	): Promise<{ status: "registered" | "waitlisted"; position: number | null }> {
+		// Check current registration count
+		let registrationCount = await tx.$count(
+			subscriptions,
+			and(
+				eq(subscriptions.eventId, eventId),
+				eq(subscriptions.status, "registered"),
+				isNull(subscriptions.deletedAt),
+			),
+		);
+
+		if (!registrationCount) {
+			registrationCount = 0;
+		}
+
+		let status: "registered" | "waitlisted" = "registered";
+		let position: number | null = null;
+
+		// If event is full, add to waitlist
+		if (registrationCount >= eventQuota) {
+			status = "waitlisted";
+			// Get next position in waitlist
+			const [maxPosition] = await tx
+				.select({ max: max(subscriptions.position) })
+				.from(subscriptions)
+				.where(
+					and(
+						eq(subscriptions.eventId, eventId),
+						eq(subscriptions.status, "waitlisted"),
+						isNull(subscriptions.deletedAt),
+					),
+				)
+				.limit(1);
+
+			position = (maxPosition?.max || 0) + 1;
+		}
+
+		return { status, position };
+	}
+
+	/**
 	 * Promotes the next user from waitlist to registered
 	 * @param tx Database transaction
 	 * @param eventId The event ID
@@ -45,7 +95,13 @@ export class SubscriptionsService {
 		const [nextWaitlisted] = await tx
 			.select()
 			.from(subscriptions)
-			.where(and(eq(subscriptions.eventId, eventId), eq(subscriptions.status, "waitlisted")))
+			.where(
+				and(
+					eq(subscriptions.eventId, eventId),
+					eq(subscriptions.status, "waitlisted"),
+					isNull(subscriptions.deletedAt),
+				),
+			)
 			.orderBy(subscriptions.position)
 			.limit(1);
 
@@ -89,8 +145,11 @@ export class SubscriptionsService {
 	 * @param query Query parameters for filtering
 	 * @returns all subscriptions matching the criteria
 	 */
-	async getUserSubscriptions(userId: string, query?: SubscriptionQuerySchema) {
-		const conditions: SQL[] = [eq(subscriptions.userId, userId)];
+	async getUserSubscriptions(
+		userId: string,
+		query?: SubscriptionQuerySchema,
+	): Promise<SubscriptionResponseSchema[]> {
+		const conditions: SQL[] = [eq(subscriptions.userId, userId), isNull(subscriptions.deletedAt)];
 
 		if (query?.status) {
 			conditions.push(eq(subscriptions.status, query.status));
@@ -108,7 +167,7 @@ export class SubscriptionsService {
 			throw new NotFoundException("Subscriptions not found");
 		}
 
-		return result;
+		return result.map((subscription) => this.toSubscriptionResponse(subscription));
 	}
 
 	/**
@@ -117,18 +176,27 @@ export class SubscriptionsService {
 	 * @param userId The user ID (for authorization)
 	 * @returns The subscription or undefined
 	 */
-	async getSubscriptionById(subscriptionId: SubscriptionIdParamSchema, userId: string) {
+	async getSubscriptionById(
+		subscriptionId: SubscriptionIdParamSchema,
+		userId: string,
+	): Promise<SubscriptionResponseSchema> {
 		const [subscription] = await this.db
 			.select()
 			.from(subscriptions)
-			.where(and(eq(subscriptions.id, subscriptionId), eq(subscriptions.userId, userId)))
+			.where(
+				and(
+					eq(subscriptions.id, subscriptionId),
+					eq(subscriptions.userId, userId),
+					isNull(subscriptions.deletedAt),
+				),
+			)
 			.limit(1);
 
 		if (!subscription) {
 			throw new NotFoundException("Subscription not found");
 		}
 
-		return subscription;
+		return this.toSubscriptionResponse(subscription);
 	}
 
 	/**
@@ -149,16 +217,44 @@ export class SubscriptionsService {
 				.where(and(eq(subscriptions.userId, userId), eq(subscriptions.eventId, data.eventId)))
 				.limit(1);
 
-			if (existingSubscription) {
-				// Idempotent - return existing subscription
-				return this.toSubscriptionResponse(existingSubscription);
-			}
-
-			// Get event details with lock
+			// Get event details
 			const [event] = await tx.select().from(events).where(eq(events.id, data.eventId)).limit(1);
 
 			if (!event) {
 				throw new NotFoundException("Event not found");
+			}
+
+			if (existingSubscription) {
+				// Check if subscription was deleted
+				if (existingSubscription.deletedAt) {
+					// Determine if user can be registered or should be waitlisted
+					const { status, position } = await this.determineSubscriptionStatus(
+						tx,
+						data.eventId,
+						event.quota,
+					);
+
+					// Restore subscription by clearing deletedAt and updating status
+					const [restored] = await tx
+						.update(subscriptions)
+						.set({
+							status,
+							position,
+							deletedAt: null,
+							updatedAt: new Date(),
+						})
+						.where(eq(subscriptions.id, existingSubscription.id))
+						.returning();
+
+					if (!restored) {
+						throw new InternalServerErrorException("Failed to restore subscription");
+					}
+
+					return this.toSubscriptionResponse(restored);
+				}
+
+				// Idempotent - return existing subscription
+				return this.toSubscriptionResponse(existingSubscription);
 			}
 
 			// Check registration window
@@ -170,32 +266,12 @@ export class SubscriptionsService {
 				throw new ForbiddenException("Registration has closed");
 			}
 
-			// Check current registration count
-			let registrationCount = await tx.$count(
-				subscriptions,
-				and(eq(subscriptions.eventId, data.eventId), eq(subscriptions.status, "registered")),
+			// Determine subscription status and position
+			const { status, position } = await this.determineSubscriptionStatus(
+				tx,
+				data.eventId,
+				event.quota,
 			);
-
-			let status: "registered" | "waitlisted" = "registered";
-			let position: number | null = null;
-			if (!registrationCount) {
-				registrationCount = 0;
-			}
-
-			// If event is full, add to waitlist
-			if (registrationCount >= event.quota) {
-				status = "waitlisted";
-				// Get next position in waitlist
-				const [maxPosition] = await tx
-					.select({ max: max(subscriptions.position) })
-					.from(subscriptions)
-					.where(
-						and(eq(subscriptions.eventId, data.eventId), eq(subscriptions.status, "waitlisted")),
-					)
-					.limit(1);
-
-				position = (maxPosition?.max || 0) + 1;
-			}
 
 			// Create subscription
 			const [result] = await tx
@@ -237,7 +313,13 @@ export class SubscriptionsService {
 				})
 				.from(subscriptions)
 				.innerJoin(events, eq(events.id, subscriptions.eventId))
-				.where(and(eq(subscriptions.id, subscriptionId), eq(subscriptions.userId, userId)))
+				.where(
+					and(
+						eq(subscriptions.id, subscriptionId),
+						eq(subscriptions.userId, userId),
+						isNull(subscriptions.deletedAt),
+					),
+				)
 				.limit(1);
 
 			if (!subscription) {
@@ -281,7 +363,7 @@ export class SubscriptionsService {
 	async deleteSubscription(
 		subscriptionId: SubscriptionIdParamSchema,
 		userId: string,
-	): Promise<string> {
+	): Promise<{ message: string }> {
 		return await this.db.transaction(async (tx) => {
 			const [subscription] = await tx
 				.select({
@@ -317,7 +399,7 @@ export class SubscriptionsService {
 				})
 				.where(eq(subscriptions.id, subscriptionId));
 
-			return "Subscription cancelled successfully";
+			return { message: "Subscription cancelled successfully" };
 		});
 	}
 }

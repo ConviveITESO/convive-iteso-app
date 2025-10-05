@@ -126,7 +126,7 @@ describe("SubscriptionsController", () => {
 		it("should delete subscription for the authenticated user", async () => {
 			const id = "subscription-id" as SubscriptionIdParamSchema;
 			const req = { user: { id: "user-654" } };
-			const message = "Subscription cancelled successfully";
+			const message = { message: "Subscription cancelled successfully" };
 			service.deleteSubscription.mockResolvedValue(message);
 
 			const result = await controller.deleteSubscription(id, req);
