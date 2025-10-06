@@ -13,19 +13,27 @@ import EventForm from "../_event-form";
 export default function EditEventPage() {
 	// TODO: replace mocks with fetch once GETs exist
 	const categories: CategoryResponseSchema[] = [
-		{ id: "temp1", name: "art" },
-		{ id: "temp2", name: "entertainment" },
-		{ id: "temp3", name: "economy" },
+		{ id: "140c5571-9d06-47af-b05f-52c5b3ad3dc6", name: "art" },
+		{ id: "158bf962-77f9-4dd4-874b-3b4d1c9c808d", name: "entertainment" },
+		{ id: "33c119a0-d431-491a-8bdf-e93f2fdf775a", name: "economy" },
 	];
 
 	const badges: BadgeResponseSchema[] = [
-		{ id: "temp4", name: "Badge4", description: "This is the badge4" },
-		{ id: "temp5", name: "Badge5", description: "This is the badge5" },
+		{
+			id: "92c5592a-7160-49b9-86fa-95e13c8e2d4d",
+			name: "Badge4",
+			description: "This is the badge4",
+		},
+		{
+			id: "7310eed1-c17c-4cbe-927c-7b6316649ceb",
+			name: "Badge5",
+			description: "This is the badge5",
+		},
 	];
 
 	const locations: LocationResponseSchema[] = [
-		{ id: "temp6", name: "Building M" },
-		{ id: "temp7", name: "Library" },
+		{ id: "264869f2-a8a4-4ba0-965c-c529c8a3f567", name: "Building M" },
+		{ id: "ab0baa65-53de-44d9-8428-8805e8f7c864", name: "Library" },
 	];
 
 	const initialData: Partial<CreateEventSchema> = {
