@@ -4,10 +4,14 @@ import { z } from "./zod-openapi.js";
 // PARAMS schemas
 // ==========================================================
 
-export const subscriptionIdParamSchema = z.uuid().openapi("SubscriptionIdParamSchema", {
-	description: "Subscription ID",
-	example: "123e4567-e89b-12d3-a456-426614174000",
-});
+export const subscriptionIdParamSchema = z
+	.object({
+		id: z.uuid().openapi("SubscriptionIdParamSchema", {
+			description: "Subscription ID",
+			example: "123e4567-e89b-12d3-a456-426614174000",
+		}),
+	})
+	.openapi("SubscriptionIdParamSchema");
 
 // ==========================================================
 // QUERY schemas

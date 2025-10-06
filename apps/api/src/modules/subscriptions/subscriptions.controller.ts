@@ -8,7 +8,6 @@ import {
 	Post,
 	Query,
 	Req,
-	UnauthorizedException,
 	UseGuards,
 } from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
@@ -50,12 +49,9 @@ export class SubscriptionsController {
 	@ZodQuery(subscriptionQuerySchema, "search")
 	@ZodOk(subscriptionArrayResponseSchema)
 	async getUserSubscriptions(
+		@Req() req: UserRequest,
 		@Query(new ZodValidationPipe(subscriptionQuerySchema)) query?: SubscriptionQuerySchema,
-		@Req() req?: UserRequest,
 	) {
-		if (!req) {
-			throw new UnauthorizedException("Unauthorized");
-		}
 		const userId = req.user.id;
 		return await this.subscriptionsService.getUserSubscriptions(userId, query);
 	}
@@ -66,13 +62,10 @@ export class SubscriptionsController {
 	@ZodOk(subscriptionResponseSchema)
 	async getSubscriptionById(
 		@Param(new ZodValidationPipe(subscriptionIdParamSchema)) id: SubscriptionIdParamSchema,
-		@Req() req?: UserRequest,
+		@Req() req: UserRequest,
 	) {
-		if (!req) {
-			throw new UnauthorizedException("Unauthorized");
-		}
 		const userId = req.user.id;
-		return await this.subscriptionsService.getSubscriptionById(id, userId);
+		return await this.subscriptionsService.getSubscriptionById(id.id, userId);
 	}
 
 	// GET /subscriptions/:id/stats
@@ -89,11 +82,8 @@ export class SubscriptionsController {
 	@ZodCreated(subscriptionResponseSchema)
 	async createSubscription(
 		@Body(new ZodValidationPipe(createSubscriptionSchema)) data: CreateSubscriptionSchema,
-		@Req() req?: UserRequest,
+		@Req() req: UserRequest,
 	) {
-		if (!req) {
-			throw new UnauthorizedException("Unauthorized");
-		}
 		const userId = req.user.id;
 		return await this.subscriptionsService.createSubscription(userId, data);
 	}
@@ -106,13 +96,10 @@ export class SubscriptionsController {
 	async updateSubscription(
 		@Body(new ZodValidationPipe(updateSubscriptionSchema)) data: UpdateSubscriptionSchema,
 		@Param(new ZodValidationPipe(subscriptionIdParamSchema)) id: SubscriptionIdParamSchema,
-		@Req() req?: UserRequest,
+		@Req() req: UserRequest,
 	) {
-		if (!req) {
-			throw new UnauthorizedException("Unauthorized");
-		}
 		const userId = req.user.id;
-		return await this.subscriptionsService.updateSubscription(id, userId, data);
+		return await this.subscriptionsService.updateSubscription(id.id, userId, data);
 	}
 
 	// DELETE /subscriptions/:id
@@ -121,12 +108,9 @@ export class SubscriptionsController {
 	@ZodOk(subscriptionResponseSchema)
 	async deleteSubscription(
 		@Param(new ZodValidationPipe(subscriptionIdParamSchema)) id: SubscriptionIdParamSchema,
-		@Req() req?: UserRequest,
+		@Req() req: UserRequest,
 	) {
-		if (!req) {
-			throw new UnauthorizedException("Unauthorized");
-		}
 		const userId = req.user.id;
-		return await this.subscriptionsService.deleteSubscription(id, userId);
+		return await this.subscriptionsService.deleteSubscription(id.id, userId);
 	}
 }

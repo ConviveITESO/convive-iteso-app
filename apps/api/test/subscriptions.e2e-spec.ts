@@ -167,6 +167,67 @@ describe("SubscriptionsModule (e2e)", () => {
 				});
 		});
 
+		it("/subscriptions/:id/stats (GET) should return event statistics", () => {
+			const mockChain = {
+				limit: jest.fn(),
+			};
+			(mockDb.where as jest.Mock).mockReturnValue(mockChain);
+			(mockChain.limit as jest.Mock).mockResolvedValue([mockEvent]);
+			(mockDb.$count as jest.Mock)
+				.mockResolvedValueOnce(7) // Registered count
+				.mockResolvedValueOnce(3); // Waitlisted count
+
+			return request(app.getHttpServer())
+				.get(`/subscriptions/${mockEvent.id}/stats`)
+				.expect(200)
+				.then(({ body }) => {
+					expect(body).toEqual({
+						eventId: mockEvent.id,
+						registeredCount: 7,
+						waitlistedCount: 3,
+						spotsLeft: 3, // quota (10) - registered (7) = 3
+					});
+				});
+		});
+
+		it("/subscriptions/:id/stats (GET) should return 0 spots left when event is full", () => {
+			const mockChain = {
+				limit: jest.fn(),
+			};
+			(mockDb.where as jest.Mock).mockReturnValue(mockChain);
+			(mockChain.limit as jest.Mock).mockResolvedValue([mockEvent]);
+			(mockDb.$count as jest.Mock)
+				.mockResolvedValueOnce(10) // Registered count equals quota
+				.mockResolvedValueOnce(5); // Waitlisted count
+
+			return request(app.getHttpServer())
+				.get(`/subscriptions/${mockEvent.id}/stats`)
+				.expect(200)
+				.then(({ body }) => {
+					expect(body).toEqual({
+						eventId: mockEvent.id,
+						registeredCount: 10,
+						waitlistedCount: 5,
+						spotsLeft: 0,
+					});
+				});
+		});
+
+		it("/subscriptions/:id/stats (GET) should return 404 when event not found", () => {
+			const mockChain = {
+				limit: jest.fn(),
+			};
+			(mockDb.where as jest.Mock).mockReturnValue(mockChain);
+			(mockChain.limit as jest.Mock).mockResolvedValue([]);
+
+			return request(app.getHttpServer())
+				.get(`/subscriptions/${mockEvent.id}/stats`)
+				.expect(404)
+				.then(({ body }) => {
+					expect(body.message).toBe("Event not found");
+				});
+		});
+
 		it("/subscriptions (POST) should create a subscription", () => {
 			const mockTransaction = createMockTransaction();
 			(mockDb.transaction as jest.Mock).mockImplementation((callback) => callback(mockTransaction));

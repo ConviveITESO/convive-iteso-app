@@ -159,6 +159,112 @@ describe("SubscriptionsService", () => {
 		});
 	});
 
+	describe("getEventStats", () => {
+		beforeEach(() => {
+			jest.clearAllMocks();
+			// Setup the chain for getEventStats
+			const mockChain = {
+				limit: jest.fn(),
+			};
+			(mockDb.where as jest.Mock).mockReturnValue(mockChain);
+		});
+
+		it("should return event statistics with registered and waitlisted counts", async () => {
+			const mockChain = (mockDb.where as jest.Mock)();
+			(mockChain.limit as jest.Mock).mockResolvedValue([mockEvent]);
+			(mockDb.$count as jest.Mock)
+				.mockResolvedValueOnce(18) // Registered count
+				.mockResolvedValueOnce(5); // Waitlisted count
+
+			const result = await service.getEventStats("event-123");
+
+			expect(result).toEqual({
+				eventId: "event-123",
+				registeredCount: 18,
+				waitlistedCount: 5,
+				spotsLeft: 0, // quota (10) - registered (18) = -8, clamped to 0 by Math.max
+			});
+			expect(mockDb.select).toHaveBeenCalled();
+			expect(mockDb.$count).toHaveBeenCalledTimes(2);
+		});
+
+		it("should return correct spots left when event is not full", async () => {
+			const mockChain = (mockDb.where as jest.Mock)();
+			(mockChain.limit as jest.Mock).mockResolvedValue([mockEvent]);
+			(mockDb.$count as jest.Mock)
+				.mockResolvedValueOnce(7) // Registered count
+				.mockResolvedValueOnce(2); // Waitlisted count
+
+			const result = await service.getEventStats("event-123");
+
+			expect(result).toEqual({
+				eventId: "event-123",
+				registeredCount: 7,
+				waitlistedCount: 2,
+				spotsLeft: 3, // quota (10) - registered (7) = 3
+			});
+		});
+
+		it("should return 0 spots left when event is full", async () => {
+			const mockChain = (mockDb.where as jest.Mock)();
+			(mockChain.limit as jest.Mock).mockResolvedValue([mockEvent]);
+			(mockDb.$count as jest.Mock)
+				.mockResolvedValueOnce(10) // Registered count equals quota
+				.mockResolvedValueOnce(3); // Waitlisted count
+
+			const result = await service.getEventStats("event-123");
+
+			expect(result).toEqual({
+				eventId: "event-123",
+				registeredCount: 10,
+				waitlistedCount: 3,
+				spotsLeft: 0, // quota (10) - registered (10) = 0
+			});
+		});
+
+		it("should handle zero counts correctly", async () => {
+			const mockChain = (mockDb.where as jest.Mock)();
+			(mockChain.limit as jest.Mock).mockResolvedValue([mockEvent]);
+			(mockDb.$count as jest.Mock)
+				.mockResolvedValueOnce(0) // No registered
+				.mockResolvedValueOnce(0); // No waitlisted
+
+			const result = await service.getEventStats("event-123");
+
+			expect(result).toEqual({
+				eventId: "event-123",
+				registeredCount: 0,
+				waitlistedCount: 0,
+				spotsLeft: 10, // quota (10) - registered (0) = 10
+			});
+		});
+
+		it("should handle null counts from database", async () => {
+			const mockChain = (mockDb.where as jest.Mock)();
+			(mockChain.limit as jest.Mock).mockResolvedValue([mockEvent]);
+			(mockDb.$count as jest.Mock)
+				.mockResolvedValueOnce(null) // Null registered count
+				.mockResolvedValueOnce(null); // Null waitlisted count
+
+			const result = await service.getEventStats("event-123");
+
+			expect(result).toEqual({
+				eventId: "event-123",
+				registeredCount: 0,
+				waitlistedCount: 0,
+				spotsLeft: 10,
+			});
+		});
+
+		it("should throw NotFoundException when event does not exist", async () => {
+			const mockChain = (mockDb.where as jest.Mock)();
+			(mockChain.limit as jest.Mock).mockResolvedValue([]);
+
+			await expect(service.getEventStats("event-123")).rejects.toThrow(NotFoundException);
+			await expect(service.getEventStats("event-123")).rejects.toThrow("Event not found");
+		});
+	});
+
 	describe("createSubscription", () => {
 		let mockTransaction: typeof mockDb;
 

@@ -8,7 +8,6 @@ import {
 import {
 	CreateSubscriptionSchema,
 	EventStatsResponseSchema,
-	SubscriptionIdParamSchema,
 	SubscriptionQuerySchema,
 	SubscriptionResponseSchema,
 	UpdateSubscriptionSchema,
@@ -178,7 +177,7 @@ export class SubscriptionsService {
 	 * @returns The subscription or undefined
 	 */
 	async getSubscriptionById(
-		subscriptionId: SubscriptionIdParamSchema,
+		subscriptionId: string,
 		userId: string,
 	): Promise<SubscriptionResponseSchema> {
 		const [subscription] = await this.db
@@ -347,7 +346,7 @@ export class SubscriptionsService {
 	 * @returns The updated subscription or undefined
 	 */
 	async updateSubscription(
-		subscriptionId: SubscriptionIdParamSchema,
+		subscriptionId: string,
 		userId: string,
 		data: UpdateSubscriptionSchema,
 	): Promise<SubscriptionResponseSchema> {
@@ -407,10 +406,7 @@ export class SubscriptionsService {
 	 * @param userId The user ID (for authorization)
 	 * @returns The deleted subscription or undefined
 	 */
-	async deleteSubscription(
-		subscriptionId: SubscriptionIdParamSchema,
-		userId: string,
-	): Promise<{ message: string }> {
+	async deleteSubscription(subscriptionId: string, userId: string): Promise<{ message: string }> {
 		return await this.db.transaction(async (tx) => {
 			const [subscription] = await tx
 				.select({
