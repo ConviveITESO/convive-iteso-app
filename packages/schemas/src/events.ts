@@ -6,6 +6,16 @@ import { userResponseSchema, userResponseSchemaExample } from "./users";
 import { z } from "./zod-openapi.js";
 
 // ==========================================================
+// PARAM schemas
+// ==========================================================
+
+export const eventIdParamSchema = z.object({
+	id: z.uuid().openapi("EventIdParamSchema", {
+		description: "Event ID",
+		example: "123e4567-e89b-12d3-a456-426614174000",
+	}),
+});
+// ==========================================================
 // BODY schemas
 // ==========================================================
 
@@ -145,6 +155,7 @@ export const eventResponseArraySchema = z
 // TYPE schemas
 // ==========================================================
 
+export type EventIdParamSchema = z.infer<typeof eventIdParamSchema>;
 export type CreateEventSchema = z.infer<typeof createEventSchema>;
 export type UpdateEventSchema = z.infer<typeof updateEventSchema>;
 export type EventResponseSchema = z.infer<typeof eventResponseSchema>;

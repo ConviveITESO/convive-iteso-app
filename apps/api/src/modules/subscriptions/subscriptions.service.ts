@@ -7,6 +7,7 @@ import {
 } from "@nestjs/common";
 import {
 	CreateSubscriptionSchema,
+	EventStatsResponseSchema,
 	SubscriptionIdParamSchema,
 	SubscriptionQuerySchema,
 	SubscriptionResponseSchema,
@@ -197,6 +198,52 @@ export class SubscriptionsService {
 		}
 
 		return this.toSubscriptionResponse(subscription);
+	}
+
+	/**
+	 * Gets subscription statistics for an event
+	 * @param eventId The event ID
+	 * @returns Event statistics including registered count, waitlisted count, and spots left
+	 */
+	async getEventStats(eventId: string): Promise<EventStatsResponseSchema> {
+		// Verify event exists
+		const [event] = await this.db.select().from(events).where(eq(events.id, eventId)).limit(1);
+
+		if (!event) {
+			throw new NotFoundException("Event not found");
+		}
+
+		// Get registered count
+		const registeredCount =
+			(await this.db.$count(
+				subscriptions,
+				and(
+					eq(subscriptions.eventId, eventId),
+					eq(subscriptions.status, "registered"),
+					isNull(subscriptions.deletedAt),
+				),
+			)) || 0;
+
+		// Get waitlisted count
+		const waitlistedCount =
+			(await this.db.$count(
+				subscriptions,
+				and(
+					eq(subscriptions.eventId, eventId),
+					eq(subscriptions.status, "waitlisted"),
+					isNull(subscriptions.deletedAt),
+				),
+			)) || 0;
+
+		// Calculate spots left
+		const spotsLeft = Math.max(0, event.quota - registeredCount);
+
+		return {
+			eventId,
+			registeredCount,
+			waitlistedCount,
+			spotsLeft,
+		};
 	}
 
 	/**

@@ -15,6 +15,9 @@ import { ApiTags } from "@nestjs/swagger";
 import {
 	CreateSubscriptionSchema,
 	createSubscriptionSchema,
+	EventIdParamSchema,
+	eventIdParamSchema,
+	eventStatsResponseSchema,
 	SubscriptionIdParamSchema,
 	SubscriptionQuerySchema,
 	subscriptionArrayResponseSchema,
@@ -70,6 +73,14 @@ export class SubscriptionsController {
 		}
 		const userId = req.user.id;
 		return await this.subscriptionsService.getSubscriptionById(id, userId);
+	}
+
+	// GET /subscriptions/:id/stats
+	@Get(":id/stats")
+	@ZodParam(eventIdParamSchema, "id")
+	@ZodOk(eventStatsResponseSchema)
+	async getEventStats(@Param(new ZodValidationPipe(eventIdParamSchema)) id: EventIdParamSchema) {
+		return await this.subscriptionsService.getEventStats(id.id);
 	}
 
 	// POST /subscriptions
