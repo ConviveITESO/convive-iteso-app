@@ -1,6 +1,6 @@
 name: Validate Code
 
-on: 
+on:
   pull_request:
     branches:
       - main
@@ -23,7 +23,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'pnpm'
+          cache: "pnpm"
           cache-dependency-path: pnpm-lock.yaml
 
       - name: Install dependencies
@@ -45,8 +45,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Copy .env.example to .env
+      - name: Copy .env.example to .env api
         run: cp apps/api/.env.example apps/api/.env
+      - name: Copy .env.example to .env web
+        run: cp apps/web/.env.example apps/web/.env
 
       - uses: pnpm/action-setup@v2
         with:
@@ -56,7 +58,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'pnpm'
+          cache: "pnpm"
           cache-dependency-path: pnpm-lock.yaml
 
       - name: Install dependencies
@@ -92,7 +94,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'pnpm'
+          cache: "pnpm"
           cache-dependency-path: pnpm-lock.yaml
 
       - name: Install dependencies
@@ -102,8 +104,14 @@ jobs:
           echo "pnpm version: $(pnpm -v)"
           pnpm install --frozen-lockfile # Second run to ensure everything is locked
 
-      - name: Copy .env.example to .env
+      - name: Copy .env.example to .env api
         run: cp apps/api/.env.example apps/api/.env
+
+      - name: Copy .env.example to .env web
+        run: cp apps/web/.env.example apps/web/.env
+
+      - name: Update DATABASE_URL for Docker network
+        run: sed -i 's|localhost:5432|db:5432|g' apps/api/.env
 
       - name: Start DB with Docker Compose
         run: make prod-up-ci

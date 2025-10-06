@@ -23,7 +23,7 @@ prod-up-ci:
 	@printf "[+] Waiting for database to be ready...\n"
 	@sleep 10
 	@printf "[+] Starting production services...\n"
-	@CI=true COMPOSE_PROJECT_NAME=$(PROJECT_NAME) DATABASE_URL="postgresql://user:unsafe@db:5432/convive-iteso-db" \
+	@CI=true COMPOSE_PROJECT_NAME=$(PROJECT_NAME) ENV_FILE=.env \
 		docker compose -p $(PROJECT_NAME) -f $(COMPOSE_PROD) up --build -d
 	@printf "API: http://localhost:%s\n" "$(API_PORT)"
 	@printf "Web: http://localhost:%s\n" "$(WEB_PORT)"

@@ -1,7 +1,8 @@
 /** biome-ignore-all lint/suspicious/noConsole: main file not logger  */
-import process from "node:process";
+/** biome-ignore-all lint/style/noProcessEnv: main doesn't use the config module */
 import { NestFactory } from "@nestjs/core";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
+import cookieParser from "cookie-parser";
 import { AppModule } from "./app.module";
 
 async function bootstrap() {
@@ -9,6 +10,9 @@ async function bootstrap() {
 
 	// Remove X-Powered-By header for security
 	app.getHttpAdapter().getInstance().disable("x-powered-by");
+
+	// Add Cookie parser
+	app.use(cookieParser());
 
 	// Configure CORS properly
 	app.enableCors({
