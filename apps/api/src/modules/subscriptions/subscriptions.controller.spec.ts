@@ -80,7 +80,7 @@ describe("SubscriptionsController", () => {
 			>;
 			service.getSubscriptionById.mockResolvedValue(subscription);
 
-			const result = await controller.getSubscriptionById(req, params);
+			const result = await controller.getSubscriptionById(params, req);
 
 			expect(service.getSubscriptionById).toHaveBeenCalledWith(subscriptionId, req.user.id);
 			expect(result).toBe(subscription);
