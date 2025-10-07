@@ -16,7 +16,9 @@ export default function EventPage() {
 	const { data: event, isLoading } = useQuery({
 		queryKey: ["event", id],
 		queryFn: async () => {
-			const response = await fetch(`${getApiUrl()}/events/${id}`);
+			const response = await fetch(`${getApiUrl()}/events/${id}`, {
+				credentials: "include",
+			});
 			if (!response.ok) throw new Error("Failed to fetch event");
 			return response.json() as Promise<EventResponseSchema>;
 		},
@@ -25,7 +27,9 @@ export default function EventPage() {
 	const { data: stats, isLoading: isLoadingStats } = useQuery({
 		queryKey: ["event-stats", id],
 		queryFn: async () => {
-			const response = await fetch(`${getApiUrl()}/subscriptions/${id}/stats`);
+			const response = await fetch(`${getApiUrl()}/subscriptions/${id}/stats`, {
+				credentials: "include",
+			});
 			if (!response.ok) throw new Error("Failed to fetch event stats");
 			return response.json() as Promise<EventStatsResponseSchema>;
 		},
