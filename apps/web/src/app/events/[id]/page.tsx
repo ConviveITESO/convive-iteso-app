@@ -1,7 +1,7 @@
 "use client";
 
 import type { EventResponseSchema, EventStatsResponseSchema } from "@repo/schemas";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Calendar, Clock, ImageIcon, Users } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
@@ -12,32 +12,48 @@ import { getApiUrl } from "@/lib/api";
 export default function EventPage() {
 	const { id } = useParams();
 	const router = useRouter();
+	const queryClient = useQueryClient();
+
+	const eventId = Array.isArray(id) ? id[0] : id;
 
 	const { data: event, isLoading } = useQuery({
-		queryKey: ["event", id],
+		queryKey: ["event", eventId],
 		queryFn: async () => {
-			const response = await fetch(`${getApiUrl()}/events/${id}`, {
+			if (!eventId) {
+				throw new Error("Event id is required");
+			}
+
+			const response = await fetch(`${getApiUrl()}/events/${eventId}`, {
 				credentials: "include",
 			});
 			if (!response.ok) throw new Error("Failed to fetch event");
 			return response.json() as Promise<EventResponseSchema>;
 		},
+		enabled: Boolean(eventId),
 	});
 
 	const { data: stats, isLoading: isLoadingStats } = useQuery({
-		queryKey: ["event-stats", id],
+		queryKey: ["event-stats", eventId],
 		queryFn: async () => {
-			const response = await fetch(`${getApiUrl()}/subscriptions/${id}/stats`, {
+			if (!eventId) {
+				throw new Error("Event id is required");
+			}
+
+			const response = await fetch(`${getApiUrl()}/subscriptions/${eventId}/stats`, {
 				credentials: "include",
 			});
 			if (!response.ok) throw new Error("Failed to fetch event stats");
 			return response.json() as Promise<EventStatsResponseSchema>;
 		},
-		enabled: !!id,
+		enabled: Boolean(eventId),
 	});
 
 	const handleRegister = async () => {
 		try {
+			if (!eventId) {
+				throw new Error("Event id is required");
+			}
+
 			const response = await fetch(`${getApiUrl()}/subscriptions`, {
 				method: "POST",
 				headers: {
@@ -45,13 +61,15 @@ export default function EventPage() {
 				},
 				credentials: "include",
 				body: JSON.stringify({
-					eventId: id,
+					eventId,
 				}),
 			});
 
 			if (!response.ok) {
 				throw new Error("Failed to register for event");
 			}
+
+			await queryClient.invalidateQueries({ queryKey: ["event-stats", eventId] });
 
 			// Optionally show success message or redirect
 			alert("Successfully registered for event!");
