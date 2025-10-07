@@ -22,7 +22,7 @@ export class AuthMiddleware implements NestMiddleware {
 
 	async use(req: AuthRequest, res: Response, next: () => void) {
 		Logger.log("AuthMiddleware called");
-		const idToken = req.cookies.idToken;
+		const idToken = req.cookies?.idToken;
 		if (!idToken) {
 			return res.status(401).json({ message: "Missing or invalid token", redirectTo: "/" });
 		}

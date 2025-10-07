@@ -36,6 +36,30 @@ export default function EventPage() {
 		enabled: !!id,
 	});
 
+	const handleRegister = async () => {
+		try {
+			const response = await fetch(`${getApiUrl()}/subscriptions`, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				credentials: "include",
+				body: JSON.stringify({
+					eventId: id,
+				}),
+			});
+
+			if (!response.ok) {
+				throw new Error("Failed to register for event");
+			}
+
+			// Optionally show success message or redirect
+			alert("Successfully registered for event!");
+		} catch (_error) {
+			alert("Failed to register for event. Please try again.");
+		}
+	};
+
 	if (isLoading || isLoadingStats) {
 		return (
 			<div className="flex items-center justify-center min-h-screen">
@@ -182,7 +206,10 @@ export default function EventPage() {
 					</div>
 
 					{/* Register Button */}
-					<Button className="w-full h-10 bg-primary text-primary-foreground hover:bg-primary/90">
+					<Button
+						className="w-full h-10 bg-primary text-primary-foreground hover:bg-primary/90"
+						onClick={handleRegister}
+					>
 						Register for event
 					</Button>
 				</div>

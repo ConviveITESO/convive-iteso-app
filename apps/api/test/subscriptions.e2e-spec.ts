@@ -1,5 +1,7 @@
 import { ExecutionContext, INestApplication } from "@nestjs/common";
 import { Test, TestingModule } from "@nestjs/testing";
+import cookieParser from "cookie-parser";
+import { jwtVerify } from "jose";
 import request from "supertest";
 import { App } from "supertest/types";
 import { AppModule } from "../src/app.module";
@@ -16,8 +18,14 @@ jest.mock("jose", () => ({
 jest.mock("@/pipes/zod-validation/zod-validation.pipe", () => {
 	const actual = jest.requireActual("@/pipes/zod-validation/zod-validation.pipe");
 	class ZodValidationPipeAdapter extends actual.ZodValidationPipe {
-		transform(value: unknown, metadata: unknown) {
-			if (value && typeof value === "object" && "id" in (value as Record<string, unknown>)) {
+		transform(value: unknown, metadata: { type?: string }) {
+			// Only transform body objects that have an 'id' field, not params or queries
+			if (
+				metadata.type === "body" &&
+				value &&
+				typeof value === "object" &&
+				"id" in (value as Record<string, unknown>)
+			) {
 				return super.transform((value as { id: unknown }).id, metadata);
 			}
 			return super.transform(value, metadata);
@@ -117,6 +125,21 @@ describe("SubscriptionsModule (e2e)", () => {
 	beforeEach(async () => {
 		mockDb = createMockDb();
 
+		// Setup mock JWT verification
+		(jwtVerify as jest.Mock).mockResolvedValue({
+			payload: {
+				email: mockUser.email,
+			},
+		});
+
+		// Setup mock database query for user
+		const mockDbQuery = {
+			findFirst: jest.fn().mockResolvedValue(mockUser),
+		};
+		(mockDb as unknown as { query: { users: typeof mockDbQuery } }).query = {
+			users: mockDbQuery,
+		};
+
 		const moduleFixture: TestingModule = await Test.createTestingModule({
 			imports: [AppModule],
 		})
@@ -129,6 +152,7 @@ describe("SubscriptionsModule (e2e)", () => {
 			.compile();
 
 		app = moduleFixture.createNestApplication();
+		app.use(cookieParser());
 		await app.init();
 	});
 
@@ -147,6 +171,7 @@ describe("SubscriptionsModule (e2e)", () => {
 
 			return request(app.getHttpServer())
 				.get("/subscriptions")
+				.set("Cookie", "idToken=mock-token")
 				.expect(200)
 				.then(({ body }) => {
 					expect(body).toEqual(mockResult);
@@ -161,6 +186,7 @@ describe("SubscriptionsModule (e2e)", () => {
 
 			return request(app.getHttpServer())
 				.get(`/subscriptions/${mockSubscriptionResponse.id}`)
+				.set("Cookie", "idToken=mock-token")
 				.expect(200)
 				.then(({ body }) => {
 					expect(body).toEqual(mockSubscriptionResponse);
@@ -179,6 +205,7 @@ describe("SubscriptionsModule (e2e)", () => {
 
 			return request(app.getHttpServer())
 				.get(`/subscriptions/${mockEvent.id}/stats`)
+				.set("Cookie", "idToken=mock-token")
 				.expect(200)
 				.then(({ body }) => {
 					expect(body).toEqual({
@@ -202,6 +229,7 @@ describe("SubscriptionsModule (e2e)", () => {
 
 			return request(app.getHttpServer())
 				.get(`/subscriptions/${mockEvent.id}/stats`)
+				.set("Cookie", "idToken=mock-token")
 				.expect(200)
 				.then(({ body }) => {
 					expect(body).toEqual({
@@ -222,6 +250,7 @@ describe("SubscriptionsModule (e2e)", () => {
 
 			return request(app.getHttpServer())
 				.get(`/subscriptions/${mockEvent.id}/stats`)
+				.set("Cookie", "idToken=mock-token")
 				.expect(404)
 				.then(({ body }) => {
 					expect(body.message).toBe("Event not found");
@@ -240,6 +269,7 @@ describe("SubscriptionsModule (e2e)", () => {
 
 			return request(app.getHttpServer())
 				.post("/subscriptions")
+				.set("Cookie", "idToken=mock-token")
 				.send({ eventId: mockEvent.id })
 				.expect(201)
 				.then(({ body }) => {
@@ -263,6 +293,7 @@ describe("SubscriptionsModule (e2e)", () => {
 
 			return request(app.getHttpServer())
 				.patch(`/subscriptions/${mockSubscriptionResponse.id}`)
+				.set("Cookie", "idToken=mock-token")
 				.send({ status: "cancelled" })
 				.expect(200)
 				.then(({ body }) => {
@@ -282,6 +313,7 @@ describe("SubscriptionsModule (e2e)", () => {
 
 			return request(app.getHttpServer())
 				.delete(`/subscriptions/${mockSubscriptionResponse.id}`)
+				.set("Cookie", "idToken=mock-token")
 				.expect(200)
 				.then(({ body }) => {
 					expect(body).toEqual({ message: "Subscription cancelled successfully" });
