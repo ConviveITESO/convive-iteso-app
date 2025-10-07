@@ -1,5 +1,6 @@
 "use client";
 
+import type { EventResponseSchema, SubscriptionResponseSchema } from "@repo/schemas";
 import { useParams } from "next/navigation";
 import { useAuth } from "@/lib/use-auth";
 
