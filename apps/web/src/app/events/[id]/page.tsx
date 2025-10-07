@@ -26,6 +26,10 @@ export default function EventPage() {
 			const response = await fetch(`${getApiUrl()}/events/${eventId}`, {
 				credentials: "include",
 			});
+			if (response.status === 401 || response.status === 403) {
+				router.push("/");
+				throw new Error("Unauthorized");
+			}
 			if (!response.ok) throw new Error("Failed to fetch event");
 			return response.json() as Promise<EventResponseSchema>;
 		},
@@ -42,6 +46,10 @@ export default function EventPage() {
 			const response = await fetch(`${getApiUrl()}/subscriptions/${eventId}/stats`, {
 				credentials: "include",
 			});
+			if (response.status === 401 || response.status === 403) {
+				router.push("/");
+				throw new Error("Unauthorized");
+			}
 			if (!response.ok) throw new Error("Failed to fetch event stats");
 			return response.json() as Promise<EventStatsResponseSchema>;
 		},
