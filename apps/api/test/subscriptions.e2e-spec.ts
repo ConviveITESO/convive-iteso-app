@@ -1,10 +1,17 @@
-import { INestApplication } from "@nestjs/common";
+import { ExecutionContext, INestApplication } from "@nestjs/common";
 import { Test, TestingModule } from "@nestjs/testing";
 import request from "supertest";
 import { App } from "supertest/types";
 import { AppModule } from "../src/app.module";
+import { AuthGuard } from "../src/modules/auth/guards/auth.guard";
 import { DATABASE_CONNECTION } from "../src/modules/database/connection";
 import { DatabaseHealthService } from "../src/modules/database/database-health.service";
+
+jest.mock("jose", () => ({
+	// biome-ignore lint/style/useNamingConvention: external library name
+	createRemoteJWKSet: jest.fn(),
+	jwtVerify: jest.fn(),
+}));
 
 jest.mock("@/pipes/zod-validation/zod-validation.pipe", () => {
 	const actual = jest.requireActual("@/pipes/zod-validation/zod-validation.pipe");
@@ -29,6 +36,22 @@ describe("SubscriptionsModule (e2e)", () => {
 
 	const mockDatabaseHealthService = {
 		onModuleInit: jest.fn(),
+	};
+
+	const mockUser = {
+		id: "7d098d5f-430c-4a4b-a6dc-22f3c5135cdf",
+		code: "user123",
+		name: "Test User",
+		email: "test@example.com",
+		status: "active" as const,
+	};
+
+	const mockAuthGuard = {
+		canActivate: (context: ExecutionContext) => {
+			const req = context.switchToHttp().getRequest();
+			req.user = mockUser;
+			return true;
+		},
 	};
 
 	const mockSubscriptionResponse = {
@@ -101,6 +124,8 @@ describe("SubscriptionsModule (e2e)", () => {
 			.useValue(mockDatabaseHealthService)
 			.overrideProvider(DATABASE_CONNECTION)
 			.useValue(mockDb)
+			.overrideGuard(AuthGuard)
+			.useValue(mockAuthGuard)
 			.compile();
 
 		app = moduleFixture.createNestApplication();
@@ -197,8 +222,8 @@ describe("SubscriptionsModule (e2e)", () => {
 			return request(app.getHttpServer())
 				.delete(`/subscriptions/${mockSubscriptionResponse.id}`)
 				.expect(200)
-				.then((res) => {
-					expect(res.text).toBe("Subscription cancelled successfully");
+				.then(({ body }) => {
+					expect(body).toEqual({ message: "Subscription cancelled successfully" });
 				});
 		});
 	});

@@ -6,6 +6,7 @@ import {
 	SubscriptionResponseSchema,
 	UpdateSubscriptionSchema,
 } from "@repo/schemas";
+import { UserRequest } from "@/types/user.request";
 import { SubscriptionsController } from "./subscriptions.controller";
 import { SubscriptionsService } from "./subscriptions.service";
 
@@ -52,7 +53,7 @@ describe("SubscriptionsController", () => {
 	describe("getUserSubscriptions", () => {
 		it("should return subscriptions for the authenticated user", async () => {
 			const query: SubscriptionQuerySchema = { status: "registered" } as SubscriptionQuerySchema;
-			const req = { user: { id: "user-123" } };
+			const req = { user: { id: "user-123" } } as UserRequest;
 			const subscriptions = [{ id: "sub-1" }] as unknown as Awaited<
 				ReturnType<SubscriptionsService["getUserSubscriptions"]>
 			>;
@@ -68,7 +69,7 @@ describe("SubscriptionsController", () => {
 	describe("getSubscriptionById", () => {
 		it("should return subscription by id for the authenticated user", async () => {
 			const id = "subscription-id" as SubscriptionIdParamSchema;
-			const req = { user: { id: "user-456" } };
+			const req = { user: { id: "user-456" } } as UserRequest;
 			const subscription = { id: id } as unknown as Awaited<
 				ReturnType<SubscriptionsService["getSubscriptionById"]>
 			>;
@@ -83,7 +84,7 @@ describe("SubscriptionsController", () => {
 
 	describe("createSubscription", () => {
 		it("should create a subscription for the authenticated user", async () => {
-			const req = { user: { id: "user-789" } };
+			const req = { user: { id: "user-789" } } as UserRequest;
 			const data = { eventId: "event-1" } as CreateSubscriptionSchema;
 			const subscription = {
 				id: "sub-created",
@@ -104,7 +105,7 @@ describe("SubscriptionsController", () => {
 	describe("updateSubscription", () => {
 		it("should update subscription for the authenticated user", async () => {
 			const id = "subscription-id" as SubscriptionIdParamSchema;
-			const req = { user: { id: "user-321" } };
+			const req = { user: { id: "user-321" } } as UserRequest;
 			const data = { status: "cancelled" } as UpdateSubscriptionSchema;
 			const subscription = {
 				id,
@@ -125,7 +126,7 @@ describe("SubscriptionsController", () => {
 	describe("deleteSubscription", () => {
 		it("should delete subscription for the authenticated user", async () => {
 			const id = "subscription-id" as SubscriptionIdParamSchema;
-			const req = { user: { id: "user-654" } };
+			const req = { user: { id: "user-654" } } as UserRequest;
 			const message = { message: "Subscription cancelled successfully" };
 			service.deleteSubscription.mockResolvedValue(message);
 
