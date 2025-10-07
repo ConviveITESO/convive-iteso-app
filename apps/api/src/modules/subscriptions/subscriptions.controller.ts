@@ -45,6 +45,18 @@ import { SubscriptionsService } from "./subscriptions.service";
 export class SubscriptionsController {
 	constructor(private readonly subscriptionsService: SubscriptionsService) {}
 
+	// POST /subscriptions/getQr
+	@Post("getQr")
+	@ZodBody(createSubscriptionSchema) // We can reuse this schema since it has the same structure
+	@ZodOk(subscriptionResponseSchema) // We can reuse this schema since it has subscription details
+	async getQrCode(
+		@Body(new ZodValidationPipe(createSubscriptionSchema)) body: CreateSubscriptionSchema,
+		@Req() req?: { user: { id: string } },
+	) {
+		const userId = req?.user?.id || this.testUser;
+		return await this.subscriptionsService.getQrCode(body.eventId, userId);
+	}
+
 	// GET /subscriptions
 	@Get()
 	@ZodQuery(subscriptionQuerySchema, "search")

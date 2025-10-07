@@ -22,6 +22,43 @@ export class SubscriptionsService {
 	constructor(@Inject(DATABASE_CONNECTION) private readonly db: AppDatabase) {}
 
 	/**
+	 * Gets the QR code data for a specific event and user
+	 * @param eventId The event ID
+	 * @param userId The user ID
+	 * @returns QR code data including event name, date, and attendee info
+	 */
+	async getQrCode(eventId: string, userId: string): Promise<SubscriptionResponseSchema> {
+		// Check if subscription exists and is valid
+		const subscription = await this.db
+			.select({
+				id: subscriptions.id,
+				userId: subscriptions.userId,
+				eventId: subscriptions.eventId,
+				status: subscriptions.status,
+				position: subscriptions.position,
+				createdAt: subscriptions.createdAt,
+				updatedAt: subscriptions.updatedAt,
+				deletedAt: subscriptions.deletedAt,
+			})
+			.from(subscriptions)
+			.where(
+				and(
+					eq(subscriptions.eventId, eventId),
+					eq(subscriptions.userId, userId),
+					eq(subscriptions.status, "registered"),
+				),
+			)
+			.limit(1)
+			.then((results) => results[0]);
+
+		if (!subscription) {
+			throw new NotFoundException("Subscription not found or not valid");
+		}
+
+		return this.toSubscriptionResponse(subscription);
+	}
+
+	/**
 	 * Converts a subscription to a subscription response
 	 * @param subscription The subscription to convert
 	 * @returns The subscription response
