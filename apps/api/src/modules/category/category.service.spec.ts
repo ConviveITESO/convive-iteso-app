@@ -48,6 +48,23 @@ describe("CategoryService", () => {
 		});
 	});
 
+	describe("getAllCategories", () => {
+		it("should return all categories from the database", async () => {
+			const mockCategories = [
+				{ id: "1", name: "Category 1" },
+				{ id: "2", name: "Category 2" },
+			];
+			mockDb.where.mockResolvedValue(mockCategories);
+			const result = await service.getAllCategories();
+			expect(mockDb.select).toHaveBeenCalledWith({
+				id: expect.anything(),
+				name: expect.anything(),
+			});
+			expect(mockDb.from).toHaveBeenCalled();
+			expect(result).toEqual(mockCategories);
+		});
+	});
+
 	describe("formatCategory", () => {
 		it("should format a category correctly", () => {
 			const id = "1";

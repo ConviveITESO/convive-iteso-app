@@ -18,6 +18,16 @@ export class CategoryService {
 		if (ids.length !== categoriesCount) throw new NotFoundException("Category not found");
 	}
 
+	async getAllCategories(): Promise<CategoryResponseSchema[]> {
+		return this.db
+			.select({
+				id: categories.id,
+				name: categories.name,
+			})
+			.from(categories)
+			.where(eq(categories.status, "active"));
+	}
+
 	formatCategory(category: Category): CategoryResponseSchema {
 		return {
 			id: category.id,

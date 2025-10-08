@@ -1,11 +1,12 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { getApiUrl } from "@/lib/api";
 
 export default function LoginPage() {
 	const handleLogin = async () => {
 		try {
-			window.location.href = "http://localhost:8080/auth/login";
+			window.location.href = `${getApiUrl()}/auth/login`;
 		} catch {}
 	};
 

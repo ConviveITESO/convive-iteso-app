@@ -22,6 +22,16 @@ export class LocationService {
 		return location;
 	}
 
+	async getAllLocations(): Promise<LocationResponseSchema[]> {
+		return this.db
+			.select({
+				id: locations.id,
+				name: locations.name,
+			})
+			.from(locations)
+			.where(eq(locations.status, "active"));
+	}
+
 	formatLocation(location: Location): LocationResponseSchema {
 		return {
 			id: location.id,
