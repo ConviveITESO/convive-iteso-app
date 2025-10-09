@@ -15,7 +15,7 @@ describe("CategoryController", () => {
 	let service: CategoryService;
 
 	const mockCategoryService = {
-		getCategories: jest.fn(),
+		getAllCategories: jest.fn(),
 		getCategoryById: jest.fn(),
 		createCategory: jest.fn(),
 		updateCategory: jest.fn(),
@@ -45,7 +45,7 @@ describe("CategoryController", () => {
 	describe("getAllCategories", () => {
 		it("should return all categories without query", async () => {
 			const mockCategories = [{ id: "1", name: "Sports" }];
-			mockCategoryService.getCategories.mockResolvedValueOnce(mockCategories);
+			mockCategoryService.getAllCategories.mockResolvedValueOnce(mockCategories);
 
 			const result = await controller.getAllCategories(undefined);
 
@@ -56,7 +56,7 @@ describe("CategoryController", () => {
 		it("should return filtered categories when query provided", async () => {
 			const query: CategoryQuerySchema = { name: "Tech", status: "active" };
 			const mockCategories = [{ id: "2", name: "Tech" }];
-			mockCategoryService.getCategories.mockResolvedValueOnce(mockCategories);
+			mockCategoryService.getAllCategories.mockResolvedValueOnce(mockCategories);
 
 			const result = await controller.getAllCategories(query);
 
