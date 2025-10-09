@@ -1,23 +1,14 @@
 /** biome-ignore-all lint/style/noNonNullAssertion: temp mocks */
 "use client";
 
-import type {
-	BadgeResponseSchema,
-	CategoryResponseSchema,
-	CreateEventSchema,
-	LocationResponseSchema,
-} from "@repo/schemas";
+import type { BadgeResponseSchema, CreateEventSchema, LocationResponseSchema } from "@repo/schemas";
 import { useState } from "react";
 import EventForm from "../../_event-form";
 
-export default function EditEventPage() {
-	// TODO: replace mocks with fetch once GETs exist
-	const categories: CategoryResponseSchema[] = [
-		{ id: "temp1", name: "art" },
-		{ id: "temp2", name: "entertainment" },
-		{ id: "temp3", name: "economy" },
-	];
+export default async function EditEventPage() {
+	const categories = await fetch("http://localhost:8080/category").then((res) => res.json());
 
+	// TODO: replace mocks with fetch once GETs exist
 	const badges: BadgeResponseSchema[] = [
 		{ id: "temp4", name: "Badge4", description: "This is the badge4" },
 		{ id: "temp5", name: "Badge5", description: "This is the badge5" },
