@@ -34,7 +34,6 @@ import {
 	ZodValidationPipe,
 } from "@/pipes/zod-validation/zod-validation.pipe";
 import { UserRequest } from "@/types/user.request";
-import { AdminGuard } from "../auth/guards/admin.guard";
 import { AuthGuard } from "../auth/guards/auth.guard";
 import { CategoryService } from "./category.service";
 
@@ -61,7 +60,6 @@ export class CategoryController {
 
 	// POST /category
 	@Post()
-	@UseGuards(AdminGuard)
 	@ZodBody(createCategorySchema)
 	@ZodCreated(categoryResponseSchema)
 	async createCategory(
@@ -73,7 +71,6 @@ export class CategoryController {
 
 	// UPDATE /category/:id
 	@Put(":id")
-	@UseGuards(AdminGuard)
 	@ZodParam(categoryIdParamSchema, "id")
 	@ZodBody(createCategorySchema)
 	@ZodOk(categoryResponseSchema)
@@ -86,7 +83,6 @@ export class CategoryController {
 
 	// PATCH /category/:id
 	@Patch(":id")
-	@UseGuards(AdminGuard)
 	@ZodParam(categoryIdParamSchema, "id")
 	@ZodBody(updateCategorySchema)
 	@ZodOk(categoryResponseSchema)
@@ -102,7 +98,6 @@ export class CategoryController {
 
 	// DELETE /category/:id
 	@Delete(":id")
-	@UseGuards(AdminGuard)
 	@ZodParam(categoryIdParamSchema, "id")
 	@ZodOk(categoryResponseSchema)
 	async deleteCategory(
