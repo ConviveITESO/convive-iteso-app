@@ -42,11 +42,8 @@ export default function EditEventPage() {
 	if (loading) return <div>Loading...</div>;
 
 	const initialData: Partial<CreateEventSchema> = {
-		name: "Event name",
-		description: "Event description",
 		startDate: new Date().toISOString(),
 		endDate: new Date().toISOString(),
-		quota: 100,
 		locationId: locations[0]?.id,
 		categoryIds: [],
 		badgeIds: [],
