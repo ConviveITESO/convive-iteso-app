@@ -32,7 +32,7 @@ describe("EventController", () => {
 				name: "Test Event",
 			};
 			mockEventService.getEventByIdOrThrow.mockResolvedValue(mockEvent);
-			const result = await controller.getEventById(eventId);
+			const result = await controller.getEventById({ id: eventId });
 			expect(mockEventService.getEventByIdOrThrow).toHaveBeenCalledWith(eventId);
 			expect(result).toEqual(mockEvent);
 		});
