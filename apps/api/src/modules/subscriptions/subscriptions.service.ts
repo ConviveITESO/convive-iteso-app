@@ -8,6 +8,7 @@ import {
 import {
 	CreateSubscriptionSchema,
 	EventStatsResponseSchema,
+	SubscriptionIdResponseSchema,
 	SubscriptionQuerySchema,
 	SubscriptionResponseSchema,
 	UpdateSubscriptionSchema,
@@ -243,6 +244,23 @@ export class SubscriptionsService {
 			waitlistedCount,
 			spotsLeft,
 		};
+	}
+
+	async getEventAlreadyRegistered(
+		eventId: string,
+		userId: string,
+	): Promise<SubscriptionIdResponseSchema> {
+		const [subscription] = await this.db
+			.select({ id: subscriptions.id })
+			.from(subscriptions)
+			.where(and(eq(subscriptions.eventId, eventId), eq(subscriptions.userId, userId)))
+			.limit(1);
+
+		if (!subscription) {
+			throw new NotFoundException("Subscription not found");
+		}
+
+		return { id: subscription.id };
 	}
 
 	/**

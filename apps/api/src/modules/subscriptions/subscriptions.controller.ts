@@ -21,6 +21,7 @@ import {
 	SubscriptionQuerySchema,
 	subscriptionArrayResponseSchema,
 	subscriptionIdParamSchema,
+	subscriptionIdResponseSchema,
 	subscriptionQuerySchema,
 	subscriptionResponseSchema,
 	UpdateSubscriptionSchema,
@@ -74,6 +75,17 @@ export class SubscriptionsController {
 	@ZodOk(eventStatsResponseSchema)
 	async getEventStats(@Param(new ZodValidationPipe(eventIdParamSchema)) id: EventIdParamSchema) {
 		return await this.subscriptionsService.getEventStats(id.id);
+	}
+
+	// GET /subscriptions/:id/alreadyRegistered
+	@Get(":id/alreadyRegistered")
+	@ZodParam(eventIdParamSchema, "id")
+	@ZodOk(subscriptionIdResponseSchema)
+	async getEventAlreadyRegistered(
+		@Param(new ZodValidationPipe(eventIdParamSchema)) eventId: EventIdParamSchema,
+		@Req() req: UserRequest,
+	) {
+		return await this.subscriptionsService.getEventAlreadyRegistered(eventId.id, req.user.id);
 	}
 
 	// POST /subscriptions
