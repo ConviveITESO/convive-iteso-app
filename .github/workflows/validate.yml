@@ -74,12 +74,12 @@ jobs:
       - name: Run Snyk test
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        run: snyk test
+        run: snyk test --all-projects
 
       - name: Monitor project with Snyk (optional)
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        run: snyk monitor
+        run: snyk monitor --all-projects
 
   security-dast:
     needs: [lint-and-test]

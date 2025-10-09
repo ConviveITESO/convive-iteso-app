@@ -1,4 +1,4 @@
-import { Inject, Injectable, NotFoundException } from "@nestjs/common";
+import { ForbiddenException, Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { CreateEventSchema, EventResponseSchema, UpdateEventSchema } from "@repo/schemas";
 import { and, eq, sql } from "drizzle-orm";
 import { BadgeService } from "../badge/badge.service";
@@ -99,15 +99,18 @@ export class EventService {
 		return this.db.transaction(async () => {
 			await this.assertLocationCategoriesBadgesExist(data);
 			const groupId = await this.createEventGroup(data);
+			await this.groupService.createSubscription(groupId, userId);
 			const eventId = await this._createEvent(data, userId, groupId);
 			await this.createCategoryBadgeRelations(data, eventId);
 			return eventId;
 		});
 	}
 
-	async updateEvent(data: UpdateEventSchema, id: string): Promise<void> {
+	async updateEvent(data: UpdateEventSchema, id: string, userId: string): Promise<void> {
 		return this.db.transaction(async () => {
-			await this.getEventByIdOrThrow(id);
+			const event = await this.getEventByIdOrThrow(id);
+			if (event.createdBy.id !== userId)
+				throw new ForbiddenException("You do not have permission to edit this event");
 			await this.assertLocationCategoriesBadgesExist(data);
 			await this._updateEvent(data, id);
 			await this.updateCategoryBadgeRelations(data, id);

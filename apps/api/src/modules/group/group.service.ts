@@ -2,6 +2,7 @@ import { Inject, Injectable } from "@nestjs/common";
 import { CreateGroupSchema, GroupResponseSchema } from "@repo/schemas";
 import { AppDatabase, DATABASE_CONNECTION } from "../database/connection";
 import { Group, groups, NewGroup, User } from "../database/schemas";
+import { usersGroups } from "../database/schemas/users-groups";
 import { UserService } from "../user/user.service";
 
 @Injectable()
@@ -17,6 +18,13 @@ export class GroupService {
 			description: data.description,
 		});
 		return groupId;
+	}
+
+	async createSubscription(groupId: string, userId: string): Promise<void> {
+		await this.db.insert(usersGroups).values({
+			groupId,
+			userId,
+		});
 	}
 
 	formatGroup(group: Group, creator?: User): GroupResponseSchema {

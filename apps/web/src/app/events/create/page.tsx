@@ -7,57 +7,57 @@ import type {
 	CreateEventSchema,
 	LocationResponseSchema,
 } from "@repo/schemas";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { getApiUrl } from "@/lib/api";
 import EventForm from "../_event-form";
 
 export default function EditEventPage() {
-	// TODO: replace mocks with fetch once GETs exist
-	const categories: CategoryResponseSchema[] = [
-		{ id: "140c5571-9d06-47af-b05f-52c5b3ad3dc6", name: "art" },
-		{ id: "158bf962-77f9-4dd4-874b-3b4d1c9c808d", name: "entertainment" },
-		{ id: "33c119a0-d431-491a-8bdf-e93f2fdf775a", name: "economy" },
-	];
+	const [locations, setLocations] = useState<LocationResponseSchema[]>([]);
+	const [categories, setCategories] = useState<CategoryResponseSchema[]>([]);
+	const [badges, setBadges] = useState<BadgeResponseSchema[]>([]);
+	const [loading, setLoading] = useState(true);
+	const [savedData, setSavedData] = useState<CreateEventSchema | null>(null);
+	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-	const badges: BadgeResponseSchema[] = [
-		{
-			id: "92c5592a-7160-49b9-86fa-95e13c8e2d4d",
-			name: "Badge4",
-			description: "This is the badge4",
-		},
-		{
-			id: "7310eed1-c17c-4cbe-927c-7b6316649ceb",
-			name: "Badge5",
-			description: "This is the badge5",
-		},
-	];
+	const loadData = useCallback(async () => {
+		try {
+			const [resLoc, resCat, resBad] = await Promise.all([
+				fetch(`${getApiUrl()}/locations`, { credentials: "include" }),
+				fetch(`${getApiUrl()}/categories`, { credentials: "include" }),
+				fetch(`${getApiUrl()}/badges`, { credentials: "include" }),
+			]);
+			setLocations(await resLoc.json());
+			setCategories(await resCat.json());
+			setBadges(await resBad.json());
+			setLoading(false);
+		} catch (err) {
+			console.error("Error loading data", err);
+		}
+	}, []);
 
-	const locations: LocationResponseSchema[] = [
-		{ id: "264869f2-a8a4-4ba0-965c-c529c8a3f567", name: "Building M" },
-		{ id: "ab0baa65-53de-44d9-8428-8805e8f7c864", name: "Library" },
-	];
+	useEffect(() => {
+		loadData();
+	}, [loadData]);
+
+	if (loading) return <div>Loading...</div>;
 
 	const initialData: Partial<CreateEventSchema> = {
-		name: "Event name",
-		description: "Event description",
 		startDate: new Date().toISOString(),
 		endDate: new Date().toISOString(),
-		quota: 100,
-		locationId: locations[0]!.id,
+		locationId: locations[0]?.id,
 		categoryIds: [],
 		badgeIds: [],
 	};
-
-	const [savedData, setSavedData] = useState<CreateEventSchema | null>(null);
-	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
 	const handleSave = async (data: CreateEventSchema) => {
 		setErrorMessage(null);
 
 		try {
-			const response = await fetch(`http://localhost:8080/events`, {
+			const response = await fetch(`${getApiUrl()}/events`, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify(data),
+				credentials: "include",
 			});
 
 			if (!response.ok) {

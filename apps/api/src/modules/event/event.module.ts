@@ -1,4 +1,5 @@
-import { Module } from "@nestjs/common";
+import { MiddlewareConsumer, Module, NestModule } from "@nestjs/common";
+import { AuthMiddleware } from "../auth/middlewares/auth.middleware";
 import { BadgeModule } from "../badge/badge.module";
 import { CategoryModule } from "../category/category.module";
 import { DatabaseModule } from "../database/database.module";
@@ -14,4 +15,8 @@ import { EventService } from "./event.service";
 	imports: [DatabaseModule, UserModule, GroupModule, LocationModule, CategoryModule, BadgeModule],
 	exports: [EventService],
 })
-export class EventModule {}
+export class EventModule implements NestModule {
+	configure(consumer: MiddlewareConsumer) {
+		consumer.apply(AuthMiddleware).forRoutes(EventController);
+	}
+}

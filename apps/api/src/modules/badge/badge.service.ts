@@ -18,6 +18,17 @@ export class BadgeService {
 		if (ids.length !== badgesCount) throw new NotFoundException("Badge not found");
 	}
 
+	async getAllBadges(): Promise<BadgeResponseSchema[]> {
+		return this.db
+			.select({
+				id: badges.id,
+				name: badges.name,
+				description: badges.description,
+			})
+			.from(badges)
+			.where(eq(badges.status, "active"));
+	}
+
 	formatBadge(badge: Badge): BadgeResponseSchema {
 		return {
 			id: badge.id,

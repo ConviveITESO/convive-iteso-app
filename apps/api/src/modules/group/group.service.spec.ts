@@ -45,6 +45,19 @@ describe("GroupService", () => {
 		});
 	});
 
+	describe("createSubscription", () => {
+		it("should insert a record in usersGroups with groupId and userId", async () => {
+			const groupId = "group123";
+			const userId = "user456";
+			await service.createSubscription(groupId, userId);
+			expect(mockDb.insert).toHaveBeenCalledWith(expect.anything());
+			expect(mockDb.values).toHaveBeenCalledWith({
+				groupId,
+				userId,
+			});
+		});
+	});
+
 	describe("formatGroup", () => {
 		it("should format a group without creator", () => {
 			const id = "groupId";

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import AddUserDialog from "@/app/users/_add-user-dialog";
 import UserCard from "@/app/users/_user-card";
+import { getApiUrl } from "@/lib/api";
 
 interface User {
 	id: string;
@@ -21,7 +22,7 @@ export default function UsersPage() {
 	const fetchUsers = useCallback(async () => {
 		try {
 			setLoading(true);
-			const response = await fetch("http://localhost:8080/user", {
+			const response = await fetch(`${getApiUrl()}/user`, {
 				credentials: "include",
 			});
 			const data = await response.json();

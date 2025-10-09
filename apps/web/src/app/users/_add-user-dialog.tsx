@@ -21,6 +21,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { getApiUrl } from "@/lib/api";
 
 interface AddUserDialogProps {
 	onUserAdded: () => void;
@@ -93,7 +94,7 @@ export default function AddUserDialog({ onUserAdded }: AddUserDialogProps) {
 		console.log(createUserSchema.encode(validatedData));
 
 		try {
-			const response = await fetch("http://localhost:8080/user", {
+			const response = await fetch(`${getApiUrl()}/user`, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",

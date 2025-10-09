@@ -46,6 +46,24 @@ describe("BadgeService", () => {
 		});
 	});
 
+	describe("getAllBadges", () => {
+		it("should return all badges from the database", async () => {
+			const mockBadges = [
+				{ id: "1", name: "Badge 1" },
+				{ id: "2", name: "Badge 2" },
+			];
+			mockDb.where.mockResolvedValue(mockBadges);
+			const result = await service.getAllBadges();
+			expect(mockDb.select).toHaveBeenCalledWith({
+				id: expect.anything(),
+				name: expect.anything(),
+				description: expect.anything(),
+			});
+			expect(mockDb.from).toHaveBeenCalled();
+			expect(result).toEqual(mockBadges);
+		});
+	});
+
 	describe("formatBadge", () => {
 		it("should format a badge correctly", () => {
 			const id = "1";

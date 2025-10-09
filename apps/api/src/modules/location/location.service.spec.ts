@@ -12,6 +12,9 @@ describe("LocationService", () => {
 				findFirst: jest.fn(),
 			},
 		},
+		select: jest.fn().mockReturnThis(),
+		from: jest.fn().mockReturnThis(),
+		where: jest.fn().mockReturnThis(),
 	};
 
 	beforeEach(async () => {
@@ -53,6 +56,23 @@ describe("LocationService", () => {
 		it("should throw NotFoundException if location not found", async () => {
 			jest.spyOn(service, "getLocationById").mockResolvedValue(undefined);
 			await expect(service.getLocationByIdOrThrow("locationId")).rejects.toThrow(NotFoundException);
+		});
+	});
+
+	describe("getAllLocations", () => {
+		it("should return all locations from the database", async () => {
+			const mockLocations = [
+				{ id: "1", name: "Location 1" },
+				{ id: "2", name: "Location 2" },
+			];
+			mockDb.where.mockResolvedValue(mockLocations);
+			const result = await service.getAllLocations();
+			expect(mockDb.select).toHaveBeenCalledWith({
+				id: expect.anything(),
+				name: expect.anything(),
+			});
+			expect(mockDb.from).toHaveBeenCalled();
+			expect(result).toEqual(mockLocations);
 		});
 	});
 
