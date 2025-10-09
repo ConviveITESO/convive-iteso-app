@@ -49,7 +49,7 @@ describe("CategoryController", () => {
 
 			const result = await controller.getAllCategories(undefined);
 
-			expect(service.getCategories).toHaveBeenCalledWith(undefined);
+			expect(service.getAllCategories).toHaveBeenCalledWith(undefined);
 			expect(result).toEqual(mockCategories);
 		});
 
@@ -60,7 +60,7 @@ describe("CategoryController", () => {
 
 			const result = await controller.getAllCategories(query);
 
-			expect(service.getCategories).toHaveBeenCalledWith(query);
+			expect(service.getAllCategories).toHaveBeenCalledWith(query);
 			expect(result).toEqual(mockCategories);
 		});
 	});

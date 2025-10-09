@@ -66,7 +66,7 @@ describe("CategoryService", () => {
 			const categories = [{ id: "1" }, { id: "2" }];
 			mockDb.query.categories.findMany.mockResolvedValueOnce(categories);
 
-			const result = await service.getCategories();
+			const result = await service.getAllCategories();
 			expect(result).toEqual(categories);
 			expect(mockDb.query.categories.findMany).toHaveBeenCalledWith();
 		});
@@ -76,7 +76,7 @@ describe("CategoryService", () => {
 			mockDb.query.categories.findMany.mockResolvedValueOnce(filtered);
 
 			const query = { name: "sports", status: "active" as const };
-			const result = await service.getCategories(query);
+			const result = await service.getAllCategories(query);
 
 			expect(result).toEqual(filtered);
 			expect(mockDb.query.categories.findMany).toHaveBeenCalledWith({

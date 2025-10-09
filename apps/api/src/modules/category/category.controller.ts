@@ -48,7 +48,7 @@ export class CategoryController {
 	@ZodQuery(categoryQuerySchema, "search")
 	@ZodOk(categoryResponseArraySchema)
 	async getAllCategories(@Query() query?: CategoryQuerySchema) {
-		return await this.categoryService.getCategories(query);
+		return await this.categoryService.getAllCategories(query);
 	}
 
 	// GET /category/:id
