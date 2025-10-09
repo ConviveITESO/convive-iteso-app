@@ -141,7 +141,7 @@ describe("SubscriptionsService", () => {
 			const mockChain = (mockDb.where as jest.Mock)();
 			(mockChain.limit as jest.Mock).mockResolvedValue([mockSubscription]);
 
-			const result = await service.getSubscriptionById({ id: "sub-123" }, "user-123");
+			const result = await service.getSubscriptionById("sub-123", "user-123");
 
 			expect(result).toEqual(mockSubscription);
 			expect(mockDb.select).toHaveBeenCalled();
@@ -153,7 +153,7 @@ describe("SubscriptionsService", () => {
 			const mockChain = (mockDb.where as jest.Mock)();
 			(mockChain.limit as jest.Mock).mockResolvedValue([]);
 
-			await expect(service.getSubscriptionById({ id: "sub-123" }, "user-123")).rejects.toThrow(
+			await expect(service.getSubscriptionById("sub-123", "user-123")).rejects.toThrow(
 				NotFoundException,
 			);
 		});
@@ -450,7 +450,7 @@ describe("SubscriptionsService", () => {
 			(mockTransaction.limit as jest.Mock).mockResolvedValue([waitlistedJoinedResult]);
 			(mockTransaction.returning as jest.Mock).mockResolvedValue([updatedSubscription]);
 
-			const result = await service.updateSubscription({ id: "sub-123" }, "user-123", {
+			const result = await service.updateSubscription("sub-123", "user-123", {
 				status: "cancelled",
 			});
 
