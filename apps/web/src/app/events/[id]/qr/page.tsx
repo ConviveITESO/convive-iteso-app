@@ -1,6 +1,10 @@
 "use client";
 
-import type { EventResponseSchema, SubscriptionResponseSchema } from "@repo/schemas";
+import type {
+	EventResponseSchema,
+	SubscriptionResponseSchema,
+	UserResponseSchema,
+} from "@repo/schemas";
 import { useParams } from "next/navigation";
 import { useAuth } from "@/lib/use-auth";
 
