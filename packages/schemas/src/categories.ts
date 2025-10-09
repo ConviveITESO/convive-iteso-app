@@ -36,9 +36,6 @@ export const createCategorySchema = z
 			.openapi({
 				description: "Category name",
 			}),
-		createdBy: z.uuid().openapi({
-			description: "ID of the user who created the category",
-		}),
 		status: z.enum(["active", "deleted"]).openapi({
 			description: "Category status",
 		}),
@@ -46,7 +43,6 @@ export const createCategorySchema = z
 	.openapi("CreateCategorySchema", {
 		example: {
 			name: "New Category",
-			createdBy: "550e8400-e29b-41d4-a716-446655440000",
 			status: "active",
 		},
 	});

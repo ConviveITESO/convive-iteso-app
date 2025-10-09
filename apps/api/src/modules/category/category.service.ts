@@ -25,13 +25,13 @@ export class CategoryService {
 	}
 
 	/**
-	 * Gets all users from the database with optional filtering
+	 * Gets all categories from the database with optional filtering
 	 * @param query Query parameters for filtering
-	 * @returns all users matching the criteria
+	 * @returns all categories matching the criteria
 	 */
-	async getUsers(query?: CategoryQuerySchema) {
+	async getCategories(query?: CategoryQuerySchema) {
 		if (!query || Object.keys(query).length === 0) {
-			return await this.db.query.users.findMany();
+			return await this.db.query.categories.findMany();
 		}
 
 		const conditions: SQL[] = [];
@@ -63,10 +63,10 @@ export class CategoryService {
 	 * @param data Data of the category
 	 * @returns success
 	 */
-	async createCategory(data: CreateCategorySchema) {
+	async createCategory(data: CreateCategorySchema, createdBy: string) {
 		const result = await this.db
 			.insert(categories)
-			.values({ ...data })
+			.values({ ...data, createdBy })
 			.returning();
 		return result[0];
 	}
