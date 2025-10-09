@@ -1,4 +1,4 @@
-import { Inject, Injectable, NestMiddleware } from "@nestjs/common";
+import { Inject, Injectable, Logger, NestMiddleware } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { CreateUserSchema } from "@repo/schemas";
 import { eq } from "drizzle-orm/sql/expressions/conditions";
@@ -21,7 +21,8 @@ export class AuthMiddleware implements NestMiddleware {
 	) {}
 
 	async use(req: AuthRequest, res: Response, next: () => void) {
-		const idToken = req.cookies.idToken;
+		Logger.log("AuthMiddleware called");
+		const idToken = req.cookies?.idToken;
 		if (!idToken) {
 			return res.status(401).json({ message: "Missing or invalid token", redirectTo: "/" });
 		}
@@ -38,6 +39,8 @@ export class AuthMiddleware implements NestMiddleware {
 			if (!payload.email) {
 				return res.status(403).json({ message: "No email received in the token", redirectTo: "/" });
 			}
+
+			Logger.log(`Email: ${payload.email}`);
 
 			const user = await this.db.query.users.findFirst({
 				where: eq(users.email, payload.email),

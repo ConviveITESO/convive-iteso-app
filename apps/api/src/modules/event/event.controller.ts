@@ -1,9 +1,11 @@
-import { Body, Controller, Param, Post, Put } from "@nestjs/common";
+import { Body, Controller, Get, Logger, Param, Post, Put } from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
 import {
 	CreateEventSchema,
 	createEventSchema,
+	EventIdParamSchema,
 	EventResponseSchema,
+	eventIdParamSchema,
 	eventResponseSchema,
 	UpdateEventSchema,
 	updateEventSchema,
@@ -12,6 +14,7 @@ import {
 	ZodBody,
 	ZodCreated,
 	ZodOk,
+	ZodParam,
 	ZodValidationPipe,
 } from "@/pipes/zod-validation/zod-validation.pipe";
 import { EventService } from "./event.service";
@@ -45,5 +48,16 @@ export class EventController {
 	): Promise<EventResponseSchema> {
 		await this.eventsService.updateEvent(data, id);
 		return this.eventsService.getEventByIdOrThrow(id);
+	}
+
+	// GET /events/:id
+	@Get(":id")
+	@ZodParam(eventIdParamSchema, "id")
+	@ZodOk(eventResponseSchema)
+	async getEventById(
+		@Param(new ZodValidationPipe(eventIdParamSchema)) idParam: EventIdParamSchema,
+	): Promise<EventResponseSchema> {
+		Logger.log(`Event id: ${idParam.id}`);
+		return this.eventsService.getEventByIdOrThrow(idParam.id);
 	}
 }

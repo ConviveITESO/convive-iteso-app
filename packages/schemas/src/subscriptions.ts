@@ -4,15 +4,14 @@ import { z } from "./zod-openapi.js";
 // PARAMS schemas
 // ==========================================================
 
-export const subscriptionIdParamSchema = z.uuid().openapi("SubscriptionIdParamSchema", {
-	description: "Subscription ID",
-	example: "123e4567-e89b-12d3-a456-426614174000",
-});
-
-export const eventIdParamSchema = z.uuid().openapi("EventIdParamSchema", {
-	description: "Event ID",
-	example: "123e4567-e89b-12d3-a456-426614174000",
-});
+export const subscriptionIdParamSchema = z
+	.object({
+		id: z.uuid().openapi("SubscriptionIdParamSchema", {
+			description: "Subscription ID",
+			example: "123e4567-e89b-12d3-a456-426614174000",
+		}),
+	})
+	.openapi("SubscriptionIdParamSchema");
 
 // ==========================================================
 // QUERY schemas
@@ -103,13 +102,29 @@ export const subscriptionArrayResponseSchema = z
 		],
 	});
 
+export const eventStatsResponseSchema = z
+	.object({
+		eventId: z.uuid(),
+		registeredCount: z.number().int(),
+		waitlistedCount: z.number().int(),
+		spotsLeft: z.number().int(),
+	})
+	.openapi("EventStatsResponseSchema", {
+		example: {
+			eventId: "123e4567-e89b-12d3-a456-426614174000",
+			registeredCount: 18,
+			waitlistedCount: 5,
+			spotsLeft: 32,
+		},
+	});
+
 // ==========================================================
 // TYPE schemas
 // ==========================================================
 export type SubscriptionIdParamSchema = z.infer<typeof subscriptionIdParamSchema>;
-export type EventIdParamSchema = z.infer<typeof eventIdParamSchema>;
 export type SubscriptionQuerySchema = z.infer<typeof subscriptionQuerySchema>;
 export type CreateSubscriptionSchema = z.infer<typeof createSubscriptionSchema>;
 export type UpdateSubscriptionSchema = z.infer<typeof updateSubscriptionSchema>;
 export type SubscriptionResponseSchema = z.infer<typeof subscriptionResponseSchema>;
 export type SubscriptionArrayResponseSchema = z.infer<typeof subscriptionArrayResponseSchema>;
+export type EventStatsResponseSchema = z.infer<typeof eventStatsResponseSchema>;
