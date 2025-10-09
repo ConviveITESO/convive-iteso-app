@@ -557,7 +557,7 @@ describe("SubscriptionsService", () => {
 
 			(mockTransaction.limit as jest.Mock).mockResolvedValue([waitlistedJoinedResult]);
 
-			const result = await service.deleteSubscription({ id: "sub-123" }, "user-123");
+			const result = await service.deleteSubscription("sub-123", "user-123");
 
 			expect(result).toStrictEqual({ message: "Subscription cancelled successfully" });
 			expect(mockTransaction.update).toHaveBeenCalled();
@@ -590,7 +590,7 @@ describe("SubscriptionsService", () => {
 		it("should throw NotFoundException when subscription not found", async () => {
 			(mockTransaction.limit as jest.Mock).mockResolvedValue([]);
 
-			await expect(service.deleteSubscription({ id: "sub-123" }, "user-123")).rejects.toThrow(
+			await expect(service.deleteSubscription("sub-123", "user-123")).rejects.toThrow(
 				NotFoundException,
 			);
 		});
@@ -672,7 +672,7 @@ describe("SubscriptionsService", () => {
 				.mockResolvedValueOnce([waitlistedUserNoPosition]); // Waitlisted user with no position
 
 			await expect(
-				service.updateSubscription({ id: "sub-123" }, "user-123", { status: "cancelled" }),
+				service.updateSubscription("sub-123", "user-123", { status: "cancelled" }),
 			).rejects.toThrow("Next waitlisted user has no position");
 		});
 	});

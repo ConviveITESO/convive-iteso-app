@@ -223,7 +223,7 @@ export class SubscriptionsService {
 			.from(subscriptions)
 			.where(
 				and(
-					eq(subscriptions.id, subscriptionId.id),
+					eq(subscriptions.id, subscriptionId),
 					eq(subscriptions.userId, userId),
 					isNull(subscriptions.deletedAt),
 				),
@@ -423,7 +423,7 @@ export class SubscriptionsService {
 				.innerJoin(events, eq(events.id, subscriptions.eventId))
 				.where(
 					and(
-						eq(subscriptions.id, subscriptionId.id),
+						eq(subscriptions.id, subscriptionId),
 						eq(subscriptions.userId, userId),
 						isNull(subscriptions.deletedAt),
 					),
@@ -451,7 +451,7 @@ export class SubscriptionsService {
 			const [result] = await tx
 				.update(subscriptions)
 				.set({ ...data, updatedAt: new Date() })
-				.where(and(eq(subscriptions.id, subscriptionId.id), eq(subscriptions.userId, userId)))
+				.where(and(eq(subscriptions.id, subscriptionId), eq(subscriptions.userId, userId)))
 				.returning();
 
 			if (!result) {
@@ -477,7 +477,7 @@ export class SubscriptionsService {
 				})
 				.from(subscriptions)
 				.innerJoin(events, eq(events.id, subscriptions.eventId))
-				.where(and(eq(subscriptions.id, subscriptionId.id), eq(subscriptions.userId, userId)))
+				.where(and(eq(subscriptions.id, subscriptionId), eq(subscriptions.userId, userId)))
 				.limit(1);
 
 			if (!subscription) {
@@ -502,7 +502,7 @@ export class SubscriptionsService {
 					status: "cancelled",
 					updatedAt: new Date(),
 				})
-				.where(eq(subscriptions.id, subscriptionId.id));
+				.where(eq(subscriptions.id, subscriptionId));
 
 			return { message: "Subscription cancelled successfully" };
 		});

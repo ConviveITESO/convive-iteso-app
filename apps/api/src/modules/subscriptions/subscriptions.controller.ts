@@ -53,7 +53,7 @@ export class SubscriptionsController {
 		@Body(new ZodValidationPipe(createSubscriptionSchema)) body: CreateSubscriptionSchema,
 		@Req() req?: { user: { id: string } },
 	) {
-		const userId = req?.user?.id || this.testUser;
+		const userId = req?.user?.id || "";
 		return await this.subscriptionsService.getQrCode(body.eventId, userId);
 	}
 
