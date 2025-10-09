@@ -1,4 +1,10 @@
-import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from "@nestjs/common";
+import {
+	CanActivate,
+	ExecutionContext,
+	Injectable,
+	Logger,
+	UnauthorizedException,
+} from "@nestjs/common";
 import { CreateUserSchema } from "@repo/schemas";
 import { Request } from "express";
 
@@ -9,6 +15,7 @@ interface AuthRequest extends Request {
 @Injectable()
 export class AuthGuard implements CanActivate {
 	async canActivate(context: ExecutionContext): Promise<boolean> {
+		Logger.log("AuthGuard canActivate");
 		const req = context.switchToHttp().getRequest<AuthRequest>();
 
 		if (!req.user) {

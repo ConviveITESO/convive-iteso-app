@@ -19,6 +19,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import { getApiUrl } from "@/lib/api";
 
 interface User {
 	id: string;
@@ -49,7 +50,7 @@ export default function UserCard({
 		setLoading(true);
 
 		try {
-			const response = await fetch(`http://localhost:8080/user/${id}`, {
+			const response = await fetch(`${getApiUrl()}/user/${id}`, {
 				method: "DELETE",
 				credentials: "include",
 			});

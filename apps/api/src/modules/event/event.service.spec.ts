@@ -1,4 +1,5 @@
-import { NotFoundException } from "@nestjs/common";
+/** biome-ignore-all lint/suspicious/noExplicitAny: <> */
+import { ForbiddenException, NotFoundException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Test, TestingModule } from "@nestjs/testing";
 import { EventResponseSchema } from "@repo/schemas";
@@ -21,12 +22,15 @@ describe("EventService", () => {
 		transaction: jest.fn((cb) => cb()),
 	};
 	const mockUserService = { formatUser: jest.fn() };
-	const mockGroupService = { formatGroup: jest.fn(), createEventGroup: jest.fn() };
+	const mockGroupService = {
+		formatGroup: jest.fn(),
+		createEventGroup: jest.fn(),
+		createSubscription: jest.fn(),
+	};
 	const mockLocationService = { formatLocation: jest.fn(), getLocationByIdOrThrow: jest.fn() };
 	const mockCategoryService = { formatCategory: jest.fn(), assertCategoriesExist: jest.fn() };
 	const mockBadgeService = { formatBadge: jest.fn(), assertBadgesExist: jest.fn() };
 	const mockConfigService = { get: jest.fn() };
-	const mockCloudinaryService = { uploadImage: jest.fn() };
 
 	beforeEach(async () => {
 		const module: TestingModule = await Test.createTestingModule({
@@ -39,7 +43,6 @@ describe("EventService", () => {
 				{ provide: CategoryService, useValue: mockCategoryService },
 				{ provide: BadgeService, useValue: mockBadgeService },
 				{ provide: ConfigService, useValue: mockConfigService },
-				{ provide: "CloudinaryService", useValue: mockCloudinaryService },
 			],
 		}).compile();
 		service = module.get<EventService>(EventService);
@@ -239,6 +242,7 @@ describe("EventService", () => {
 	describe("updateEvent", () => {
 		it("should call required services and update event", async () => {
 			const id = "eventId";
+			const userId = "userId";
 			const name = "Updated event";
 			const description = "Updated description";
 			const startDate = new Date();
@@ -248,7 +252,9 @@ describe("EventService", () => {
 			const badgeIds = ["badgeId3", "badgeId4"];
 			const locationId = "newLocationId";
 
-			jest.spyOn(service, "getEventByIdOrThrow").mockResolvedValue({ id } as EventResponseSchema);
+			jest
+				.spyOn(service, "getEventByIdOrThrow")
+				.mockResolvedValue({ id, createdBy: { id: userId } } as EventResponseSchema);
 			mockLocationService.getLocationByIdOrThrow.mockResolvedValue({ locationId });
 			mockCategoryService.assertCategoriesExist.mockResolvedValue(undefined);
 			mockBadgeService.assertBadgesExist.mockResolvedValue(undefined);
@@ -275,6 +281,7 @@ describe("EventService", () => {
 					badgeIds,
 				},
 				id,
+				userId,
 			);
 
 			expect(service.getEventByIdOrThrow).toHaveBeenCalledWith(id);
@@ -296,6 +303,22 @@ describe("EventService", () => {
 			expect(mockDb.insert().values).toHaveBeenCalledWith(
 				badgeIds.map((badgeId) => ({ badgeId, eventId: id })),
 			);
+		});
+
+		it("should throw ForbiddenException if the user is not the event creator", async () => {
+			const id = "eventId";
+			const userId = "wrongUserId";
+			jest.spyOn(service, "getEventByIdOrThrow").mockResolvedValue({
+				id,
+				createdBy: { id: "realCreatorId" },
+			} as any);
+			await expect(service.updateEvent({ name: "New event name" }, id, userId)).rejects.toThrow(
+				ForbiddenException,
+			);
+			await expect(service.updateEvent({}, id, userId)).rejects.toThrow(
+				"You do not have permission to edit this event",
+			);
+			expect(service.getEventByIdOrThrow).toHaveBeenCalledWith(id);
 		});
 	});
 });

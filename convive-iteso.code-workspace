@@ -26,7 +26,7 @@
 		"biome.requireConfiguration": true,
 		"biome.lsp.trace.server": "verbose",
 		"editor.codeActionsOnSave": {
-			"quickfix.biome": "explicit",
+			"quickfix.biome": "never",
 			"source.action.useSortedKeys.biome": "explicit",
 			"source.fixAll.biome": "explicit",
 			"source.organizeImports.biome": "explicit"

@@ -1,8 +1,22 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req } from "@nestjs/common";
+import {
+	Body,
+	Controller,
+	Delete,
+	Get,
+	Param,
+	Patch,
+	Post,
+	Query,
+	Req,
+	UseGuards,
+} from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
 import {
 	CreateSubscriptionSchema,
 	createSubscriptionSchema,
+	EventIdParamSchema,
+	eventIdParamSchema,
+	eventStatsResponseSchema,
 	SubscriptionIdParamSchema,
 	SubscriptionQuerySchema,
 	subscriptionArrayResponseSchema,
@@ -20,12 +34,14 @@ import {
 	ZodQuery,
 	ZodValidationPipe,
 } from "@/pipes/zod-validation/zod-validation.pipe";
+import { UserRequest } from "@/types/user.request";
+import { AuthGuard } from "../auth/guards/auth.guard";
 import { SubscriptionsService } from "./subscriptions.service";
 
 @ApiTags("Subscriptions")
 @Controller("subscriptions")
+@UseGuards(AuthGuard)
 export class SubscriptionsController {
-	private readonly testUser = "8f75e755-ba91-4b6c-a65d-bc3eb46fa9fb";
 	constructor(private readonly subscriptionsService: SubscriptionsService) {}
 
 	// GET /subscriptions
@@ -33,11 +49,10 @@ export class SubscriptionsController {
 	@ZodQuery(subscriptionQuerySchema, "search")
 	@ZodOk(subscriptionArrayResponseSchema)
 	async getUserSubscriptions(
+		@Req() req: UserRequest,
 		@Query(new ZodValidationPipe(subscriptionQuerySchema)) query?: SubscriptionQuerySchema,
-		@Req() req?: { user: { id: string } },
 	) {
-		// TODO: Replace with actual user ID from authentication
-		const userId = req?.user?.id || this.testUser;
+		const userId = req.user.id;
 		return await this.subscriptionsService.getUserSubscriptions(userId, query);
 	}
 
@@ -47,11 +62,18 @@ export class SubscriptionsController {
 	@ZodOk(subscriptionResponseSchema)
 	async getSubscriptionById(
 		@Param(new ZodValidationPipe(subscriptionIdParamSchema)) id: SubscriptionIdParamSchema,
-		@Req() req?: { user: { id: string } },
+		@Req() req: UserRequest,
 	) {
-		// TODO: Replace with actual user ID from authentication
-		const userId = req?.user?.id || this.testUser;
-		return await this.subscriptionsService.getSubscriptionById(id, userId);
+		const userId = req.user.id;
+		return await this.subscriptionsService.getSubscriptionById(id.id, userId);
+	}
+
+	// GET /subscriptions/:id/stats
+	@Get(":id/stats")
+	@ZodParam(eventIdParamSchema, "id")
+	@ZodOk(eventStatsResponseSchema)
+	async getEventStats(@Param(new ZodValidationPipe(eventIdParamSchema)) id: EventIdParamSchema) {
+		return await this.subscriptionsService.getEventStats(id.id);
 	}
 
 	// POST /subscriptions
@@ -60,10 +82,9 @@ export class SubscriptionsController {
 	@ZodCreated(subscriptionResponseSchema)
 	async createSubscription(
 		@Body(new ZodValidationPipe(createSubscriptionSchema)) data: CreateSubscriptionSchema,
-		@Req() req?: { user: { id: string } },
+		@Req() req: UserRequest,
 	) {
-		// TODO: Replace with actual user ID from authentication
-		const userId = req?.user?.id || this.testUser;
+		const userId = req.user.id;
 		return await this.subscriptionsService.createSubscription(userId, data);
 	}
 
@@ -75,11 +96,10 @@ export class SubscriptionsController {
 	async updateSubscription(
 		@Body(new ZodValidationPipe(updateSubscriptionSchema)) data: UpdateSubscriptionSchema,
 		@Param(new ZodValidationPipe(subscriptionIdParamSchema)) id: SubscriptionIdParamSchema,
-		@Req() req?: { user: { id: string } },
+		@Req() req: UserRequest,
 	) {
-		// TODO: Replace with actual user ID from authentication
-		const userId = req?.user?.id || this.testUser;
-		return await this.subscriptionsService.updateSubscription(id, userId, data);
+		const userId = req.user.id;
+		return await this.subscriptionsService.updateSubscription(id.id, userId, data);
 	}
 
 	// DELETE /subscriptions/:id
@@ -88,10 +108,9 @@ export class SubscriptionsController {
 	@ZodOk(subscriptionResponseSchema)
 	async deleteSubscription(
 		@Param(new ZodValidationPipe(subscriptionIdParamSchema)) id: SubscriptionIdParamSchema,
-		@Req() req?: { user: { id: string } },
+		@Req() req: UserRequest,
 	) {
-		// TODO: Replace with actual user ID from authentication
-		const userId = req?.user?.id || this.testUser;
-		return await this.subscriptionsService.deleteSubscription(id, userId);
+		const userId = req.user.id;
+		return await this.subscriptionsService.deleteSubscription(id.id, userId);
 	}
 }

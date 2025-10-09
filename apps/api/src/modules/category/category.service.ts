@@ -29,7 +29,7 @@ export class CategoryService {
 	 * @param query Query parameters for filtering
 	 * @returns all categories matching the criteria
 	 */
-	async getCategories(query?: CategoryQuerySchema) {
+	async getAllCategories(query?: CategoryQuerySchema) {
 		if (!query || Object.keys(query).length === 0) {
 			return await this.db.query.categories.findMany();
 		}

@@ -74,12 +74,12 @@ jobs:
       - name: Run Snyk test
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        run: snyk test
+        run: snyk test --all-projects
 
       - name: Monitor project with Snyk (optional)
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        run: snyk monitor
+        run: snyk monitor --all-projects
 
   security-dast:
     needs: [lint-and-test]
@@ -115,8 +115,28 @@ jobs:
 
       - name: Start DB with Docker Compose
         run: make prod-up-ci
-      - name: Seed project
+
+      - name: Update DATABASE_URL for local seed
+        run: sed -i 's|db:5432|localhost:5432|g' apps/api/.env
+      - name: Wait for database to be ready
+        run: |
+          echo "Waiting for database to be ready..."
+          for i in {1..30}; do
+            if docker exec convive-iteso-database pg_isready -U user >/dev/null 2>&1; then
+              echo "✅ Database is ready."
+              exit 0
+            fi
+            echo "⏳ Database not ready yet, retrying in 2s..."
+            sleep 2
+          done
+          echo "❌ Database did not become ready in time"
+          exit 1
+
+      - name: create database
         run: pnpm db:push
+
+      - name: seed database
+        run: pnpm db:seed
       - name: Start Server with Docker Compose
         run: docker ps -a
       - name: Wait for API readiness (HTTP)

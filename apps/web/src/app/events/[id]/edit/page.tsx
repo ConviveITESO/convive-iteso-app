@@ -1,47 +1,69 @@
 /** biome-ignore-all lint/style/noNonNullAssertion: temp mocks */
 "use client";
 
-import type { BadgeResponseSchema, CreateEventSchema, LocationResponseSchema } from "@repo/schemas";
-import { useState } from "react";
+import type {
+	BadgeResponseSchema,
+	CategoryResponseSchema,
+	CreateEventSchema,
+	EventResponseSchema,
+	LocationResponseSchema,
+} from "@repo/schemas";
+import { useCallback, useEffect, useState } from "react";
+import { getApiUrl } from "@/lib/api";
 import EventForm from "../../_event-form";
 
-export default async function EditEventPage() {
-	const categories = await fetch("http://localhost:8080/category").then((res) => res.json());
-
-	// TODO: replace mocks with fetch once GETs exist
-	const badges: BadgeResponseSchema[] = [
-		{ id: "temp4", name: "Badge4", description: "This is the badge4" },
-		{ id: "temp5", name: "Badge5", description: "This is the badge5" },
-	];
-
-	const locations: LocationResponseSchema[] = [
-		{ id: "temp6", name: "Building M" },
-		{ id: "temp7", name: "Library" },
-	];
-
-	const initialData: Partial<CreateEventSchema> = {
-		name: "Seeded Event",
-		description: "This event uses seeded mocks",
-		startDate: new Date().toISOString(),
-		endDate: new Date(Date.now() + 3600 * 1000).toISOString(),
-		quota: 30,
-		locationId: locations[0]!.id,
-		categoryIds: [categories[0]!.id, categories[2]!.id],
-		badgeIds: [badges[0]!.id],
-	};
-
-	const eventId = "temp8";
+export default function EditEventPage() {
+	const [locations, setLocations] = useState<LocationResponseSchema[]>([]);
+	const [categories, setCategories] = useState<CategoryResponseSchema[]>([]);
+	const [badges, setBadges] = useState<BadgeResponseSchema[]>([]);
+	const [initialData, setInitialData] = useState<CreateEventSchema & EventResponseSchema>(
+		{} as CreateEventSchema & EventResponseSchema,
+	);
+	const [loading, setLoading] = useState(true);
 	const [savedData, setSavedData] = useState<CreateEventSchema | null>(null);
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+	const loadData = useCallback(async () => {
+		try {
+			const url = window.location.href.split("/")!;
+			const eventId = url[url.length - 2];
+			const [resLoc, resCat, resBad, resEvent] = await Promise.all([
+				fetch(`${getApiUrl()}/locations`, { credentials: "include" }),
+				fetch(`${getApiUrl()}/categories`, { credentials: "include" }),
+				fetch(`${getApiUrl()}/badges`, { credentials: "include" }),
+				fetch(`${getApiUrl()}/events/${eventId}`, { credentials: "include" }),
+			]);
+			const event: EventResponseSchema = await resEvent.json();
+			setLocations(await resLoc.json());
+			setCategories(await resCat.json());
+			setBadges(await resBad.json());
+			setInitialData({
+				...event,
+				locationId: event.location.id,
+				categoryIds: event.categories.map((category) => category.id),
+				badgeIds: event.badges.map((badge) => badge.id),
+			});
+			setLoading(false);
+		} catch (err) {
+			console.error("Error loading data", err);
+		}
+	}, []);
+
+	useEffect(() => {
+		loadData();
+	}, [loadData]);
+
+	if (loading) return <div>Loading...</div>;
 
 	const handleSave = async (data: CreateEventSchema) => {
 		setErrorMessage(null);
 
 		try {
-			const response = await fetch(`http://localhost:8080/events/${eventId}`, {
+			const response = await fetch(`${getApiUrl()}/events/${initialData.id}`, {
 				method: "PUT",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify(data),
+				credentials: "include",
 			});
 
 			if (!response.ok) {
@@ -66,7 +88,7 @@ export default async function EditEventPage() {
 		<div className="p-4">
 			<EventForm
 				mode="edit"
-				eventId={eventId}
+				eventId={initialData.id}
 				initialData={initialData}
 				categories={categories}
 				badges={badges}

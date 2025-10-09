@@ -1,46 +1,63 @@
 /** biome-ignore-all lint/style/noNonNullAssertion: temp mocks */
 "use client";
 
-import type { BadgeResponseSchema, CreateEventSchema, LocationResponseSchema } from "@repo/schemas";
-import { useState } from "react";
+import type {
+	BadgeResponseSchema,
+	CategoryResponseSchema,
+	CreateEventSchema,
+	LocationResponseSchema,
+} from "@repo/schemas";
+import { useCallback, useEffect, useState } from "react";
+import { getApiUrl } from "@/lib/api";
 import EventForm from "../_event-form";
 
-export default async function EditEventPage() {
-	const categories = await fetch("http://localhost:8080/category").then((res) => res.json());
+export default function EditEventPage() {
+	const [locations, setLocations] = useState<LocationResponseSchema[]>([]);
+	const [categories, setCategories] = useState<CategoryResponseSchema[]>([]);
+	const [badges, setBadges] = useState<BadgeResponseSchema[]>([]);
+	const [loading, setLoading] = useState(true);
+	const [savedData, setSavedData] = useState<CreateEventSchema | null>(null);
+	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-	// TODO: replace mocks with fetch once GETs exist
-	const badges: BadgeResponseSchema[] = [
-		{ id: "temp4", name: "Badge4", description: "This is the badge4" },
-		{ id: "temp5", name: "Badge5", description: "This is the badge5" },
-	];
+	const loadData = useCallback(async () => {
+		try {
+			const [resLoc, resCat, resBad] = await Promise.all([
+				fetch(`${getApiUrl()}/locations`, { credentials: "include" }),
+				fetch(`${getApiUrl()}/categories`, { credentials: "include" }),
+				fetch(`${getApiUrl()}/badges`, { credentials: "include" }),
+			]);
+			setLocations(await resLoc.json());
+			setCategories(await resCat.json());
+			setBadges(await resBad.json());
+			setLoading(false);
+		} catch (err) {
+			console.error("Error loading data", err);
+		}
+	}, []);
 
-	const locations: LocationResponseSchema[] = [
-		{ id: "temp6", name: "Building M" },
-		{ id: "temp7", name: "Library" },
-	];
+	useEffect(() => {
+		loadData();
+	}, [loadData]);
+
+	if (loading) return <div>Loading...</div>;
 
 	const initialData: Partial<CreateEventSchema> = {
-		name: "Event name",
-		description: "Event description",
 		startDate: new Date().toISOString(),
 		endDate: new Date().toISOString(),
-		quota: 100,
-		locationId: locations[0]!.id,
+		locationId: locations[0]?.id,
 		categoryIds: [],
 		badgeIds: [],
 	};
-
-	const [savedData, setSavedData] = useState<CreateEventSchema | null>(null);
-	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
 	const handleSave = async (data: CreateEventSchema) => {
 		setErrorMessage(null);
 
 		try {
-			const response = await fetch(`http://localhost:8080/events`, {
+			const response = await fetch(`${getApiUrl()}/events`, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify(data),
+				credentials: "include",
 			});
 
 			if (!response.ok) {
