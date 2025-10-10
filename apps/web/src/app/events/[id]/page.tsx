@@ -410,7 +410,7 @@ export default function EventPage() {
 						className="w-full h-10 bg-primary text-primary-foreground hover:bg-primary/90"
 						onClick={handleRegister}
 					>
-						Register for event
+						{stats?.spotsLeft === 0 ? "Enter waitlist" : "Register for event"}
 					</Button>
 				</div>
 			</div>

@@ -7,11 +7,13 @@ import type {
 	CreateEventSchema,
 	LocationResponseSchema,
 } from "@repo/schemas";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { getApiUrl } from "@/lib/api";
 import EventForm from "../_event-form";
 
 export default function EditEventPage() {
+	const router = useRouter();
 	const [locations, setLocations] = useState<LocationResponseSchema[]>([]);
 	const [categories, setCategories] = useState<CategoryResponseSchema[]>([]);
 	const [badges, setBadges] = useState<BadgeResponseSchema[]>([]);
@@ -68,7 +70,7 @@ export default function EditEventPage() {
 			const createdEvent = await response.json();
 			setSavedData(createdEvent);
 
-			// TODO: redirect to events list page once it exists
+			router.push(`/events/${createdEvent.id}`);
 		} catch {
 			setErrorMessage("Unexpected error while creating event");
 		}
