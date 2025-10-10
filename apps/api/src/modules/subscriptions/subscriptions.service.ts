@@ -13,7 +13,7 @@ import {
 	SubscriptionResponseSchema,
 	UpdateSubscriptionSchema,
 } from "@repo/schemas";
-import { and, eq, gte, isNull, max, SQL, sql } from "drizzle-orm";
+import { and, eq, gte, isNull, max, ne, SQL, sql } from "drizzle-orm";
 import { AppDatabase, DATABASE_CONNECTION, Transaction } from "../database/connection";
 import { events, Subscription, subscriptions } from "../database/schemas";
 
@@ -253,7 +253,14 @@ export class SubscriptionsService {
 		const [subscription] = await this.db
 			.select({ id: subscriptions.id })
 			.from(subscriptions)
-			.where(and(eq(subscriptions.eventId, eventId), eq(subscriptions.userId, userId)))
+			.where(
+				and(
+					eq(subscriptions.eventId, eventId),
+					eq(subscriptions.userId, userId),
+					ne(subscriptions.status, "cancelled"),
+					isNull(subscriptions.deletedAt),
+				),
+			)
 			.limit(1);
 
 		if (!subscription) {
@@ -290,7 +297,7 @@ export class SubscriptionsService {
 
 			if (existingSubscription) {
 				// Check if subscription was deleted
-				if (existingSubscription.deletedAt) {
+				if (existingSubscription.deletedAt || existingSubscription.status === "cancelled") {
 					// Determine if user can be registered or should be waitlisted
 					const { status, position } = await this.determineSubscriptionStatus(
 						tx,
