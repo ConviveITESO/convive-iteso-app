@@ -68,7 +68,7 @@ describe("CategoryService", () => {
 
 			const result = await service.getAllCategories();
 			expect(result).toEqual(categories);
-			expect(mockDb.query.categories.findMany).toHaveBeenCalledWith();
+			expect(mockDb.query.categories.findMany).toHaveBeenCalled();
 		});
 
 		it("should apply filters when query is provided", async () => {

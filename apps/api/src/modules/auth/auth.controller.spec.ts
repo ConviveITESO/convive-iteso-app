@@ -3,6 +3,12 @@ import { Request, Response } from "express";
 import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";
 
+jest.mock("jose", () => ({
+	// biome-ignore lint/style/useNamingConvention: external library name
+	createRemoteJWKSet: jest.fn(),
+	jwtVerify: jest.fn(),
+}));
+
 describe("AuthController", () => {
 	let controller: AuthController;
 
@@ -10,6 +16,7 @@ describe("AuthController", () => {
 		getAuthUrl: jest.fn(),
 		handleCallback: jest.fn(),
 		refreshIdToken: jest.fn(),
+		validateIdToken: jest.fn(),
 	};
 
 	const mockResponse = (): Response => {
@@ -104,6 +111,45 @@ describe("AuthController", () => {
 				secure: true,
 			});
 			expect(res.json).toHaveBeenCalledWith({ message: "Token refreshed" });
+		});
+	});
+
+	describe("validate", () => {
+		it("should return 401 if no ID token", async () => {
+			const res = mockResponse();
+			const req = { cookies: {} } as Request;
+
+			await controller.validate(req, res);
+
+			expect(res.status).toHaveBeenCalledWith(401);
+			expect(res.json).toHaveBeenCalledWith({ message: "No ID token" });
+			expect(mockAuthService.validateIdToken).not.toHaveBeenCalled();
+		});
+
+		it("should return 401 if token is invalid", async () => {
+			const res = mockResponse();
+			const req = { cookies: { idToken: "invalid" } } as unknown as Request;
+
+			mockAuthService.validateIdToken.mockResolvedValue(false);
+
+			await controller.validate(req, res);
+
+			expect(mockAuthService.validateIdToken).toHaveBeenCalledWith("invalid");
+			expect(res.status).toHaveBeenCalledWith(401);
+			expect(res.json).toHaveBeenCalledWith({ message: "Invalid ID token" });
+		});
+
+		it("should return success if token is valid", async () => {
+			const res = mockResponse();
+			const req = { cookies: { idToken: "valid" } } as unknown as Request;
+
+			mockAuthService.validateIdToken.mockResolvedValue(true);
+
+			const result = await controller.validate(req, res);
+
+			expect(mockAuthService.validateIdToken).toHaveBeenCalledWith("valid");
+			expect(res.json).toHaveBeenCalledWith({ message: "ID token is valid" });
+			expect(result).toEqual({ valid: true });
 		});
 	});
 });
