@@ -2,7 +2,7 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { getApiUrl } from "@/lib/api";
 
-const publicPaths = ["/login", "/register"];
+const publicPaths = ["/", "/login", "/register"];
 
 export async function middleware(req: NextRequest) {
 	const { cookies, nextUrl } = req;

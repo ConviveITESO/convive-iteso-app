@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { getApiUrl } from "@/lib/api";
+import { useAuth } from "@/lib/use-auth";
 import { EventDetails } from "./_event-details";
 import { EventHeader } from "./_event-header";
 import { EventImage } from "./_event-image";
@@ -12,12 +13,21 @@ import { SubscriptionStatus } from "./_subscription-status";
 import { useEventData } from "./_use-event-data";
 
 export default function EventPage() {
+	const { isAuthenticated } = useAuth();
 	const { id } = useParams();
 	const router = useRouter();
 	const queryClient = useQueryClient();
 
 	const eventId = Array.isArray(id) ? id[0] : id;
 	const { event, stats, subscription, isLoading } = useEventData(eventId);
+
+	if (!isAuthenticated) {
+		return (
+			<div className="flex items-center justify-center min-h-screen">
+				<p className="text-muted-foreground">Loading...</p>
+			</div>
+		);
+	}
 
 	const handleRegister = async () => {
 		try {

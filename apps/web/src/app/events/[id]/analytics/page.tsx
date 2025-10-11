@@ -4,17 +4,21 @@ import { Image } from "lucide-react";
 /* import { useEffect, useState } from "react"; */
 import { useParams, useSearchParams } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuth } from "@/lib/use-auth";
 import { EventAnalyticsChart } from "./_event-analysis-chart";
 import EventAnalyticsEngagement from "./_event-analysis-engagement";
 import EventAnalyticsAssistants from "./_event-analytics-assistants";
 
 export default function EventAnalytics() {
+	const { isAuthenticated } = useAuth();
 	// ---- obtain page id ----
 	const params = useParams();
 	const searchParams = useSearchParams();
 	const first = (v?: string | string[] | null) => (Array.isArray(v) ? v[0] : (v ?? null));
 
 	const pageId = first(params.id) ?? searchParams.get("id") ?? null;
+
+	if (!isAuthenticated) return <div>Loading...</div>;
 
 	// ---- eAPI state ----
 	/* const [apiData, setApiData] = useState<any>(null); */
