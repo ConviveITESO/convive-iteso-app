@@ -3,6 +3,7 @@ import { ForbiddenException, Inject, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { UserResponseSchema } from "@repo/schemas";
 import { eq } from "drizzle-orm";
+import { createRemoteJWKSet, jwtVerify } from "jose";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { randomBytes, sha256 } from "../../utils/crypto";
 import { base64UrlEncode } from "../../utils/encoding";
@@ -31,7 +32,6 @@ export class AuthService {
 	}
 
 	private readonly clientId: string;
-
 	private readonly clientSecret: string;
 	private readonly redirectUri: string;
 
@@ -39,6 +39,10 @@ export class AuthService {
 	private nonce = base64UrlEncode(randomBytes(16));
 	private codeVerifier = base64UrlEncode(randomBytes(32));
 	private codeChallenge = base64UrlEncode(sha256(this.codeVerifier));
+
+	private readonly jwks = createRemoteJWKSet(
+		new URL("https://login.microsoftonline.com/common/discovery/v2.0/keys"),
+	);
 
 	getAuthUrl(): string {
 		return `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${
@@ -154,5 +158,20 @@ export class AuthService {
 			refreshToken: tokens.refresh_token,
 			expiresIn: tokens.expires_in,
 		};
+	}
+
+	async validateIdToken(token: string): Promise<boolean> {
+		try {
+			const { payload } = await jwtVerify(token, this.jwks, {
+				audience: this.clientId,
+			});
+
+			const email = payload["email" as const] as string | undefined;
+
+			if (!email || !email.endsWith("@iteso.mx")) return false;
+			return true;
+		} catch {
+			return false;
+		}
 	}
 }

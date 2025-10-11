@@ -5,9 +5,9 @@ import { CategoryController } from "./category.controller";
 import { CategoryService } from "./category.service";
 
 @Module({
+	imports: [DatabaseModule],
 	controllers: [CategoryController],
 	providers: [CategoryService],
-	imports: [DatabaseModule],
 	exports: [CategoryService],
 })
 export class CategoryModule {

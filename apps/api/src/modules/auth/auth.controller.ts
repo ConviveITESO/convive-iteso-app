@@ -47,4 +47,22 @@ export class AuthController {
 			.cookie("refreshToken", tokens.refreshToken, { httpOnly: true, secure: true })
 			.json({ message: "Token refreshed" });
 	}
+
+	@Get("validate")
+	async validate(@Req() req: Request, @Res() res: Response) {
+		const idToken = req.cookies?.idToken;
+		if (!idToken) {
+			res.status(401).json({ message: "No ID token" });
+			return;
+		}
+
+		const valid = await this.authService.validateIdToken(idToken);
+		if (!valid) {
+			res.status(401).json({ message: "Invalid ID token" });
+			return;
+		}
+
+		res.json({ message: "ID token is valid" });
+		return { valid };
+	}
 }

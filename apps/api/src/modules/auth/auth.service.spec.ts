@@ -10,8 +10,14 @@ import { AuthService } from "./auth.service";
 
 declare const global: { fetch: typeof fetch };
 
+jest.mock("jose", () => ({
+	createRemoteJWKSet: jest.fn(),
+	jwtVerify: jest.fn(),
+}));
+
 describe("AuthService", () => {
 	let service: AuthService;
+	const { jwtVerify } = jest.requireMock("jose");
 
 	const mockDb = {
 		query: {
@@ -145,7 +151,6 @@ describe("AuthService", () => {
 		});
 
 		it("should update existing user", async () => {
-			// existing user returned from findFirst (entity with Dates)
 			const existingEntity = {
 				id: "123",
 				email: validJwt.email,
@@ -158,8 +163,6 @@ describe("AuthService", () => {
 			};
 
 			mockDb.query.users.findFirst.mockResolvedValueOnce(existingEntity);
-
-			// the DB update returning() should return the entity (with Date fields)
 			mockDb.returning.mockResolvedValueOnce([existingEntity]);
 
 			const result = await service.handleCallback("code", stateCode);
@@ -252,6 +255,38 @@ describe("AuthService", () => {
 				refreshToken: "new-refresh-token",
 				expiresIn: 3600,
 			});
+		});
+	});
+
+	describe("validateIdToken", () => {
+		it("should return true for valid token with allowed email", async () => {
+			jwtVerify.mockResolvedValueOnce({
+				payload: { email: "test@iteso.mx" },
+			});
+			const result = await service.validateIdToken("token");
+			expect(result).toBe(true);
+		});
+
+		it("should return false for invalid email domain", async () => {
+			jwtVerify.mockResolvedValueOnce({
+				payload: { email: "bad@gmail.com" },
+			});
+			const result = await service.validateIdToken("token");
+			expect(result).toBe(false);
+		});
+
+		it("should return false if no email in payload", async () => {
+			jwtVerify.mockResolvedValueOnce({
+				payload: {},
+			});
+			const result = await service.validateIdToken("token");
+			expect(result).toBe(false);
+		});
+
+		it("should return false on thrown verification error", async () => {
+			jwtVerify.mockRejectedValueOnce(new Error("bad token"));
+			const result = await service.validateIdToken("token");
+			expect(result).toBe(false);
 		});
 	});
 });

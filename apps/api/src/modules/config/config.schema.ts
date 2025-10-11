@@ -11,6 +11,7 @@ export const configSchema = z.object({
 	CLIENT_SECRET: z.string().min(1),
 	APP_VERSION: z.string().default("1.0.0"),
 	REDIRECT_URI: z.url().default("http://localhost:8080/auth/oauth-callback"),
+	ADMIN_TOKEN: z.string().min(1),
 });
 
 export type ConfigSchema = z.infer<typeof configSchema>;

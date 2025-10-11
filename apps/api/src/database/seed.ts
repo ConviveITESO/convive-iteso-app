@@ -113,6 +113,12 @@ async function main() {
 	const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 	const db = drizzle(pool, { schema: schemas });
 	await resetDatabase(db);
+	// TODO: Remove once role management is implemented
+	await db.insert(schemas.users).values({
+		email: `admin@iteso.mx`,
+		name: `ADMIN`,
+		status: "active",
+	});
 	const userIds = await seedUsers(db, 20);
 	await seedBadges(db, 10, userIds);
 	await seedCategories(db, userIds);

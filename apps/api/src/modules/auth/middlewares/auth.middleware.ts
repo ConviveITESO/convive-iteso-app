@@ -21,6 +21,17 @@ export class AuthMiddleware implements NestMiddleware {
 	) {}
 
 	async use(req: AuthRequest, res: Response, next: () => void) {
+		const adminToken = req.headers["admin-token"];
+		if (adminToken && adminToken === this.configService.getOrThrow("ADMIN_TOKEN")) {
+			const adminEmail = "admin@iteso.mx";
+			const user = await this.db.query.users.findFirst({
+				where: eq(users.email, adminEmail),
+			});
+			req.user = user;
+			return next();
+		}
+
+
 		Logger.log("AuthMiddleware called");
 		const idToken = req.cookies?.idToken;
 		if (!idToken) {

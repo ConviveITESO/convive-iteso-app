@@ -14,4 +14,7 @@ export default () => ({
 		clientSecret: process.env.CLIENT_SECRET,
 		redirectUri: process.env.REDIRECT_URI,
 	},
+	admin: {
+		adminToken: process.env.ADMIN_TOKEN,
+	},
 });
