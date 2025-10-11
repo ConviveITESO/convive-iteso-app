@@ -31,7 +31,9 @@ export class CategoryService {
 	 */
 	async getAllCategories(query?: CategoryQuerySchema) {
 		if (!query || Object.keys(query).length === 0) {
-			return await this.db.query.categories.findMany();
+			return await this.db.query.categories.findMany({
+				where: eq(categories.status, "active"),
+			});
 		}
 
 		const conditions: SQL[] = [];
@@ -43,7 +45,8 @@ export class CategoryService {
 		}
 
 		return await this.db.query.categories.findMany({
-			where: conditions.length > 0 ? and(...conditions) : undefined,
+			where:
+				eq(categories.status, "active") && conditions.length > 0 ? and(...conditions) : undefined,
 		});
 	}
 
@@ -54,7 +57,7 @@ export class CategoryService {
 	 */
 	async getCategoryById(categoryId: CategoryIdParamSchema) {
 		return await this.db.query.categories.findFirst({
-			where: eq(categories.id, categoryId),
+			where: eq(categories.id, categoryId) && eq(categories.status, "active"),
 		});
 	}
 

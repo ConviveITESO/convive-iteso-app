@@ -38,7 +38,7 @@ import { AuthGuard } from "../auth/guards/auth.guard";
 import { CategoryService } from "./category.service";
 
 @ApiTags("Category")
-@Controller("category")
+@Controller("categories")
 @UseGuards(AuthGuard)
 export class CategoryController {
 	constructor(private readonly categoryService: CategoryService) {}
