@@ -1,60 +1,33 @@
 "use client";
 
-import type { EventResponseSchema, EventStatsResponseSchema } from "@repo/schemas";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Calendar, Clock, ImageIcon, Users } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { getApiUrl } from "@/lib/api";
+import { useAuth } from "@/lib/use-auth";
+import { EventDetails } from "./_event-details";
+import { EventHeader } from "./_event-header";
+import { EventImage } from "./_event-image";
+import { EventStats } from "./_event-stats";
+import { SubscriptionStatus } from "./_subscription-status";
+import { useEventData } from "./_use-event-data";
 
 export default function EventPage() {
+	const { isAuthenticated } = useAuth();
 	const { id } = useParams();
 	const router = useRouter();
 	const queryClient = useQueryClient();
 
 	const eventId = Array.isArray(id) ? id[0] : id;
+	const { event, stats, subscription, isLoading } = useEventData(eventId);
 
-	const { data: event, isLoading } = useQuery({
-		queryKey: ["event", eventId],
-		queryFn: async () => {
-			if (!eventId) {
-				throw new Error("Event id is required");
-			}
-
-			const response = await fetch(`${getApiUrl()}/events/${eventId}`, {
-				credentials: "include",
-			});
-			if (response.status === 401 || response.status === 403) {
-				router.push("/");
-				throw new Error("Unauthorized");
-			}
-			if (!response.ok) throw new Error("Failed to fetch event");
-			return response.json() as Promise<EventResponseSchema>;
-		},
-		enabled: Boolean(eventId),
-	});
-
-	const { data: stats, isLoading: isLoadingStats } = useQuery({
-		queryKey: ["event-stats", eventId],
-		queryFn: async () => {
-			if (!eventId) {
-				throw new Error("Event id is required");
-			}
-
-			const response = await fetch(`${getApiUrl()}/subscriptions/${eventId}/stats`, {
-				credentials: "include",
-			});
-			if (response.status === 401 || response.status === 403) {
-				router.push("/");
-				throw new Error("Unauthorized");
-			}
-			if (!response.ok) throw new Error("Failed to fetch event stats");
-			return response.json() as Promise<EventStatsResponseSchema>;
-		},
-		enabled: Boolean(eventId),
-	});
+	if (!isAuthenticated) {
+		return (
+			<div className="flex items-center justify-center min-h-screen">
+				<p className="text-muted-foreground">Loading...</p>
+			</div>
+		);
+	}
 
 	const handleRegister = async () => {
 		try {
@@ -77,16 +50,19 @@ export default function EventPage() {
 				throw new Error("Failed to register for event");
 			}
 
-			await queryClient.invalidateQueries({ queryKey: ["event-stats", eventId] });
+			// Invalidate stats and subscription check
+			await Promise.all([
+				queryClient.invalidateQueries({ queryKey: ["event-stats", eventId] }),
+				queryClient.invalidateQueries({ queryKey: ["subscription-check", eventId] }),
+			]);
 
 			// Optionally show success message or redirect
-			alert("Successfully registered for event!");
 		} catch (_error) {
 			alert("Failed to register for event. Please try again.");
 		}
 	};
 
-	if (isLoading || isLoadingStats) {
+	if (isLoading) {
 		return (
 			<div className="flex items-center justify-center min-h-screen">
 				<p className="text-muted-foreground">Loading...</p>
@@ -107,136 +83,69 @@ export default function EventPage() {
 	const registeredCount = stats?.registeredCount ?? 0;
 	const spotsLeft = stats?.spotsLeft ?? event.quota;
 
-	const formatDate = (date: Date) => {
-		return date.toLocaleDateString("en-US", {
-			weekday: "long",
-			year: "numeric",
-			month: "long",
-			day: "numeric",
-		});
-	};
+	if (subscription) {
+		const isWaitlisted = subscription.status === "waitlisted";
+		const now = new Date();
+		const tenMinutesBeforeStart = new Date(startDate.getTime() - 10 * 60 * 1000);
+		const showQr = now >= tenMinutesBeforeStart && now <= endDate && !isWaitlisted;
 
-	const formatTime = (start: Date, end: Date) => {
-		const startTime = start.toLocaleTimeString("en-US", {
-			hour: "2-digit",
-			minute: "2-digit",
-		});
-		const endTime = end.toLocaleTimeString("en-US", {
-			hour: "2-digit",
-			minute: "2-digit",
-		});
-		return `${startTime} - ${endTime}`;
-	};
-
-	const isSameDay = (date1: Date, date2: Date) => {
 		return (
-			date1.getFullYear() === date2.getFullYear() &&
-			date1.getMonth() === date2.getMonth() &&
-			date1.getDate() === date2.getDate()
-		);
-	};
+			<div className="min-h-screen bg-background">
+				<div className="max-w-md mx-auto shadow-lg overflow-hidden">
+					<EventHeader eventName={event.name} />
+					<EventImage />
 
-	const isMultiDay = !isSameDay(startDate, endDate);
+					<div className="px-8 pb-8">
+						<EventDetails description={event.description} startDate={startDate} endDate={endDate} />
+
+						<SubscriptionStatus isWaitlisted={isWaitlisted} position={subscription.position} />
+
+						{showQr && (
+							<div className="w-full mt-4 p-4 border rounded-lg text-center">
+								<p className="text-lg font-medium">QR</p>
+								{/* TODO: Add QR component */}
+							</div>
+						)}
+
+						<Button
+							variant="secondary"
+							className="w-full mt-4 h-10"
+							onClick={() => {
+								router.push(`/groups/${event.group.id}`);
+							}}
+						>
+							Go to event group
+						</Button>
+					</div>
+				</div>
+			</div>
+		);
+	}
+
+	const now = new Date();
+	const eventHasStarted = now >= startDate;
 
 	return (
 		<div className="min-h-screen bg-background">
 			<div className="max-w-md mx-auto shadow-lg overflow-hidden">
-				{/* Header */}
-				<div className="relative h-24 shadow-md -mb-5">
-					<Button
-						variant="ghost"
-						size="icon"
-						className="absolute left-6 top-6"
-						onClick={() => router.back()}
-					>
-						<ArrowLeft className="size-6" />
-					</Button>
-					<h1 className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-xl font-semibold text-center whitespace-nowrap">
-						{event.name}
-					</h1>
-				</div>
+				<EventHeader eventName={event.name} />
+				<EventImage />
 
-				{/* Event Image Placeholder */}
-				<div className="mx-4 mt-12 mb-6">
-					<div className="bg-gray-200 rounded-4xl shadow-md h-52 flex items-center justify-center">
-						<ImageIcon className="size-6 text-foreground" />
-					</div>
-				</div>
-
-				{/* Content */}
 				<div className="px-8 pb-8">
-					{/* About Section */}
-					<h2 className="text-xl font-medium text-foreground mb-4">About this event</h2>
-					<p className="text-base text-foreground/70 leading-relaxed mb-6">{event.description}</p>
+					<EventDetails description={event.description} startDate={startDate} endDate={endDate} />
 
-					<Separator className="my-6" />
+					<EventStats registeredCount={registeredCount} quota={event.quota} spotsLeft={spotsLeft} />
 
-					{/* Date and Time */}
-					<div className="space-y-4 mb-6">
-						<div className="flex items-start gap-3">
-							<Calendar className="size-5 text-foreground mt-0.5 shrink-0" />
-							<div>
-								<p className="text-base font-medium text-foreground">
-									{isMultiDay ? "Dates" : "Date"}
-								</p>
-								{isMultiDay ? (
-									<>
-										<p className="text-base text-foreground/70">{formatDate(startDate)}</p>
-										<p className="text-base text-foreground/70">to {formatDate(endDate)}</p>
-									</>
-								) : (
-									<p className="text-base text-foreground/70">{formatDate(startDate)}</p>
-								)}
-							</div>
-						</div>
-
-						<div className="flex items-start gap-3">
-							<Clock className="size-5 text-foreground mt-0.5 shrink-0" />
-							<div>
-								<p className="text-base font-medium text-foreground">Time</p>
-								{isMultiDay ? (
-									<>
-										<p className="text-base text-foreground/70">
-											Starts: {formatTime(startDate, startDate)}
-										</p>
-										<p className="text-base text-foreground/70">
-											Ends: {formatTime(endDate, endDate)}
-										</p>
-									</>
-								) : (
-									<p className="text-base text-foreground/70">{formatTime(startDate, endDate)}</p>
-								)}
-							</div>
-						</div>
-					</div>
-
-					<Separator className="my-6" />
-
-					{/* Attendance */}
-					<div className="flex items-start gap-3 mb-8">
-						<Users className="size-5 text-foreground mt-0.5 shrink-0" />
-						<div className="flex-1">
-							<p className="text-base font-medium text-foreground mb-1">Attendance</p>
-							<div className="flex items-center gap-2">
-								<p className="text-base text-foreground/70">
-									{registeredCount} / {event.quota} registered
-								</p>
-								<Badge
-									variant="secondary"
-									className="bg-secondary text-secondary-foreground text-xs"
-								>
-									{spotsLeft} spots left
-								</Badge>
-							</div>
-						</div>
-					</div>
-
-					{/* Register Button */}
 					<Button
 						className="w-full h-10 bg-primary text-primary-foreground hover:bg-primary/90"
 						onClick={handleRegister}
+						disabled={eventHasStarted}
 					>
-						Register for event
+						{eventHasStarted
+							? "Event has started"
+							: stats?.spotsLeft === 0
+								? "Enter waitlist"
+								: "Register for event"}
 					</Button>
 				</div>
 			</div>

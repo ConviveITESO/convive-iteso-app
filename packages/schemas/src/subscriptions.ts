@@ -118,6 +118,16 @@ export const eventStatsResponseSchema = z
 		},
 	});
 
+export const subscriptionIdResponseSchema = z
+	.object({
+		id: z.uuid(),
+	})
+	.openapi("SubscriptionIdResponseSchema", {
+		example: {
+			id: "123e4567-e89b-12d3-a456-426614174000",
+		},
+	});
+
 // ==========================================================
 // TYPE schemas
 // ==========================================================
@@ -128,3 +138,4 @@ export type UpdateSubscriptionSchema = z.infer<typeof updateSubscriptionSchema>;
 export type SubscriptionResponseSchema = z.infer<typeof subscriptionResponseSchema>;
 export type SubscriptionArrayResponseSchema = z.infer<typeof subscriptionArrayResponseSchema>;
 export type EventStatsResponseSchema = z.infer<typeof eventStatsResponseSchema>;
+export type SubscriptionIdResponseSchema = z.infer<typeof subscriptionIdResponseSchema>;

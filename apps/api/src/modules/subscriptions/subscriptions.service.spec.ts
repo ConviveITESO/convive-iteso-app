@@ -159,6 +159,39 @@ describe("SubscriptionsService", () => {
 		});
 	});
 
+	describe("getEventAlreadyRegistered", () => {
+		beforeEach(() => {
+			jest.clearAllMocks();
+			const mockChain = {
+				limit: jest.fn(),
+			};
+			(mockDb.where as jest.Mock).mockReturnValue(mockChain);
+		});
+
+		it("should return subscription id when user is already registered for event", async () => {
+			const mockChain = (mockDb.where as jest.Mock)();
+			(mockChain.limit as jest.Mock).mockResolvedValue([{ id: "sub-123" }]);
+
+			const result = await service.getEventAlreadyRegistered("event-123", "user-123");
+
+			expect(result).toEqual({ id: "sub-123" });
+			expect(mockDb.select).toHaveBeenCalled();
+			expect(mockChain.limit).toHaveBeenCalledWith(1);
+		});
+
+		it("should throw NotFoundException when user is not registered for event", async () => {
+			const mockChain = (mockDb.where as jest.Mock)();
+			(mockChain.limit as jest.Mock).mockResolvedValue([]);
+
+			await expect(service.getEventAlreadyRegistered("event-123", "user-123")).rejects.toThrow(
+				NotFoundException,
+			);
+			await expect(service.getEventAlreadyRegistered("event-123", "user-123")).rejects.toThrow(
+				"Subscription not found",
+			);
+		});
+	});
+
 	describe("getEventStats", () => {
 		beforeEach(() => {
 			jest.clearAllMocks();

@@ -7,11 +7,15 @@ import type {
 	CreateEventSchema,
 	LocationResponseSchema,
 } from "@repo/schemas";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { getApiUrl } from "@/lib/api";
+import { useAuth } from "@/lib/use-auth";
 import EventForm from "../_event-form";
 
 export default function EditEventPage() {
+	const { isAuthenticated } = useAuth();
+	const router = useRouter();
 	const [locations, setLocations] = useState<LocationResponseSchema[]>([]);
 	const [categories, setCategories] = useState<CategoryResponseSchema[]>([]);
 	const [badges, setBadges] = useState<BadgeResponseSchema[]>([]);
@@ -26,20 +30,29 @@ export default function EditEventPage() {
 				fetch(`${getApiUrl()}/categories`, { credentials: "include" }),
 				fetch(`${getApiUrl()}/badges`, { credentials: "include" }),
 			]);
+
+			if (!resLoc.ok || !resCat.ok || !resBad.ok) {
+				router.push("/");
+				return;
+			}
+
 			setLocations(await resLoc.json());
 			setCategories(await resCat.json());
 			setBadges(await resBad.json());
 			setLoading(false);
 		} catch (err) {
 			console.error("Error loading data", err);
+			router.push("/");
 		}
-	}, []);
+	}, [router]);
 
 	useEffect(() => {
-		loadData();
-	}, [loadData]);
+		if (isAuthenticated) {
+			loadData();
+		}
+	}, [isAuthenticated, loadData]);
 
-	if (loading) return <div>Loading...</div>;
+	if (!isAuthenticated || loading) return <div>Loading...</div>;
 
 	const initialData: Partial<CreateEventSchema> = {
 		startDate: new Date().toISOString(),
@@ -68,7 +81,7 @@ export default function EditEventPage() {
 			const createdEvent = await response.json();
 			setSavedData(createdEvent);
 
-			// TODO: redirect to events list page once it exists
+			router.push(`/events/${createdEvent.id}`);
 		} catch {
 			setErrorMessage("Unexpected error while creating event");
 		}

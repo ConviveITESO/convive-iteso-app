@@ -10,9 +10,11 @@ import type {
 } from "@repo/schemas";
 import { useCallback, useEffect, useState } from "react";
 import { getApiUrl } from "@/lib/api";
+import { useAuth } from "@/lib/use-auth";
 import EventForm from "../../_event-form";
 
 export default function EditEventPage() {
+	const { isAuthenticated } = useAuth();
 	const [locations, setLocations] = useState<LocationResponseSchema[]>([]);
 	const [categories, setCategories] = useState<CategoryResponseSchema[]>([]);
 	const [badges, setBadges] = useState<BadgeResponseSchema[]>([]);
@@ -33,6 +35,11 @@ export default function EditEventPage() {
 				fetch(`${getApiUrl()}/badges`, { credentials: "include" }),
 				fetch(`${getApiUrl()}/events/${eventId}`, { credentials: "include" }),
 			]);
+
+			if (!resLoc.ok || !resCat.ok || !resBad.ok || !resEvent.ok) {
+				return;
+			}
+
 			const event: EventResponseSchema = await resEvent.json();
 			setLocations(await resLoc.json());
 			setCategories(await resCat.json());
@@ -50,10 +57,12 @@ export default function EditEventPage() {
 	}, []);
 
 	useEffect(() => {
-		loadData();
-	}, [loadData]);
+		if (isAuthenticated) {
+			loadData();
+		}
+	}, [isAuthenticated, loadData]);
 
-	if (loading) return <div>Loading...</div>;
+	if (!isAuthenticated || loading) return <div>Loading...</div>;
 
 	const handleSave = async (data: CreateEventSchema) => {
 		setErrorMessage(null);

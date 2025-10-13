@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import AddUserDialog from "@/app/users/_add-user-dialog";
 import UserCard from "@/app/users/_user-card";
 import { getApiUrl } from "@/lib/api";
+import { useAuth } from "@/lib/use-auth";
 
 interface User {
 	id: string;
@@ -16,6 +17,7 @@ interface User {
 }
 
 export default function UsersPage() {
+	const { isAuthenticated } = useAuth();
 	const [users, setUsers] = useState<User[]>([]);
 	const [loading, setLoading] = useState(true);
 
@@ -39,8 +41,14 @@ export default function UsersPage() {
 	}, []);
 
 	useEffect(() => {
-		fetchUsers();
-	}, [fetchUsers]);
+		if (isAuthenticated) {
+			fetchUsers();
+		}
+	}, [isAuthenticated, fetchUsers]);
+
+	if (!isAuthenticated) {
+		return <div className="text-center p-10">Loading...</div>;
+	}
 
 	return (
 		<div className="flex flex-col h-screen">
