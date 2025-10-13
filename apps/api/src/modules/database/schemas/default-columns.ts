@@ -1,5 +1,5 @@
-import { pgEnum, timestamp } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm"; // 👈 importa sql
+import { pgEnum, timestamp } from "drizzle-orm/pg-core";
 
 export const registerStatus = pgEnum("status", ["active", "deleted"]);
 
