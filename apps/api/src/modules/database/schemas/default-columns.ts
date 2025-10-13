@@ -1,10 +1,14 @@
 import { pgEnum, timestamp } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm"; // 👈 importa sql
 
 export const registerStatus = pgEnum("status", ["active", "deleted"]);
 
 export const timestampColumns = {
 	createdAt: timestamp("created_at").defaultNow().notNull(),
-	updatedAt: timestamp("updated_at").defaultNow().notNull().onUpdateNow(),
+	updatedAt: timestamp("updated_at")
+		.defaultNow()
+		.notNull()
+		.$onUpdate(() => sql`now()`), // 👈 cambio aquí
 	deletedAt: timestamp("deleted_at"),
 };
 
