@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
-import { and, Column, eq, gt, inArray, lt } from "drizzle-orm";
+import { and, eq, gt, inArray, isNull, lt, or } from "drizzle-orm";
+import { DateTime } from "luxon";
 import { AppDatabase, DATABASE_CONNECTION } from "../database/connection";
 import { Event, events, reminders, subscriptions, User, users } from "../database/schemas";
 import { EmailService } from "../email/email.service";
@@ -11,23 +12,13 @@ export class EventReminderService {
 	private readonly remindersConfig: ReminderConfig[] = [
 		{
 			minutesBeforeEvent: {
-				start: 5,
-				end: 4,
-			},
-			emailSubject: () => "Reminder to attend to an event at ITESO",
-			emailBody: (event, user) =>
-				`Hi ${user.name}. Remember to attend to the event ${event.name} on ${event.startDate.toLocaleDateString("en-GB")}`,
-			tableColumn: reminders.firstReminderDone,
-		},
-		{
-			minutesBeforeEvent: {
-				start: 2,
+				start: 15,
 				end: 1,
 			},
 			emailSubject: () => "Reminder to attend to an event at ITESO",
 			emailBody: (event, user) =>
-				`Hi ${user.name}. Remember to attend to the event ${event.name} on ${event.startDate.toLocaleDateString("en-GB")}`,
-			tableColumn: reminders.secondReminderDone,
+				`Hi ${user.name}. Remember to attend to the event "${event.name}" on ${zoneDateToString(event.startDate, "America/Mexico_City")}`,
+			tableColumn: "firstReminderDone",
 		},
 	];
 
@@ -36,15 +27,15 @@ export class EventReminderService {
 		private readonly emailService: EmailService,
 	) {}
 
-	@Cron(CronExpression.EVERY_5_SECONDS)
+	@Cron(CronExpression.EVERY_30_SECONDS)
 	async handleEventReminders(): Promise<void> {
 		this.logger.log("Checking for upcoming events...");
 		await Promise.all(
 			this.remindersConfig.map(async (reminderConfig) => {
 				const remindersToDo = await this.getReminders(reminderConfig);
 				const remindersDone = await this.makeReminders(remindersToDo, reminderConfig);
+				await this.setRemindersDone(remindersDone, reminderConfig);
 				this.logger.log(`${remindersDone.length} reminders sent successfully`);
-				return this.setRemindersDone(remindersDone, reminderConfig);
 			}),
 		);
 	}
@@ -54,19 +45,21 @@ export class EventReminderService {
 		reminderConfig: ReminderConfig,
 	): Promise<string[]> {
 		const remindersDone: string[] = [];
-		remindersToDo.forEach(async (reminderToDo) => {
-			const email = reminderToDo.users.email;
-			const subject = reminderConfig.emailSubject(reminderToDo.events, reminderToDo.users);
-			const body = reminderConfig.emailBody(reminderToDo.events, reminderToDo.users);
-			try {
-				await this.emailService.sendEmail(email, subject, body);
-				if (!reminderToDo.reminders) {
-					const id = await this.createReminder(reminderToDo.events.id, reminderToDo.users.id);
-					reminderToDo.reminders = { id };
-				}
-				remindersDone.push(reminderToDo.reminders.id);
-			} catch {}
-		});
+		await Promise.all(
+			remindersToDo.map(async (reminderToDo) => {
+				const email = reminderToDo.users.email;
+				const subject = reminderConfig.emailSubject(reminderToDo.events, reminderToDo.users);
+				const body = reminderConfig.emailBody(reminderToDo.events, reminderToDo.users);
+				try {
+					await this.emailService.sendEmail(email, subject, body);
+					if (!reminderToDo.reminders) {
+						const id = await this.createReminder(reminderToDo.events.id, reminderToDo.users.id);
+						reminderToDo.reminders = { id };
+					}
+					remindersDone.push(reminderToDo.reminders.id);
+				} catch {}
+			}),
+		);
 		return remindersDone;
 	}
 
@@ -96,7 +89,10 @@ export class EventReminderService {
 				and(
 					eq(reminders.eventId, events.id),
 					eq(reminders.userId, users.id),
-					eq(reminderDoneColumn, false),
+					or(
+						eq(reminders[reminderDoneColumn], false),
+						and(isNull(reminders.eventId), isNull(reminders.userId)),
+					),
 				),
 			);
 		return result;
@@ -116,13 +112,13 @@ export class EventReminderService {
 		return result[0]!.id;
 	}
 
-	private setRemindersDone(ids: string[], reminderConfig: ReminderConfig): void | Promise<void> {
+	private async setRemindersDone(ids: string[], reminderConfig: ReminderConfig): Promise<void> {
 		if (ids.length === 0) return;
 		const reminderDoneColumn = reminderConfig.tableColumn;
-		this.db
+		await this.db
 			.update(reminders)
 			.set({
-				[reminderDoneColumn.name]: true,
+				[reminderDoneColumn]: true,
 			})
 			.where(inArray(reminders.id, ids));
 	}
@@ -139,11 +135,17 @@ interface ReminderConfig {
 	};
 	emailSubject: (event: Event, user: User) => string;
 	emailBody: (event: Event, user: User) => string;
-	tableColumn: Column;
+	tableColumn: string;
 }
 
 interface ReminderToDo {
 	events: Event;
 	users: User;
 	reminders: { id: string } | null;
+}
+
+function zoneDateToString(date: Date, zone: string) {
+	return DateTime.fromISO(date.toISOString(), { zone: "UTC" })
+		.setZone(zone)
+		.toFormat("MMMM dd, yyyy 'at' hh:mm a");
 }

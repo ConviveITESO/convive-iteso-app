@@ -79,7 +79,7 @@ export default function EditEventPage() {
 	};
 
 	const handleCancel = () => {
-		router.push("/manage-events");
+		router.back();
 	};
 
 	return (
