@@ -81,7 +81,7 @@ export default function EditEventPage() {
 			const createdEvent = await response.json();
 			setSavedData(createdEvent);
 
-			router.push(`/events/${createdEvent.id}`);
+			router.push(`/manage-events`);
 		} catch {
 			setErrorMessage("Unexpected error while creating event");
 		}

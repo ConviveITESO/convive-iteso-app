@@ -8,12 +8,14 @@ import type {
 	EventResponseSchema,
 	LocationResponseSchema,
 } from "@repo/schemas";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { getApiUrl } from "@/lib/api";
 import { useAuth } from "@/lib/use-auth";
 import EventForm from "../../_event-form";
 
 export default function EditEventPage() {
+	const router = useRouter();
 	const { isAuthenticated } = useAuth();
 	const [locations, setLocations] = useState<LocationResponseSchema[]>([]);
 	const [categories, setCategories] = useState<CategoryResponseSchema[]>([]);
@@ -22,8 +24,6 @@ export default function EditEventPage() {
 		{} as CreateEventSchema & EventResponseSchema,
 	);
 	const [loading, setLoading] = useState(true);
-	const [savedData, setSavedData] = useState<CreateEventSchema | null>(null);
-	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
 	const loadData = useCallback(async () => {
 		try {
@@ -65,8 +65,6 @@ export default function EditEventPage() {
 	if (!isAuthenticated || loading) return <div>Loading...</div>;
 
 	const handleSave = async (data: CreateEventSchema) => {
-		setErrorMessage(null);
-
 		try {
 			const response = await fetch(`${getApiUrl()}/events/${initialData.id}`, {
 				method: "PUT",
@@ -76,21 +74,18 @@ export default function EditEventPage() {
 			});
 
 			if (!response.ok) {
-				setErrorMessage("Failed to update event");
+				console.error("Failed to update event");
 				return;
 			}
 
-			const updatedEvent = await response.json();
-			setSavedData(updatedEvent);
-
-			// TODO: redirect to events list page once it exists
-		} catch {
-			setErrorMessage("Unexpected error while updating event");
+			router.push("/manage-events");
+		} catch (err) {
+			console.error("Unexpected error while updating event", err);
 		}
 	};
 
 	const handleCancel = () => {
-		// TODO: redirect to events list page once it exists
+		router.push("/manage-events");
 	};
 
 	return (
@@ -105,19 +100,6 @@ export default function EditEventPage() {
 				onSave={handleSave}
 				onCancel={handleCancel}
 			/>
-
-			{errorMessage && (
-				<div className="mt-4 p-3 bg-red-50 border border-red-200 text-red-700">{errorMessage}</div>
-			)}
-
-			{savedData && (
-				<div className="mt-6 p-4 bg-blue-50 border border-blue-200">
-					<h2 className="font-semibold">Updated Event</h2>
-					<pre>{JSON.stringify(savedData, null, 2)}</pre>
-				</div>
-			)}
 		</div>
-
-		//TODO: Remove errorMessage and savedData display once redirect is possible
 	);
 }
