@@ -1,5 +1,6 @@
 import { Calendar, Clock } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { formatDateLong, formatDateTimeShort, formatTimeRange, isSameDay } from "@/lib/date-utils";
 
 interface EventDetailsProps {
 	description: string;
@@ -8,45 +9,6 @@ interface EventDetailsProps {
 }
 
 export function EventDetails({ description, startDate, endDate }: EventDetailsProps) {
-	const formatDate = (date: Date) => {
-		return date.toLocaleDateString("en-US", {
-			weekday: "long",
-			year: "numeric",
-			month: "long",
-			day: "numeric",
-		});
-	};
-
-	const formatTime = (start: Date, end: Date) => {
-		const startTime = start.toLocaleTimeString("en-US", {
-			hour: "2-digit",
-			minute: "2-digit",
-		});
-		const endTime = end.toLocaleTimeString("en-US", {
-			hour: "2-digit",
-			minute: "2-digit",
-		});
-		return `${startTime} - ${endTime}`;
-	};
-
-	const formatDateTime = (date: Date) => {
-		return date.toLocaleString("en-US", {
-			weekday: "short",
-			month: "short",
-			day: "numeric",
-			hour: "2-digit",
-			minute: "2-digit",
-		});
-	};
-
-	const isSameDay = (date1: Date, date2: Date) => {
-		return (
-			date1.getFullYear() === date2.getFullYear() &&
-			date1.getMonth() === date2.getMonth() &&
-			date1.getDate() === date2.getDate()
-		);
-	};
-
 	const isMultiDay = !isSameDay(startDate, endDate);
 
 	return (
@@ -63,11 +25,11 @@ export function EventDetails({ description, startDate, endDate }: EventDetailsPr
 						<p className="text-base font-medium text-foreground">{isMultiDay ? "Dates" : "Date"}</p>
 						{isMultiDay ? (
 							<>
-								<p className="text-base text-foreground/70">{formatDate(startDate)}</p>
-								<p className="text-base text-foreground/70">to {formatDate(endDate)}</p>
+								<p className="text-base text-foreground/70">{formatDateLong(startDate)}</p>
+								<p className="text-base text-foreground/70">to {formatDateLong(endDate)}</p>
 							</>
 						) : (
-							<p className="text-base text-foreground/70">{formatDate(startDate)}</p>
+							<p className="text-base text-foreground/70">{formatDateLong(startDate)}</p>
 						)}
 					</div>
 				</div>
@@ -78,11 +40,11 @@ export function EventDetails({ description, startDate, endDate }: EventDetailsPr
 						<p className="text-base font-medium text-foreground">Time</p>
 						{isMultiDay ? (
 							<>
-								<p className="text-base text-foreground/70">{formatDateTime(startDate)}</p>
-								<p className="text-base text-foreground/70">to {formatDateTime(endDate)}</p>
+								<p className="text-base text-foreground/70">{formatDateTimeShort(startDate)}</p>
+								<p className="text-base text-foreground/70">to {formatDateTimeShort(endDate)}</p>
 							</>
 						) : (
-							<p className="text-base text-foreground/70">{formatTime(startDate, endDate)}</p>
+							<p className="text-base text-foreground/70">{formatTimeRange(startDate, endDate)}</p>
 						)}
 					</div>
 				</div>

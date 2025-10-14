@@ -18,6 +18,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { combineDateTime, formatLocalDate, formatLocalTime } from "@/lib/date-utils";
 
 interface EventFormData {
 	name: string;
@@ -60,10 +61,10 @@ const EventForm = ({
 			return {
 				name: initialData.name || "",
 				description: initialData.description || "",
-				startDate: startDateTime?.toISOString().split("T")[0] ?? "",
-				startTime: startDateTime?.toISOString().split("T")[1]?.substring(0, 5) ?? "",
-				endDate: endDateTime?.toISOString().split("T")[0] ?? "",
-				endTime: endDateTime?.toISOString().split("T")[1]?.substring(0, 5) ?? "",
+				startDate: formatLocalDate(startDateTime),
+				startTime: formatLocalTime(startDateTime),
+				endDate: formatLocalDate(endDateTime),
+				endTime: formatLocalTime(endDateTime),
 				locationId: initialData.locationId || "",
 				categoryIds: initialData.categoryIds || [],
 				badgeIds: initialData.badgeIds || [],
@@ -122,11 +123,6 @@ const EventForm = ({
 
 	const handleSaveBadges = () => {
 		setShowBadgesModal(false);
-	};
-
-	const combineDateTime = (date: string, time: string): string => {
-		if (!date || !time) return "";
-		return `${date}T${time}:00Z`;
 	};
 
 	const validateForm = (): boolean => {
