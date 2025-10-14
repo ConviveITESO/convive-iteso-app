@@ -2,16 +2,18 @@
 
 import type { CategoryResponseArraySchema, EventResponseArraySchema } from "@repo/schemas";
 import { useQuery } from "@tanstack/react-query";
-import { Calendar, MapPin, Search, Users } from "lucide-react";
+import { Image, MapPin, Search } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { getApiUrl } from "@/lib/api";
 import { useAuth } from "@/lib/use-auth";
 
 export default function FeedPage() {
 	const { isAuthenticated } = useAuth();
+	const router = useRouter();
 	const [searchQuery, setSearchQuery] = useState("");
 	const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
@@ -25,11 +27,7 @@ export default function FeedPage() {
 				.then((res) => res.json())
 				.then((data) => {
 					// Deduplicate events by ID
-					const uniqueEvents = Array.from(
-						new Map((data as EventResponseArraySchema).map((event) => [event.id, event])).values(),
-					) as EventResponseArraySchema;
-					console.log(uniqueEvents);
-					return uniqueEvents;
+					return data as EventResponseArraySchema;
 				}),
 		enabled: isAuthenticated,
 	});
@@ -40,12 +38,7 @@ export default function FeedPage() {
 			fetch(`${getApiUrl()}/categories`, {
 				method: "GET",
 				credentials: "include",
-			})
-				.then((res) => res.json() as Promise<CategoryResponseArraySchema>)
-				.then((data) => {
-					console.log(data);
-					return data;
-				}),
+			}).then((res) => res.json() as Promise<CategoryResponseArraySchema>),
 		enabled: isAuthenticated,
 	});
 
@@ -128,43 +121,38 @@ export default function FeedPage() {
 						</div>
 					) : (
 						filteredEvents.map((event) => (
-							<Card key={event.id} className="transition-shadow hover:shadow-lg">
-								<CardHeader>
-									<CardTitle className="line-clamp-2">{event.name}</CardTitle>
-									<CardDescription className="line-clamp-3">{event.description}</CardDescription>
-								</CardHeader>
-								<CardContent className="space-y-3">
-									<div className="flex items-center gap-2 text-sm text-muted-foreground">
-										<Calendar className="size-4" />
-										<span>{formatDate(event.startDate)}</span>
+							<Card
+								key={event.id}
+								className="cursor-pointer overflow-hidden p-2 transition-shadow hover:shadow-lg"
+								onClick={() => router.push(`/events/${event.id}`)}
+							>
+								<div className="flex items-center gap-4">
+									{/* Image placeholder */}
+									<div className="flex size-[92px] shrink-0 items-center justify-center rounded-xl bg-muted shadow-sm">
+										<Image className="size-6 text-muted-foreground" />
 									</div>
-									<div className="flex items-center gap-2 text-sm text-muted-foreground">
-										<MapPin className="size-4" />
-										<span>{event.location.name}</span>
-									</div>
-									<div className="flex items-center gap-2 text-sm text-muted-foreground">
-										<Users className="size-4" />
-										<span>{event.quota} spots</span>
-									</div>
-									{event.categories.length > 0 && (
-										<div className="flex flex-wrap gap-1 pt-2">
-											{event.categories.map((category) => (
-												<Badge key={category.id} variant="secondary" className="text-xs">
-													{category.name}
-												</Badge>
-											))}
+
+									{/* Event details */}
+									<div className="flex min-w-0 flex-1 flex-col justify-center gap-1">
+										{/* Date and time */}
+										<p className="text-[13px] text-muted-foreground">
+											{formatDate(event.startDate)}
+										</p>
+
+										{/* Event title */}
+										<h3 className="line-clamp-2 text-[15px] font-medium leading-tight text-foreground">
+											{event.name}
+										</h3>
+
+										{/* Location */}
+										<div className="flex items-center gap-1.5">
+											<MapPin className="size-3.5 text-muted-foreground" />
+											<span className="text-[13px] text-muted-foreground">
+												{event.location.name}
+											</span>
 										</div>
-									)}
-									{event.badges.length > 0 && (
-										<div className="flex flex-wrap gap-1">
-											{event.badges.map((badge) => (
-												<Badge key={badge.id} variant="outline" className="text-xs">
-													{badge.name}
-												</Badge>
-											))}
-										</div>
-									)}
-								</CardContent>
+									</div>
+								</div>
 							</Card>
 						))
 					)}
