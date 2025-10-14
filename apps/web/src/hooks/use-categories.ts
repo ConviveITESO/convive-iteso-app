@@ -13,11 +13,22 @@ import { getApiUrl } from "@/lib/api";
 export function useCategories(enabled = true) {
 	return useQuery({
 		queryKey: ["categories"],
-		queryFn: () =>
-			fetch(`${getApiUrl()}/categories`, {
+		queryFn: async () => {
+			const res = await fetch(`${getApiUrl()}/categories`, {
 				method: "GET",
 				credentials: "include",
-			}).then((res) => res.json() as Promise<CategoryResponseArraySchema>),
+			});
+
+			if (!res.ok) {
+				if (res.status === 401) {
+					window.location.href = "/";
+					throw new Error("Unauthorized");
+				}
+				throw new Error(`Failed to fetch categories: ${res.status}`);
+			}
+
+			return res.json() as Promise<CategoryResponseArraySchema>;
+		},
 		enabled,
 	});
 }

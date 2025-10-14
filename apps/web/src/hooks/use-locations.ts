@@ -13,11 +13,22 @@ import { getApiUrl } from "@/lib/api";
 export function useLocations(enabled = true) {
 	return useQuery({
 		queryKey: ["locations"],
-		queryFn: () =>
-			fetch(`${getApiUrl()}/locations`, {
+		queryFn: async () => {
+			const res = await fetch(`${getApiUrl()}/locations`, {
 				method: "GET",
 				credentials: "include",
-			}).then((res) => res.json() as Promise<LocationResponseArraySchema>),
+			});
+
+			if (!res.ok) {
+				if (res.status === 401) {
+					window.location.href = "/";
+					throw new Error("Unauthorized");
+				}
+				throw new Error(`Failed to fetch locations: ${res.status}`);
+			}
+
+			return res.json() as Promise<LocationResponseArraySchema>;
+		},
 		enabled,
 	});
 }

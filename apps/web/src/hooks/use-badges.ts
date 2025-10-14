@@ -13,11 +13,22 @@ import { getApiUrl } from "@/lib/api";
 export function useBadges(enabled = true) {
 	return useQuery({
 		queryKey: ["badges"],
-		queryFn: () =>
-			fetch(`${getApiUrl()}/badges`, {
+		queryFn: async () => {
+			const res = await fetch(`${getApiUrl()}/badges`, {
 				method: "GET",
 				credentials: "include",
-			}).then((res) => res.json() as Promise<BadgeResponseArraySchema>),
+			});
+
+			if (!res.ok) {
+				if (res.status === 401) {
+					window.location.href = "/";
+					throw new Error("Unauthorized");
+				}
+				throw new Error(`Failed to fetch badges: ${res.status}`);
+			}
+
+			return res.json() as Promise<BadgeResponseArraySchema>;
+		},
 		enabled,
 	});
 }

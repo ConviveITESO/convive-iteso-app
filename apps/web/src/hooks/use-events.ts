@@ -13,13 +13,22 @@ import { getApiUrl } from "@/lib/api";
 export function useEvents(enabled = true) {
 	return useQuery({
 		queryKey: ["events"],
-		queryFn: () =>
-			fetch(`${getApiUrl()}/events`, {
+		queryFn: async () => {
+			const res = await fetch(`${getApiUrl()}/events`, {
 				method: "GET",
 				credentials: "include",
-			})
-				.then((res) => res.json())
-				.then((data) => data as EventResponseArraySchema),
+			});
+
+			if (!res.ok) {
+				if (res.status === 401) {
+					window.location.href = "/";
+					throw new Error("Unauthorized");
+				}
+				throw new Error(`Failed to fetch events: ${res.status}`);
+			}
+
+			return res.json() as Promise<EventResponseArraySchema>;
+		},
 		enabled,
 	});
 }
