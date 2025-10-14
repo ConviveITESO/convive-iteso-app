@@ -94,7 +94,7 @@ describe("UserService", () => {
 			};
 			mockDb.query.users.findFirst.mockResolvedValueOnce(user);
 
-			const result = await service.getUserById("1");
+			const result = await service.getUserById({ id: "1" });
 			expect(result).toEqual(user);
 			expect(mockDb.query.users.findFirst).toHaveBeenCalledWith({
 				where: expect.anything(),
@@ -146,7 +146,7 @@ describe("UserService", () => {
 			};
 			mockDb.returning.mockResolvedValueOnce([updated]);
 
-			const result = await service.updateUser("1", { name: "Charlie" });
+			const result = await service.updateUser({ id: "1" }, { name: "Charlie" });
 			expect(result).toEqual(updated);
 			expect(mockDb.update).toHaveBeenCalledWith(expect.anything());
 			expect(mockDb.set).toHaveBeenCalledWith({ name: "Charlie" });
@@ -169,7 +169,7 @@ describe("UserService", () => {
 			};
 			jest.spyOn(service, "getUserById").mockResolvedValueOnce(user);
 
-			const result = await service.deleteUser("1");
+			const result = await service.deleteUser({ id: "1" });
 			expect(result).toEqual(user);
 			expect(mockDb.update).toHaveBeenCalledWith(expect.anything());
 			expect(mockDb.set).toHaveBeenCalledWith({
@@ -182,7 +182,7 @@ describe("UserService", () => {
 		it("should return undefined if user does not exist", async () => {
 			jest.spyOn(service, "getUserById").mockResolvedValueOnce(undefined);
 
-			const result = await service.deleteUser("nonexistent");
+			const result = await service.deleteUser({ id: "nonexistent" });
 			expect(result).toBeUndefined();
 			expect(mockDb.update).not.toHaveBeenCalled();
 		});
