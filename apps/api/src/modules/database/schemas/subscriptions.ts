@@ -7,6 +7,7 @@ export const subscriptionStatus = pgEnum("subscription_status", [
 	"registered",
 	"waitlisted",
 	"cancelled",
+	"attended",
 ]);
 
 export const subscriptions = pgTable(

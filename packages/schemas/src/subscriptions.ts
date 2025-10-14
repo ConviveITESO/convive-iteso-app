@@ -19,7 +19,7 @@ export const subscriptionIdParamSchema = z
 
 export const subscriptionQuerySchema = z
 	.object({
-		status: z.enum(["registered", "waitlisted", "cancelled"]).optional().openapi({
+		status: z.enum(["registered", "waitlisted", "cancelled", "attended"]).optional().openapi({
 			description: "Filter by subscription status",
 		}),
 		eventId: z.uuid().optional().openapi({
@@ -46,9 +46,12 @@ export const createSubscriptionSchema = z
 
 export const updateSubscriptionSchema = z
 	.object({
-		status: z.enum(["registered", "waitlisted", "cancelled"]).optional().openapi({
-			description: "Update subscription status",
-		}),
+		status: z
+			.enum(["registered", "waitlisted", "cancelled", "attended", "attended"])
+			.optional()
+			.openapi({
+				description: "Update subscription status",
+			}),
 	})
 	.refine((data) => Object.keys(data).length > 0, {
 		message: "At least one field must be provided for update",
@@ -68,7 +71,7 @@ export const subscriptionResponseSchema = z
 		id: z.uuid(),
 		userId: z.uuid(),
 		eventId: z.uuid(),
-		status: z.enum(["registered", "waitlisted", "cancelled"]),
+		status: z.enum(["registered", "waitlisted", "cancelled", "attended"]),
 		position: z.number().nullable(),
 	})
 	.openapi("SubscriptionResponseSchema", {
