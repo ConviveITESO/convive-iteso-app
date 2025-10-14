@@ -26,6 +26,7 @@ export default function EditEventPage() {
 	const { data: badges = [], isLoading: badgesLoading } = useBadges(isAuthenticated);
 
 	useEffect(() => {
+		setEventLoading(true);
 		if (!isAuthenticated) return;
 
 		const loadEvent = async () => {

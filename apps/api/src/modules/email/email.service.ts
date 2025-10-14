@@ -10,7 +10,7 @@ export class EmailService {
 	private readonly transporter: Nodemailer.Transporter;
 	private readonly sender: NodemailerSender;
 
-	constructor(private readonly configService: ConfigService<ConfigSchema>) {
+	constructor(readonly configService: ConfigService<ConfigSchema>) {
 		this.sender = {
 			name: configService.getOrThrow("SMTP_NAME"),
 			address: configService.getOrThrow("SMTP_ADDRESS"),
