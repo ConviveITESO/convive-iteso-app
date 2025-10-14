@@ -1,14 +1,12 @@
 /** biome-ignore-all lint/style/noNonNullAssertion: temp mocks */
 "use client";
 
-import type {
-	BadgeResponseSchema,
-	CategoryResponseSchema,
-	CreateEventSchema,
-	LocationResponseSchema,
-} from "@repo/schemas";
+import type { CreateEventSchema } from "@repo/schemas";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
+import { useBadges } from "@/hooks/use-badges";
+import { useCategories } from "@/hooks/use-categories";
+import { useLocations } from "@/hooks/use-locations";
 import { getApiUrl } from "@/lib/api";
 import { useAuth } from "@/lib/use-auth";
 import EventForm from "../_event-form";
@@ -16,41 +14,14 @@ import EventForm from "../_event-form";
 export default function EditEventPage() {
 	const { isAuthenticated } = useAuth();
 	const router = useRouter();
-	const [locations, setLocations] = useState<LocationResponseSchema[]>([]);
-	const [categories, setCategories] = useState<CategoryResponseSchema[]>([]);
-	const [badges, setBadges] = useState<BadgeResponseSchema[]>([]);
-	const [loading, setLoading] = useState(true);
 	const [savedData, setSavedData] = useState<CreateEventSchema | null>(null);
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-	const loadData = useCallback(async () => {
-		try {
-			const [resLoc, resCat, resBad] = await Promise.all([
-				fetch(`${getApiUrl()}/locations`, { credentials: "include" }),
-				fetch(`${getApiUrl()}/categories`, { credentials: "include" }),
-				fetch(`${getApiUrl()}/badges`, { credentials: "include" }),
-			]);
+	const { data: locations = [], isLoading: locationsLoading } = useLocations(isAuthenticated);
+	const { data: categories = [], isLoading: categoriesLoading } = useCategories(isAuthenticated);
+	const { data: badges = [], isLoading: badgesLoading } = useBadges(isAuthenticated);
 
-			if (!resLoc.ok || !resCat.ok || !resBad.ok) {
-				router.push("/");
-				return;
-			}
-
-			setLocations(await resLoc.json());
-			setCategories(await resCat.json());
-			setBadges(await resBad.json());
-			setLoading(false);
-		} catch (err) {
-			console.error("Error loading data", err);
-			router.push("/");
-		}
-	}, [router]);
-
-	useEffect(() => {
-		if (isAuthenticated) {
-			loadData();
-		}
-	}, [isAuthenticated, loadData]);
+	const loading = locationsLoading || categoriesLoading || badgesLoading;
 
 	if (!isAuthenticated || loading) return <div>Loading...</div>;
 

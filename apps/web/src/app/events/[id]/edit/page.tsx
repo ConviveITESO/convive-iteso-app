@@ -1,66 +1,60 @@
 /** biome-ignore-all lint/style/noNonNullAssertion: temp mocks */
 "use client";
 
-import type {
-	BadgeResponseSchema,
-	CategoryResponseSchema,
-	CreateEventSchema,
-	EventResponseSchema,
-	LocationResponseSchema,
-} from "@repo/schemas";
-import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import type { CreateEventSchema, EventResponseSchema } from "@repo/schemas";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useBadges } from "@/hooks/use-badges";
+import { useCategories } from "@/hooks/use-categories";
+import { useLocations } from "@/hooks/use-locations";
 import { getApiUrl } from "@/lib/api";
 import { useAuth } from "@/lib/use-auth";
 import EventForm from "../../_event-form";
 
 export default function EditEventPage() {
+	const params = useParams();
 	const router = useRouter();
 	const { isAuthenticated } = useAuth();
-	const [locations, setLocations] = useState<LocationResponseSchema[]>([]);
-	const [categories, setCategories] = useState<CategoryResponseSchema[]>([]);
-	const [badges, setBadges] = useState<BadgeResponseSchema[]>([]);
+	const eventId = params.id as string;
 	const [initialData, setInitialData] = useState<CreateEventSchema & EventResponseSchema>(
 		{} as CreateEventSchema & EventResponseSchema,
 	);
-	const [loading, setLoading] = useState(true);
+	const [eventLoading, setEventLoading] = useState(true);
 
-	const loadData = useCallback(async () => {
-		try {
-			const url = window.location.href.split("/")!;
-			const eventId = url[url.length - 2];
-			const [resLoc, resCat, resBad, resEvent] = await Promise.all([
-				fetch(`${getApiUrl()}/locations`, { credentials: "include" }),
-				fetch(`${getApiUrl()}/categories`, { credentials: "include" }),
-				fetch(`${getApiUrl()}/badges`, { credentials: "include" }),
-				fetch(`${getApiUrl()}/events/${eventId}`, { credentials: "include" }),
-			]);
-
-			if (!resLoc.ok || !resCat.ok || !resBad.ok || !resEvent.ok) {
-				return;
-			}
-
-			const event: EventResponseSchema = await resEvent.json();
-			setLocations(await resLoc.json());
-			setCategories(await resCat.json());
-			setBadges(await resBad.json());
-			setInitialData({
-				...event,
-				locationId: event.location.id,
-				categoryIds: event.categories.map((category) => category.id),
-				badgeIds: event.badges.map((badge) => badge.id),
-			});
-			setLoading(false);
-		} catch (err) {
-			console.error("Error loading data", err);
-		}
-	}, []);
+	const { data: locations = [], isLoading: locationsLoading } = useLocations(isAuthenticated);
+	const { data: categories = [], isLoading: categoriesLoading } = useCategories(isAuthenticated);
+	const { data: badges = [], isLoading: badgesLoading } = useBadges(isAuthenticated);
 
 	useEffect(() => {
-		if (isAuthenticated) {
-			loadData();
-		}
-	}, [isAuthenticated, loadData]);
+		if (!isAuthenticated) return;
+
+		const loadEvent = async () => {
+			try {
+				const resEvent = await fetch(`${getApiUrl()}/events/${eventId}`, {
+					credentials: "include",
+				});
+
+				if (!resEvent.ok) {
+					return;
+				}
+
+				const event: EventResponseSchema = await resEvent.json();
+				setInitialData({
+					...event,
+					locationId: event.location.id,
+					categoryIds: event.categories.map((category) => category.id),
+					badgeIds: event.badges.map((badge) => badge.id),
+				});
+				setEventLoading(false);
+			} catch (err) {
+				console.error("Error loading data", err);
+			}
+		};
+
+		loadEvent();
+	}, [isAuthenticated, eventId]);
+
+	const loading = locationsLoading || categoriesLoading || badgesLoading || eventLoading;
 
 	if (!isAuthenticated || loading) return <div>Loading...</div>;
 
