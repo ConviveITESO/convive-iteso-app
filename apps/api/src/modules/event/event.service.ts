@@ -1,5 +1,10 @@
 import { ForbiddenException, Inject, Injectable, NotFoundException } from "@nestjs/common";
-import { CreateEventSchema, EventResponseSchema, UpdateEventSchema } from "@repo/schemas";
+import {
+	CreateEventSchema,
+	EventResponseSchema,
+	GetEventsQuerySchema,
+	UpdateEventSchema,
+} from "@repo/schemas";
 import { and, eq, sql } from "drizzle-orm";
 import { BadgeService } from "../badge/badge.service";
 import { CategoryService } from "../category/category.service";
@@ -34,6 +39,75 @@ export class EventService {
 		private readonly categoryService: CategoryService,
 		private readonly badgeService: BadgeService,
 	) {}
+
+	async getEvents(filters: GetEventsQuerySchema): Promise<EventResponseSchema[]> {
+		const where = [eq(events.status, "active")];
+		if (filters.name) {
+			where.push(eq(events.name, filters.name));
+		}
+		if (filters.locationId) {
+			where.push(eq(events.locationId, filters.locationId));
+		}
+		if (filters.categoryId) {
+			where.push(eq(eventsCategories.categoryId, filters.categoryId));
+		}
+		if (filters.badgeId) {
+			where.push(eq(eventsBadges.badgeId, filters.badgeId));
+		}
+		const results = await this.db
+			.select({
+				event: events,
+				creator: users,
+				group: groups,
+				location: locations,
+				categories: sql<Category[]>`COALESCE(
+					json_agg(
+						distinct jsonb_build_object(
+							'id', ${categories.id},
+							'name', ${categories.name}
+						)
+					) filter (where ${categories.id} is not null),
+					'[]'::json
+				)`,
+				badges: sql<Badge[]>`COALESCE(
+					json_agg(
+						distinct jsonb_build_object(
+							'id', ${badges.id},
+							'name', ${badges.name},
+							'description', ${badges.description}
+						)
+					) filter (where ${badges.id} is not null),
+					'[]'::json
+				)`,
+			})
+			.from(events)
+			.where(and(...where))
+			.innerJoin(users, and(eq(users.id, events.createdBy), eq(users.status, "active")))
+			.innerJoin(groups, and(eq(groups.id, events.groupId), eq(groups.status, "active")))
+			.innerJoin(
+				locations,
+				and(eq(locations.id, events.locationId), eq(locations.status, "active")),
+			)
+			.leftJoin(eventsCategories, eq(eventsCategories.eventId, events.id))
+			.leftJoin(
+				categories,
+				and(eq(eventsCategories.categoryId, categories.id), eq(categories.status, "active")),
+			)
+			.leftJoin(eventsBadges, eq(eventsBadges.eventId, events.id))
+			.leftJoin(badges, and(eq(eventsBadges.badgeId, badges.id), eq(badges.status, "active")))
+			.groupBy(events.id, users.id, groups.id, locations.id);
+
+		return results.map((result) =>
+			this.formatEvent(
+				result.event,
+				result.creator,
+				result.group,
+				result.location,
+				result.categories,
+				result.badges,
+			),
+		);
+	}
 
 	async getEventById(id: string): Promise<EventResponseSchema | undefined> {
 		const [event] = await this.db
