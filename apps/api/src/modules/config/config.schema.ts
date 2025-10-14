@@ -17,6 +17,11 @@ export const configSchema = z.object({
 	EMAIL_ADDRESS: z.string(),
 	EMAIL_USER: z.string().optional(),
 	EMAIL_PASSWORD: z.string().optional(),
+	SMTP_NAME: z.string(),
+	SMTP_ADDRESS: z.email(),
+	LOCAL_SMTP_HOST: z.string(),
+	LOCAL_SMTP_PORT: z.coerce.number().int(),
+	MAILTRAP_API_KEY: z.string(),
 });
 
 export type ConfigSchema = z.infer<typeof configSchema>;

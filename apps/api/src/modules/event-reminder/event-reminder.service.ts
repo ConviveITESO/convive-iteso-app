@@ -10,16 +10,8 @@ import { EmailService } from "../email/email.service";
 export class EventReminderService {
 	private readonly logger = new Logger(EventReminderService.name);
 	private readonly remindersConfig: ReminderConfig[] = [
-		{
-			minutesBeforeEvent: {
-				start: 15,
-				end: 1,
-			},
-			emailSubject: () => "Reminder to attend to an event at ITESO",
-			emailBody: (event, user) =>
-				`Hi ${user.name}. Remember to attend to the event "${event.name}" on ${zoneDateToString(event.startDate, "America/Mexico_City")}`,
-			tableColumn: "firstReminderDone",
-		},
+		basicReminderConfig(15, 11, "firstReminderDone"),
+		basicReminderConfig(10, 6, "secondReminderDone"),
 	];
 
 	constructor(
@@ -30,14 +22,18 @@ export class EventReminderService {
 	@Cron(CronExpression.EVERY_30_SECONDS)
 	async handleEventReminders(): Promise<void> {
 		this.logger.log("Checking for upcoming events...");
-		await Promise.all(
-			this.remindersConfig.map(async (reminderConfig) => {
+		for (const reminderConfig of this.remindersConfig) {
+			try {
 				const remindersToDo = await this.getReminders(reminderConfig);
 				const remindersDone = await this.makeReminders(remindersToDo, reminderConfig);
 				await this.setRemindersDone(remindersDone, reminderConfig);
-				this.logger.log(`${remindersDone.length} reminders sent successfully`);
-			}),
-		);
+				this.logger.log(
+					`${remindersDone.length} reminders sent successfully for ${reminderConfig.tableColumn}`,
+				);
+			} catch (error) {
+				this.logger.error(`Error for ${reminderConfig.tableColumn}: ${error}`);
+			}
+		}
 	}
 
 	private async makeReminders(
@@ -50,14 +46,12 @@ export class EventReminderService {
 				const email = reminderToDo.users.email;
 				const subject = reminderConfig.emailSubject(reminderToDo.events, reminderToDo.users);
 				const body = reminderConfig.emailBody(reminderToDo.events, reminderToDo.users);
-				try {
-					await this.emailService.sendEmail(email, subject, body);
-					if (!reminderToDo.reminders) {
-						const id = await this.createReminder(reminderToDo.events.id, reminderToDo.users.id);
-						reminderToDo.reminders = { id };
-					}
-					remindersDone.push(reminderToDo.reminders.id);
-				} catch {}
+				await this.emailService.sendEmail([email], subject, body);
+				if (!reminderToDo.reminders) {
+					const id = await this.createReminder(reminderToDo.events.id, reminderToDo.users.id);
+					reminderToDo.reminders = { id };
+				}
+				remindersDone.push(reminderToDo.reminders.id);
 			}),
 		);
 		return remindersDone;
@@ -71,28 +65,23 @@ export class EventReminderService {
 		const result = await this.db
 			.select()
 			.from(events)
-			.where(
+			.innerJoin(
+				subscriptions,
 				and(
 					// startDate - minutesBeforeEvent.start < now < startDate - minutesBeforeEvent.end
 					eq(events.status, "active"),
 					lt(events.startDate, new Date(now + left)),
 					gt(events.startDate, new Date(now + right)),
+					eq(subscriptions.status, "registered"),
+					eq(subscriptions.eventId, events.id),
 				),
 			)
-			.innerJoin(
-				subscriptions,
-				and(eq(subscriptions.status, "registered"), eq(subscriptions.eventId, events.id)),
-			)
 			.innerJoin(users, and(eq(users.status, "active"), eq(users.id, subscriptions.userId)))
-			.leftJoin(
-				reminders,
-				and(
-					eq(reminders.eventId, events.id),
-					eq(reminders.userId, users.id),
-					or(
-						eq(reminders[reminderDoneColumn], false),
-						and(isNull(reminders.eventId), isNull(reminders.userId)),
-					),
+			.leftJoin(reminders, and(eq(reminders.eventId, events.id), eq(reminders.userId, users.id)))
+			.where(
+				or(
+					eq(reminders[reminderDoneColumn], false),
+					and(isNull(reminders.eventId), isNull(reminders.userId)),
 				),
 			);
 		return result;
@@ -148,4 +137,23 @@ function zoneDateToString(date: Date, zone: string) {
 	return DateTime.fromISO(date.toISOString(), { zone: "UTC" })
 		.setZone(zone)
 		.toFormat("MMMM dd, yyyy 'at' hh:mm a");
+}
+
+function basicReminderConfig(start: number, end: number, tableColumn: string): ReminderConfig {
+	return {
+		minutesBeforeEvent: {
+			start,
+			end,
+		},
+		emailSubject: () => "Reminder to attend to event at ITESO",
+		emailBody: (event, user) =>
+			`<div>
+				<p>Hi ${user.name}:</p>
+				<p>Remember to attend to the event
+					<strong>${event.name}</strong> on
+					<strong>${zoneDateToString(event.startDate, "America/Mexico_City")}</strong>
+				</p>
+			</div>`,
+		tableColumn,
+	};
 }
