@@ -45,9 +45,9 @@ describe("UserController", () => {
 			const user = { id: "1", name: "Alice" };
 			mockUserService.getUserById.mockResolvedValueOnce(user);
 
-			const response = await controller.getUserById("1");
+			const response = await controller.getUserById({ id: "1" });
 
-			expect(mockUserService.getUserById).toHaveBeenCalledWith("1");
+			expect(mockUserService.getUserById).toHaveBeenCalledWith({ id: "1" });
 			expect(response).toEqual(user);
 		});
 	});
@@ -71,9 +71,9 @@ describe("UserController", () => {
 			const updatedUser = { id: "1", ...data };
 			mockUserService.updateUser.mockResolvedValueOnce(updatedUser);
 
-			const response = await controller.updateFullUser(data, "1");
+			const response = await controller.updateFullUser(data, { id: "1" });
 
-			expect(mockUserService.updateUser).toHaveBeenCalledWith("1", data);
+			expect(mockUserService.updateUser).toHaveBeenCalledWith({ id: "1" }, data);
 			expect(response).toEqual(updatedUser);
 		});
 	});
@@ -89,9 +89,9 @@ describe("UserController", () => {
 			};
 			mockUserService.updateUser.mockResolvedValueOnce(updatedUser);
 
-			const response = await controller.updateUser(data, "1");
+			const response = await controller.updateUser(data, { id: "1" });
 
-			expect(mockUserService.updateUser).toHaveBeenCalledWith("1", data);
+			expect(mockUserService.updateUser).toHaveBeenCalledWith({ id: "1" }, data);
 			expect(response).toEqual(updatedUser);
 		});
 	});
@@ -101,9 +101,9 @@ describe("UserController", () => {
 			const user = { id: "1", name: "Eve", status: "active" as const };
 			mockUserService.deleteUser.mockResolvedValueOnce(user);
 
-			const response = await controller.deleteUser("1");
+			const response = await controller.deleteUser({ id: "1" });
 
-			expect(mockUserService.deleteUser).toHaveBeenCalledWith("1");
+			expect(mockUserService.deleteUser).toHaveBeenCalledWith({ id: "1" });
 			expect(response).toEqual(user);
 		});
 	});
