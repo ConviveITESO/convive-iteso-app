@@ -6,7 +6,7 @@ import { EventResponseSchema } from "@repo/schemas";
 import { BadgeService } from "../badge/badge.service";
 import { CategoryService } from "../category/category.service";
 import { DATABASE_CONNECTION } from "../database/connection";
-import { Badge, Category, Event, Group, Location, User } from "../database/schemas";
+import { Event, Group, Location, User } from "../database/schemas";
 import { GroupService } from "../group/group.service";
 import { LocationService } from "../location/location.service";
 import { UserService } from "../user/user.service";
@@ -274,8 +274,48 @@ describe("EventService", () => {
 			const mockUser = { id: "userId" } as User;
 			const mockGroup = { id: "groupId" } as Group;
 			const mockLocation = { id: "locationId" } as Location;
-			const mockCategories = [{ id: "categoryId1" }, { id: "categoryId2" }] as Category[];
-			const mockBadges = [{ id: "badgeId1" }, { id: "badgeId2" }] as Badge[];
+			const mockCategories = [
+				{
+					id: "categoryId1",
+					name: "Category 1",
+					createdBy: "userId",
+					status: "active" as const,
+					createdAt: new Date().toISOString(),
+					updatedAt: new Date().toISOString(),
+					deletedAt: null,
+				},
+				{
+					id: "categoryId2",
+					name: "Category 2",
+					createdBy: "userId",
+					status: "active" as const,
+					createdAt: new Date().toISOString(),
+					updatedAt: new Date().toISOString(),
+					deletedAt: null,
+				},
+			];
+			const mockBadges = [
+				{
+					id: "badgeId1",
+					name: "Badge 1",
+					description: "Badge 1 description",
+					createdBy: "userId",
+					status: "active" as const,
+					createdAt: new Date().toISOString(),
+					updatedAt: new Date().toISOString(),
+					deletedAt: null,
+				},
+				{
+					id: "badgeId2",
+					name: "Badge 2",
+					description: "Badge 2 description",
+					createdBy: "userId",
+					status: "active" as const,
+					createdAt: new Date().toISOString(),
+					updatedAt: new Date().toISOString(),
+					deletedAt: null,
+				},
+			];
 			mockUserService.formatUser.mockReturnValue(mockUser);
 			mockGroupService.formatGroup.mockReturnValue(mockGroup);
 			mockLocationService.formatLocation.mockReturnValue(mockLocation);
