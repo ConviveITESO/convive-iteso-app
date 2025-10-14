@@ -2,9 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useAuth } from "@/hooks/use-auth";
 import { useCategories } from "@/hooks/use-categories";
 import { useEvents } from "@/hooks/use-events";
-import { useAuth } from "@/lib/use-auth";
 import { CategoriesFilter } from "./_categories-filter";
 import { EventsGrid } from "./_events-grid";
 import { SearchHeader } from "./_search-header";

@@ -4,7 +4,7 @@ import { Image } from "lucide-react";
 /* import { useEffect, useState } from "react"; */
 import { useParams, useSearchParams } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useAuth } from "@/lib/use-auth";
+import { useAuth } from "@/hooks/use-auth";
 import { EventAnalyticsChart } from "./_event-analysis-chart";
 import EventAnalyticsEngagement from "./_event-analysis-engagement";
 import EventAnalyticsAssistants from "./_event-analytics-assistants";

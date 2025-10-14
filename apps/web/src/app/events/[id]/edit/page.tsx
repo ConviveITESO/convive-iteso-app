@@ -4,11 +4,11 @@
 import type { CreateEventSchema, EventResponseSchema } from "@repo/schemas";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useAuth } from "@/hooks/use-auth";
 import { useBadges } from "@/hooks/use-badges";
 import { useCategories } from "@/hooks/use-categories";
 import { useLocations } from "@/hooks/use-locations";
 import { getApiUrl } from "@/lib/api";
-import { useAuth } from "@/lib/use-auth";
 import EventForm from "../../_event-form";
 
 export default function EditEventPage() {
