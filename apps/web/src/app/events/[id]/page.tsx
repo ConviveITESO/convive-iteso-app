@@ -8,6 +8,7 @@ import { useAuth } from "@/lib/use-auth";
 import { EventDetails } from "./_event-details";
 import { EventHeader } from "./_event-header";
 import { EventImage } from "./_event-image";
+import { EventPass } from "./_event-pass";
 import { EventStats } from "./_event-stats";
 import { SubscriptionStatus } from "./_subscription-status";
 import { useEventData } from "./_use-event-data";
@@ -97,13 +98,10 @@ export default function EventPage() {
 
 					<div className="px-8 pb-8">
 						<EventDetails description={event.description} startDate={startDate} endDate={endDate} />
-
 						<SubscriptionStatus isWaitlisted={isWaitlisted} position={subscription.position} />
-
 						{showQr && (
-							<div className="w-full mt-4 p-4 border rounded-lg text-center">
-								<p className="text-lg font-medium">QR</p>
-								{/* TODO: Add QR component */}
+							<div className="w-full mt-4 p-4 text-center">
+								<EventPass event={event} subscription={subscription} />
 							</div>
 						)}
 
@@ -133,9 +131,7 @@ export default function EventPage() {
 
 				<div className="px-8 pb-8">
 					<EventDetails description={event.description} startDate={startDate} endDate={endDate} />
-
 					<EventStats registeredCount={registeredCount} quota={event.quota} spotsLeft={spotsLeft} />
-
 					<Button
 						className="w-full h-10 bg-primary text-primary-foreground hover:bg-primary/90"
 						onClick={handleRegister}
