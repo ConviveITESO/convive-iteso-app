@@ -1,4 +1,4 @@
-import type { NotificationItem } from "../../../components/notiications/types";
+import type { NotificationItem } from "../../../components/notifications/types";
 
 async function getNotification(id: string): Promise<NotificationItem | null> {
 	// reemplazar con fetch real

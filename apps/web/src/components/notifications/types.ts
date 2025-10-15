@@ -5,7 +5,7 @@ export type NotificationItem = {
 	kind: NotificationKind;
 	title: string;
 	body: string;
-	dateISO: string;
+	dateIso: string;
 	meta?: {
 		originalDate?: string;
 		newDate?: string;
