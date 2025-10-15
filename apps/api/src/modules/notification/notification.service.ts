@@ -1,6 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { and, desc, eq } from "drizzle-orm";
 import { AppDatabase, DATABASE_CONNECTION } from "@/modules/database/connection";
+import type { Notification } from "@/modules/database/schemas/notifications";
 import { notifications } from "@/modules/database/schemas/notifications";
 
 @Injectable()
@@ -33,14 +34,14 @@ export class NotificationService {
 		return this.mapRow(row);
 	}
 
-	private mapRow(row: any) {
+	private mapRow(row: Notification) {
 		return {
-			id: row.id as string,
+			id: row.id,
 			kind: row.kind,
 			title: row.title,
 			body: row.body,
-			eventId: row.eventId as number | null,
-			userId: row.userId as number,
+			eventId: row.eventId,
+			userId: row.userId,
 			createdAt: row.createdAt?.toISOString?.() ?? row.createdAt,
 			readAt: row.readAt ? (row.readAt.toISOString?.() ?? row.readAt) : null,
 			meta: {

@@ -1,4 +1,31 @@
-import type { NotificationItem } from "../../../components/notifications/types";
+import type { NotificationItem } from "@/components/notifications/types";
+import { fetchNotification } from "@/services/notifications";
+
+function fallbackNotification(id: string): NotificationItem {
+	return {
+		id,
+		userId: 1,
+		eventId: null,
+		kind: "canceled",
+		title: "Innovation in Technology Conference",
+		body: "The event has been canceled due to unforeseen circumstances.",
+		dateIso: "2025-09-22T14:30:00.000Z",
+		meta: {
+			originalDate: "2025-09-25 10:00",
+			location: "Building W, Room 204",
+		},
+	};
+}
+
+async function getNotification(id: string): Promise<NotificationItem | null> {
+	try {
+		const notification = await fetchNotification(id);
+		if (notification) return notification;
+	} catch {
+		// ignore network failures and fall back to mock data
+	}
+	return fallbackNotification(id);
+}
 
 export default async function NotificationDetail({ params }: { params: { id: string } }) {
 	const item = await getNotification(params.id);

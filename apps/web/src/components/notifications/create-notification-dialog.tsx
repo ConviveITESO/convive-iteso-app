@@ -1,10 +1,10 @@
 "use client";
 
-import { useForm } from "react-hook-form";
-import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
-import { createNotification, type CreateNotificationInput } from "@/services/notifications";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { type CreateNotificationInput, createNotification } from "@/services/notifications";
 
 const schema = z.object({
 	kind: z.enum(["canceled", "rescheduled", "reminder", "location"]),
@@ -25,6 +25,7 @@ export default function CreateNotificationDialog({
 	onCreated: (n: Awaited<ReturnType<typeof createNotification>>) => void;
 }) {
 	const [open, setOpen] = useState(false);
+	const [submitError, setSubmitError] = useState<string | null>(null);
 	const {
 		register,
 		handleSubmit,
@@ -37,7 +38,7 @@ export default function CreateNotificationDialog({
 	});
 
 	async function onSubmit(values: FormValues) {
-		console.log("[CreateNotification] submitting values:", values);
+		setSubmitError(null);
 		try {
 			const payload: CreateNotificationInput = {
 				kind: values.kind,
@@ -52,18 +53,18 @@ export default function CreateNotificationDialog({
 				},
 			};
 			const created = await createNotification(payload);
-			console.log("[CreateNotification] created:", created);
 			onCreated(created);
 			reset({ kind: "reminder" });
 			setOpen(false);
-		} catch (e) {
-			console.error("createNotification failed:", e);
+			setSubmitError(null);
+		} catch (_error) {
 			alert("No se pudo crear la notificación.");
+			setSubmitError("We could not create the notification. Please try again.");
 		}
 	}
 
-	function onError(errs: unknown) {
-		console.warn("[CreateNotification] validation errors:", errs);
+	function onError() {
+		setSubmitError("Please review the highlighted fields.");
 	}
 
 	return (
@@ -90,11 +91,19 @@ export default function CreateNotificationDialog({
 								✕
 							</button>
 						</div>
+						{submitError && (
+							<p role="alert" className="mb-3 text-xs font-medium text-red-600">
+								{submitError}
+							</p>
+						)}
 
 						<form onSubmit={handleSubmit(onSubmit, onError)} className="space-y-3">
 							<div>
-								<label className="mb-1 block text-xs font-medium">Kind</label>
+								<label className="mb-1 block text-xs font-medium" htmlFor="notification-kind">
+									Kind
+								</label>
 								<select
+									id="notification-kind"
 									{...register("kind")}
 									className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
 								>
@@ -106,8 +115,11 @@ export default function CreateNotificationDialog({
 							</div>
 
 							<div>
-								<label className="mb-1 block text-xs font-medium">Title</label>
+								<label className="mb-1 block text-xs font-medium" htmlFor="notification-title">
+									Title
+								</label>
 								<input
+									id="notification-title"
 									{...register("title")}
 									className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
 									placeholder="Title"
@@ -118,8 +130,11 @@ export default function CreateNotificationDialog({
 							</div>
 
 							<div>
-								<label className="mb-1 block text-xs font-medium">Body</label>
+								<label className="mb-1 block text-xs font-medium" htmlFor="notification-body">
+									Body
+								</label>
 								<textarea
+									id="notification-body"
 									{...register("body")}
 									className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
 									rows={3}
@@ -129,8 +144,11 @@ export default function CreateNotificationDialog({
 							</div>
 
 							<div>
-								<label className="mb-1 block text-xs font-medium">User ID</label>
+								<label className="mb-1 block text-xs font-medium" htmlFor="notification-user-id">
+									User ID
+								</label>
 								<input
+									id="notification-user-id"
 									{...register("userId", { valueAsNumber: true })}
 									className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
 									placeholder="1"
@@ -139,8 +157,11 @@ export default function CreateNotificationDialog({
 
 							<div className="grid grid-cols-2 gap-3">
 								<div>
-									<label className="mb-1 block text-xs font-medium">Event ID (optional)</label>
+									<label className="mb-1 block text-xs font-medium" htmlFor="notification-event-id">
+										Event ID (optional)
+									</label>
 									<input
+										id="notification-event-id"
 										{...register("eventId", {
 											setValueAs: (v) => (v === "" || v == null ? undefined : Number(v)),
 										})}
@@ -155,8 +176,11 @@ export default function CreateNotificationDialog({
 								</div>
 
 								<div>
-									<label className="mb-1 block text-xs font-medium">Location (meta)</label>
+									<label className="mb-1 block text-xs font-medium" htmlFor="notification-location">
+										Location (meta)
+									</label>
 									<input
+										id="notification-location"
 										{...register("location")}
 										className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
 										placeholder="Building W, Room 204"
@@ -164,8 +188,14 @@ export default function CreateNotificationDialog({
 								</div>
 
 								<div>
-									<label className="mb-1 block text-xs font-medium">Original date (meta)</label>
+									<label
+										className="mb-1 block text-xs font-medium"
+										htmlFor="notification-original-date"
+									>
+										Original date (meta)
+									</label>
 									<input
+										id="notification-original-date"
 										{...register("originalDate")}
 										className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
 										placeholder="2025-01-09 10:00"
@@ -173,8 +203,11 @@ export default function CreateNotificationDialog({
 								</div>
 
 								<div>
-									<label className="mb-1 block text-xs font-medium">New date (meta)</label>
+									<label className="mb-1 block text-xs font-medium" htmlFor="notification-new-date">
+										New date (meta)
+									</label>
 									<input
+										id="notification-new-date"
 										{...register("newDate")}
 										className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
 										placeholder="2025-01-09 18:00"
