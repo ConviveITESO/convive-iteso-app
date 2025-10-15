@@ -1,7 +1,7 @@
-import { pgTable, integer, text, timestamp, pgEnum, uuid } from "drizzle-orm/pg-core";
-import { users } from "./users";
-import { events } from "./events";
+import { integer, pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { defaultColumns } from "./default-columns";
+import { events } from "./events";
+import { users } from "./users";
 
 export const notificationKind = pgEnum("notification_kind", [
 	"canceled",

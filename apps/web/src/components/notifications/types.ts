@@ -8,8 +8,8 @@ export type NotificationMeta = {
 
 export type NotificationItem = {
 	id: string;
-	userId: string;
-	eventId?: string;
+	userId: number;
+	eventId?: number | null;
 	kind: NotificationKind;
 	title: string;
 	body: string;
