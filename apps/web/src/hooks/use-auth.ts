@@ -18,6 +18,12 @@ export function useAuth() {
 		fetch(`${getApiUrl()}/auth/validate`, {
 			method: "GET",
 			credentials: "include",
+			cache: "no-store",
+			headers: {
+				"Cache-Control": "no-cache, no-store, must-revalidate",
+				// biome-ignore lint/style/useNamingConvention: HTTP header name
+				Pragma: "no-cache",
+			},
 		})
 			.then((res) => {
 				if (!res.ok) {

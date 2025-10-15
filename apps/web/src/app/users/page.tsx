@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import AddUserDialog from "@/app/users/_add-user-dialog";
 import UserCard from "@/app/users/_user-card";
+import { useAuth } from "@/hooks/use-auth";
 import { getApiUrl } from "@/lib/api";
-import { useAuth } from "@/lib/use-auth";
 
 interface User {
 	id: string;

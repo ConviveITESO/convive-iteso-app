@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Put, Req, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Param, Post, Put, Query, Req, UseGuards } from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
 import {
 	CreateEventSchema,
@@ -7,6 +7,8 @@ import {
 	EventResponseSchema,
 	eventIdParamSchema,
 	eventResponseSchema,
+	GetEventsQuerySchema,
+	getEventsQuerySchema,
 	UpdateEventSchema,
 	updateEventSchema,
 } from "@repo/schemas";
@@ -15,6 +17,7 @@ import {
 	ZodCreated,
 	ZodOk,
 	ZodParam,
+	ZodQuery,
 	ZodValidationPipe,
 } from "@/pipes/zod-validation/zod-validation.pipe";
 import { UserRequest } from "@/types/user.request";
@@ -26,6 +29,16 @@ import { EventService } from "./event.service";
 @UseGuards(AuthGuard)
 export class EventController {
 	constructor(private readonly eventsService: EventService) {}
+
+	// GET /events
+	@Get()
+	@ZodQuery(getEventsQuerySchema, "queryEvents")
+	@ZodOk(eventResponseSchema)
+	async getEvents(
+		@Query(new ZodValidationPipe(getEventsQuerySchema)) query: GetEventsQuerySchema,
+	): Promise<EventResponseSchema[]> {
+		return this.eventsService.getEvents(query);
+	}
 
 	// GET /events/:id
 	@Get(":id")

@@ -1,13 +1,18 @@
 import { ForbiddenException, Inject, Injectable, NotFoundException } from "@nestjs/common";
-import { CreateEventSchema, EventResponseSchema, UpdateEventSchema } from "@repo/schemas";
+import {
+	BadgeResponseSchema,
+	CategoryResponseSchema,
+	CreateEventSchema,
+	EventResponseSchema,
+	GetEventsQuerySchema,
+	UpdateEventSchema,
+} from "@repo/schemas";
 import { and, eq, sql } from "drizzle-orm";
 import { BadgeService } from "../badge/badge.service";
 import { CategoryService } from "../category/category.service";
 import { AppDatabase, DATABASE_CONNECTION } from "../database/connection";
 import {
-	Badge,
 	badges,
-	Category,
 	categories,
 	Event,
 	events,
@@ -35,6 +40,80 @@ export class EventService {
 		private readonly badgeService: BadgeService,
 	) {}
 
+	async getEvents(filters: GetEventsQuerySchema): Promise<EventResponseSchema[]> {
+		const where = [eq(events.status, "active")];
+		if (filters.name) {
+			where.push(eq(events.name, filters.name));
+		}
+		if (filters.locationId) {
+			where.push(eq(events.locationId, filters.locationId));
+		}
+		if (filters.categoryId) {
+			where.push(eq(eventsCategories.categoryId, filters.categoryId));
+		}
+		if (filters.badgeId) {
+			where.push(eq(eventsBadges.badgeId, filters.badgeId));
+		}
+		const results = await this.db
+			.select({
+				event: events,
+				creator: users,
+				group: groups,
+				location: locations,
+				categories: sql<CategoryResponseSchema[]>`COALESCE(
+					json_agg(
+						distinct jsonb_build_object(
+							'id', ${categories.id},
+							'name', ${categories.name},
+							'createdBy', ${categories.createdBy},
+							'status', ${categories.status},
+							'createdAt', to_char(${categories.createdAt}, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
+							'updatedAt', to_char(${categories.updatedAt}, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
+							'deletedAt', to_char(${categories.deletedAt}, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
+						)
+					) filter (where ${categories.id} is not null),
+					'[]'::json
+				)`,
+				badges: sql<BadgeResponseSchema[]>`COALESCE(
+					json_agg(
+						distinct jsonb_build_object(
+							'id', ${badges.id},
+							'name', ${badges.name},
+							'description', ${badges.description}
+						)
+					) filter (where ${badges.id} is not null),
+					'[]'::json
+				)`,
+			})
+			.from(events)
+			.where(and(...where))
+			.innerJoin(users, and(eq(users.id, events.createdBy), eq(users.status, "active")))
+			.innerJoin(groups, and(eq(groups.id, events.groupId), eq(groups.status, "active")))
+			.innerJoin(
+				locations,
+				and(eq(locations.id, events.locationId), eq(locations.status, "active")),
+			)
+			.leftJoin(eventsCategories, eq(eventsCategories.eventId, events.id))
+			.leftJoin(
+				categories,
+				and(eq(eventsCategories.categoryId, categories.id), eq(categories.status, "active")),
+			)
+			.leftJoin(eventsBadges, eq(eventsBadges.eventId, events.id))
+			.leftJoin(badges, and(eq(eventsBadges.badgeId, badges.id), eq(badges.status, "active")))
+			.groupBy(events.id, users.id, groups.id, locations.id);
+
+		return results.map((result) =>
+			this.formatEvent(
+				result.event,
+				result.creator,
+				result.group,
+				result.location,
+				result.categories,
+				result.badges,
+			),
+		);
+	}
+
 	async getEventById(id: string): Promise<EventResponseSchema | undefined> {
 		const [event] = await this.db
 			.select({
@@ -42,16 +121,21 @@ export class EventService {
 				creator: users,
 				group: groups,
 				location: locations,
-				categories: sql<Category[]>`COALESCE(
+				categories: sql<CategoryResponseSchema[]>`COALESCE(
 					json_agg(
 						distinct jsonb_build_object(
 							'id', ${categories.id},
-							'name', ${categories.name}
+							'name', ${categories.name},
+							'createdBy', ${categories.createdBy},
+							'status', ${categories.status},
+							'createdAt', to_char(${categories.createdAt}, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
+							'updatedAt', to_char(${categories.updatedAt}, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
+							'deletedAt', to_char(${categories.deletedAt}, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
 						)
 					) filter (where ${categories.id} is not null),
 					'[]'::json
 				)`,
-				badges: sql<Badge[]>`COALESCE(
+				badges: sql<BadgeResponseSchema[]>`COALESCE(
 					json_agg(
 						distinct jsonb_build_object(
 							'id', ${badges.id},
@@ -122,16 +206,12 @@ export class EventService {
 		creator: User,
 		eventGroup: Group,
 		eventLocation: Location,
-		eventCategories: Category[],
-		eventBadges: Badge[],
+		eventCategories: CategoryResponseSchema[],
+		eventBadges: BadgeResponseSchema[],
 	): EventResponseSchema {
 		const group = this.groupService.formatGroup(eventGroup);
 		const createdBy = this.userService.formatUser(creator);
 		const location = this.locationService.formatLocation(eventLocation);
-		const categories = eventCategories.map((category) =>
-			this.categoryService.formatCategory(category),
-		);
-		const badges = eventBadges.map((badge) => this.badgeService.formatBadge(badge));
 		return {
 			id: event.id,
 			name: event.name,
@@ -142,8 +222,8 @@ export class EventService {
 			location,
 			createdBy,
 			group,
-			categories,
-			badges,
+			categories: eventCategories,
+			badges: eventBadges,
 		};
 	}
 

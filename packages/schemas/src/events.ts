@@ -6,6 +6,17 @@ import { userResponseSchema, userResponseSchemaExample } from "./users";
 import { z } from "./zod-openapi.js";
 
 // ==========================================================
+// QUERY schemas
+// ==========================================================
+
+export const getEventsQuerySchema = z.object({
+	name: z.string().optional(),
+	locationId: z.string().optional(),
+	categoryId: z.string().optional(),
+	badgeId: z.string().optional(),
+});
+
+// ==========================================================
 // PARAM schemas
 // ==========================================================
 
@@ -155,6 +166,7 @@ export const eventResponseArraySchema = z
 // TYPE schemas
 // ==========================================================
 
+export type GetEventsQuerySchema = z.infer<typeof getEventsQuerySchema>;
 export type EventIdParamSchema = z.infer<typeof eventIdParamSchema>;
 export type CreateEventSchema = z.infer<typeof createEventSchema>;
 export type UpdateEventSchema = z.infer<typeof updateEventSchema>;

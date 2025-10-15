@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useAuth } from "@/lib/use-auth";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function GroupPage() {
 	const { isAuthenticated } = useAuth();

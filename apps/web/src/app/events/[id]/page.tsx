@@ -3,8 +3,8 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/use-auth";
 import { getApiUrl } from "@/lib/api";
-import { useAuth } from "@/lib/use-auth";
 import { EventDetails } from "./_event-details";
 import { EventHeader } from "./_event-header";
 import { EventImage } from "./_event-image";
