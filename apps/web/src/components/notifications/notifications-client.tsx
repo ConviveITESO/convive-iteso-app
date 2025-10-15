@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { fetchNotifications, clearAllNotifications } from "../../services/notifications";
 import NotificationHeader from "./notification-header";
 import NotificationList from "./notification-list";
 import type { NotificationItem } from "./types";
-import { fetchNotifications, clearAllNotifications } from "../../services/Notifications";
 
 export default function NotificationsClient() {
 	const [items, setItems] = useState<NotificationItem[] | null>(null);
