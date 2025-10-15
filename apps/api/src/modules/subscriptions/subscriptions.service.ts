@@ -8,6 +8,7 @@ import {
 import {
 	CreateSubscriptionSchema,
 	EventStatsResponseSchema,
+	SubscriptionCheckInResponseSchema,
 	SubscriptionIdResponseSchema,
 	SubscriptionQuerySchema,
 	SubscriptionResponseSchema,
@@ -15,10 +16,12 @@ import {
 } from "@repo/schemas";
 import { and, eq, gte, isNull, max, ne, SQL, sql } from "drizzle-orm";
 import { AppDatabase, DATABASE_CONNECTION, Transaction } from "../database/connection";
-import { events, Subscription, subscriptions } from "../database/schemas";
+import { events, Subscription, subscriptions, users } from "../database/schemas";
 
 @Injectable()
 export class SubscriptionsService {
+	private hasEnsuredAttendedStatus = false;
+
 	constructor(@Inject(DATABASE_CONNECTION) private readonly db: AppDatabase) {}
 
 	/**
@@ -56,6 +59,101 @@ export class SubscriptionsService {
 		}
 
 		return this.toSubscriptionResponse(subscription);
+	}
+
+	/**
+	 * Validates and records an event check-in
+	 * @param eventId The event ID provided by the staff member
+	 * @param subscriptionId The subscription ID provided via QR/manual entry
+	 * @returns Result of the check-in attempt
+	 */
+	async checkIn(
+		eventId: string,
+		subscriptionId: string,
+	): Promise<SubscriptionCheckInResponseSchema> {
+		await this.ensureAttendedStatusValue();
+
+		return await this.db.transaction(async (tx) => {
+			const [record] = await tx
+				.select({
+					subscription: subscriptions,
+					event: events,
+					user: users,
+				})
+				.from(subscriptions)
+				.innerJoin(events, eq(events.id, subscriptions.eventId))
+				.innerJoin(users, eq(users.id, subscriptions.userId))
+				.where(and(eq(subscriptions.id, subscriptionId), isNull(subscriptions.deletedAt)))
+				.limit(1);
+
+			if (!record) {
+				return {
+					status: "invalid_subscription",
+					message: "Registration not found",
+				};
+			}
+
+			if (record.event.id !== eventId) {
+				return {
+					status: "invalid_event",
+					message: "Registration does not belong to this event",
+				};
+			}
+
+			if (record.subscription.status === "attended") {
+				return {
+					status: "already_checked_in",
+					message: "Attendee already checked in",
+					attendeeName: record.user.name,
+					subscription: this.toSubscriptionResponse(record.subscription),
+				};
+			}
+
+			if (record.subscription.status !== "registered") {
+				return {
+					status: "invalid_subscription",
+					message: "Registration is not confirmed",
+				};
+			}
+
+			const [updated] = await tx
+				.update(subscriptions)
+				.set({
+					status: "attended",
+					updatedAt: new Date(),
+				})
+				.where(eq(subscriptions.id, record.subscription.id))
+				.returning();
+
+			if (!updated) {
+				return {
+					status: "invalid_subscription",
+					message: "Unable to record check-in",
+				};
+			}
+
+			return {
+				status: "success",
+				message: "Check-in completed",
+				attendeeName: record.user.name,
+				subscription: this.toSubscriptionResponse(updated),
+			};
+		});
+	}
+
+	private async ensureAttendedStatusValue() {
+		if (this.hasEnsuredAttendedStatus) {
+			return;
+		}
+
+		try {
+			await this.db.execute(
+				sql`ALTER TYPE "subscription_status" ADD VALUE IF NOT EXISTS 'attended'`,
+			);
+			this.hasEnsuredAttendedStatus = true;
+		} catch {
+			// Ignore failures; if the value already exists, the update will succeed.
+		}
 	}
 
 	/**
