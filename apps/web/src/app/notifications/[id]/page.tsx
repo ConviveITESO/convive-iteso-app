@@ -7,7 +7,7 @@ async function getNotification(id: string): Promise<NotificationItem | null> {
 		kind: "canceled",
 		title: "Innovation in Technology Conference",
 		body: "The event has been canceled due to unforeseen circumstances.",
-		dateISO: "2025-09-22T14:30:00.000Z",
+		dateIso: "2025-09-22T14:30:00.000Z",
 		meta: {
 			originalDate: "2025-09-25 10:00",
 			location: "Building W, Room 204",
@@ -23,7 +23,7 @@ export default async function NotificationDetail({ params }: { params: { id: str
 		<main className="mx-auto max-w-xl px-4 py-6">
 			<div className="rounded-lg border border-red-300 bg-red-50 p-6">
 				<h2 className="text-lg font-semibold text-red-700">Event Canceled!</h2>
-				<p className="text-sm text-gray-500">{new Date(item.dateISO).toLocaleString()}</p>
+				<p className="text-sm text-gray-500">{new Date(item.dateIso).toLocaleString()}</p>
 
 				<h3 className="mt-2 font-medium">{item.title}</h3>
 				<p className="mt-1 text-sm text-gray-600">{item.body}</p>
