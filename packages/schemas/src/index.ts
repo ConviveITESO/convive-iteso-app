@@ -11,4 +11,5 @@ export * from "./locations";
 export * from "./subscriptions";
 export * from "./todo";
 export * from "./users";
+export * from "./notifications";
 export { z } from "./zod-openapi";

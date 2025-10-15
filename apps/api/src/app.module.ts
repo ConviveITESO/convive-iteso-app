@@ -11,6 +11,7 @@ import { EventReminderModule } from "./modules/event-reminder/event-reminder.mod
 import { GroupModule } from "./modules/group/group.module";
 import { HealthModule } from "./modules/health/health.module";
 import { LocationModule } from "./modules/location/location.module";
+import { NotificationModule } from "./modules/notification/notification.module";
 import { NotificationsModule } from "./modules/notifications/notifications.module";
 import { S3Module } from "./modules/s3/s3.module";
 import { SubscriptionsModule } from "./modules/subscriptions/subscriptions.module";
@@ -34,6 +35,7 @@ import { UserModule } from "./modules/user/user.module";
 		EmailModule,
 		EventAnalyticsModule,
 		S3Module,
+		NotificationModule,
 	],
 	controllers: [],
 	providers: [],

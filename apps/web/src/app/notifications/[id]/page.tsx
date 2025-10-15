@@ -1,20 +1,5 @@
 import type { NotificationItem } from "../../../components/notifications/types";
 
-async function getNotification(id: string): Promise<NotificationItem | null> {
-	// reemplazar con fetch real
-	return {
-		id,
-		kind: "canceled",
-		title: "Innovation in Technology Conference",
-		body: "The event has been canceled due to unforeseen circumstances.",
-		dateIso: "2025-09-22T14:30:00.000Z",
-		meta: {
-			originalDate: "2025-09-25 10:00",
-			location: "Building W, Room 204",
-		},
-	};
-}
-
 export default async function NotificationDetail({ params }: { params: { id: string } }) {
 	const item = await getNotification(params.id);
 	if (!item) return <div className="p-6">Notification not found.</div>;
