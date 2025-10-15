@@ -7,3 +7,4 @@ export * from "./groups";
 export * from "./locations";
 export * from "./todos";
 export * from "./users";
+export * from "./notifications";

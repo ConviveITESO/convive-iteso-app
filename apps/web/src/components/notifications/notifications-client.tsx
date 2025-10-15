@@ -1,24 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { fetchNotifications, clearAllNotifications } from "../../services/notifications";
 import NotificationHeader from "./notification-header";
 import NotificationList from "./notification-list";
 import type { NotificationItem } from "./types";
+import { clearAllNotifications, fetchNotifications } from "../../services/notifications";
+import CreateNotificationDialog from "./create-notification-dialog";
 
 export default function NotificationsClient() {
 	const [items, setItems] = useState<NotificationItem[] | null>(null);
-	const [loading, setLoading] = useState(true);
 	const [clearing, setClearing] = useState(false);
 
 	useEffect(() => {
 		let mounted = true;
 		(async () => {
 			const data = await fetchNotifications();
-			if (mounted) {
-				setItems(data);
-				setLoading(false);
-			}
+			if (mounted) setItems(data);
 		})();
 		return () => {
 			mounted = false;
@@ -29,13 +26,11 @@ export default function NotificationsClient() {
 		if (!items?.length) return;
 		setClearing(true);
 		const prev = items;
-		// Optimistic update
 		setItems([]);
 		try {
 			await clearAllNotifications();
 		} catch {
-			// rollback si falla
-			setItems(prev);
+			setItems(prev); // rollback si falla
 		} finally {
 			setClearing(false);
 		}
@@ -45,21 +40,26 @@ export default function NotificationsClient() {
 		<main className="pb-8">
 			<NotificationHeader
 				rightAction={
-					<button
-						type="button"
-						onClick={handleClearAll}
-						disabled={clearing || !items?.length}
-						className="text-xs text-gray-500 hover:underline disabled:cursor-not-allowed disabled:opacity-50"
-					>
-						{clearing ? "Clearing..." : "Clear all"}
-					</button>
+					<div className="flex gap-2">
+						<CreateNotificationDialog
+							onCreated={(created) => setItems((prev) => [created, ...(prev ?? [])])}
+						/>
+						<button
+							type="button"
+							onClick={handleClearAll}
+							disabled={clearing || !items?.length}
+							className="text-xs text-gray-500 hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+						>
+							{clearing ? "Clearing..." : "Clear all"}
+						</button>
+					</div>
 				}
 			/>
 			<div className="mx-auto max-w-2xl px-4">
-				{loading ? (
+				{items === null ? (
 					<div className="py-10 text-center text-sm text-gray-500">Loading notifications…</div>
 				) : (
-					<NotificationList data={items ?? []} />
+					<NotificationList data={items} />
 				)}
 			</div>
 		</main>
