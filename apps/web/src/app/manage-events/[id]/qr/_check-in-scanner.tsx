@@ -61,7 +61,7 @@ type CheckInResult = SubscriptionCheckInResponseSchema & {
 export function CheckInScanner({ eventId, eventName }: CheckInScannerProps) {
 	const videoRef = useRef<HTMLVideoElement | null>(null);
 	const streamRef = useRef<MediaStream | null>(null);
-	const animationFrameRef = useRef<number>();
+	const animationFrameRef = useRef<number | null>(null);
 	const processingRef = useRef(false);
 	const lastScanRef = useRef<{ code: string; time: number } | null>(null);
 
@@ -91,9 +91,11 @@ export function CheckInScanner({ eventId, eventName }: CheckInScannerProps) {
 
 		const enableTorch = !torchEnabled;
 		try {
-			await track.applyConstraints({
-				advanced: [{ torch: enableTorch }] as unknown as MediaTrackConstraints,
-			});
+			type TorchConstraint = MediaTrackConstraintSet & { torch?: boolean };
+			const constraints: MediaTrackConstraints = {
+				advanced: [{ torch: enableTorch } as TorchConstraint],
+			};
+			await track.applyConstraints(constraints);
 			setTorchEnabled(enableTorch);
 		} catch (_error) {
 			setCameraError("Unable to toggle flashlight on this device.");
@@ -203,7 +205,10 @@ export function CheckInScanner({ eventId, eventName }: CheckInScannerProps) {
 
 			setCameraError(null);
 
-			const maybeDetectorCtor = (window as Record<string, unknown>).BarcodeDetector;
+			const maybeDetectorCtor =
+				typeof window !== "undefined" && "BarcodeDetector" in window
+					? window.BarcodeDetector
+					: undefined;
 
 			if (typeof maybeDetectorCtor !== "function") {
 				setCameraError("QR scanning is not supported on this device. Use manual code entry.");
@@ -281,7 +286,10 @@ export function CheckInScanner({ eventId, eventName }: CheckInScannerProps) {
 
 		return () => {
 			isMounted = false;
-			cancelAnimationFrame(animationFrameRef.current ?? 0);
+			if (animationFrameRef.current !== null) {
+				cancelAnimationFrame(animationFrameRef.current);
+				animationFrameRef.current = null;
+			}
 			const currentStream = streamRef.current;
 			if (currentStream) {
 				for (const track of currentStream.getTracks()) {
