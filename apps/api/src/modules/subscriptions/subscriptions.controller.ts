@@ -17,9 +17,12 @@ import {
 	EventIdParamSchema,
 	eventIdParamSchema,
 	eventStatsResponseSchema,
+	SubscriptionCheckInRequestSchema,
 	SubscriptionIdParamSchema,
 	SubscriptionQuerySchema,
 	subscriptionArrayResponseSchema,
+	subscriptionCheckInRequestSchema,
+	subscriptionCheckInResponseSchema,
 	subscriptionIdParamSchema,
 	subscriptionIdResponseSchema,
 	subscriptionQuerySchema,
@@ -55,6 +58,17 @@ export class SubscriptionsController {
 	) {
 		const userId = req?.user?.id || "";
 		return await this.subscriptionsService.getQrCode(body.eventId, userId);
+	}
+
+	// POST /subscriptions/check-in
+	@Post("check-in")
+	@ZodBody(subscriptionCheckInRequestSchema)
+	@ZodOk(subscriptionCheckInResponseSchema)
+	async checkIn(
+		@Body(new ZodValidationPipe(subscriptionCheckInRequestSchema))
+		body: SubscriptionCheckInRequestSchema,
+	) {
+		return await this.subscriptionsService.checkIn(body.eventId, body.subscriptionId);
 	}
 
 	// GET /subscriptions

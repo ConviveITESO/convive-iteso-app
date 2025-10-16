@@ -1,7 +1,7 @@
 /** biome-ignore-all lint/suspicious/noExplicitAny: <> */
 /** biome-ignore-all lint/style/noNonNullAssertion: <explanation> */
 import { config } from "dotenv";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import { AppDatabase } from "@/modules/database/connection";
@@ -200,6 +200,59 @@ async function seedEvents(
 	).map((register) => register.id);
 }
 
+async function seedSubscriptions(
+	db: AppDatabase,
+	userIds: string[],
+	eventIds: string[],
+): Promise<void> {
+	if (userIds.length === 0 || eventIds.length === 0) {
+		return;
+	}
+	const events = await db.query.events.findMany({
+		where: inArray(schemas.events.id, eventIds),
+		columns: {
+			id: true,
+			quota: true,
+		},
+	});
+	for (const event of events) {
+		const shuffledUsers = [...userIds];
+		for (let i = shuffledUsers.length - 1; i > 0; i--) {
+			const j = getRandomNumber(0, i);
+			[shuffledUsers[i], shuffledUsers[j]] = [shuffledUsers[j]!, shuffledUsers[i]!];
+		}
+		const maxRegistrations = Math.min(event.quota ?? 0, shuffledUsers.length);
+		if (maxRegistrations === 0) {
+			continue;
+		}
+		const registeredCount = getRandomNumber(1, maxRegistrations);
+		const remainingUsers = shuffledUsers.slice(registeredCount);
+		const waitlistedCount =
+			remainingUsers.length === 0 ? 0 : getRandomNumber(0, Math.min(5, remainingUsers.length));
+		const subscriptionsToInsert: schemas.NewSubscription[] = [];
+		for (let index = 0; index < registeredCount; index++) {
+			subscriptionsToInsert.push({
+				userId: shuffledUsers[index]!,
+				eventId: event.id,
+				status: "registered",
+				position: index + 1,
+			});
+		}
+		for (let index = 0; index < waitlistedCount; index++) {
+			const userId = remainingUsers[index]!;
+			subscriptionsToInsert.push({
+				userId,
+				eventId: event.id,
+				status: "waitlisted",
+				position: registeredCount + index + 1,
+			});
+		}
+		if (subscriptionsToInsert.length > 0) {
+			await db.insert(schemas.subscriptions).values(subscriptionsToInsert);
+		}
+	}
+}
+
 async function main() {
 	// biome-ignore lint/style/noProcessEnv: false positive
 	const pool = new Pool({ connectionString: process.env.DATABASE_URL });
@@ -215,7 +268,8 @@ async function main() {
 	const badgeIds = await seedBadges(db, 10, userIds);
 	const categoryIds = await seedCategories(db, userIds);
 	const locationIds = await seedLocations(db, userIds);
-	await seedEvents(db, 20, userIds, badgeIds, categoryIds, locationIds);
+	const eventIds = await seedEvents(db, 20, userIds, badgeIds, categoryIds, locationIds);
+	await seedSubscriptions(db, userIds, eventIds);
 	await pool.end();
 }
 

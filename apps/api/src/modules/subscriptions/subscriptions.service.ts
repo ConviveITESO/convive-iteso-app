@@ -1,4 +1,5 @@
 import {
+	BadRequestException,
 	ForbiddenException,
 	Inject,
 	Injectable,
@@ -8,6 +9,7 @@ import {
 import {
 	CreateSubscriptionSchema,
 	EventStatsResponseSchema,
+	SubscriptionCheckInResponseSchema,
 	SubscriptionIdResponseSchema,
 	SubscriptionQuerySchema,
 	SubscriptionResponseSchema,
@@ -15,12 +17,11 @@ import {
 } from "@repo/schemas";
 import { and, eq, gte, isNull, max, ne, SQL, sql } from "drizzle-orm";
 import { AppDatabase, DATABASE_CONNECTION, Transaction } from "../database/connection";
-import { events, Subscription, subscriptions } from "../database/schemas";
+import { events, Subscription, subscriptions, users } from "../database/schemas";
 
 @Injectable()
 export class SubscriptionsService {
 	constructor(@Inject(DATABASE_CONNECTION) private readonly db: AppDatabase) {}
-
 	/**
 	 * Gets the QR code data for a specific event and user
 	 * @param eventId The event ID
@@ -56,6 +57,84 @@ export class SubscriptionsService {
 		}
 
 		return this.toSubscriptionResponse(subscription);
+	}
+
+	/**
+	 * Validates and records an event check-in
+	 * @param eventId The event ID provided by the staff member
+	 * @param subscriptionId The subscription ID provided via QR/manual entry
+	 * @returns Result of the check-in attempt
+	 */
+	async checkIn(
+		eventId: string,
+		subscriptionId: string,
+	): Promise<SubscriptionCheckInResponseSchema> {
+		return await this.db.transaction(async (tx) => {
+			const [record] = await tx
+				.select({
+					subscription: subscriptions,
+					event: events,
+					user: users,
+				})
+				.from(subscriptions)
+				.innerJoin(events, eq(events.id, subscriptions.eventId))
+				.innerJoin(users, eq(users.id, subscriptions.userId))
+				.where(and(eq(subscriptions.id, subscriptionId), isNull(subscriptions.deletedAt)))
+				.limit(1);
+
+			if (!record) {
+				throw new NotFoundException({
+					status: "invalid_subscription",
+					message: "Registration not found",
+				});
+			}
+
+			if (record.event.id !== eventId) {
+				throw new BadRequestException({
+					status: "invalid_event",
+					message: "Registration does not belong to this event",
+				});
+			}
+
+			if (record.subscription.status === "attended") {
+				return {
+					status: "already_checked_in",
+					message: "Attendee already checked in",
+					attendeeName: record.user.name,
+					subscription: this.toSubscriptionResponse(record.subscription),
+				};
+			}
+
+			if (record.subscription.status !== "registered") {
+				throw new BadRequestException({
+					status: "invalid_subscription",
+					message: "Registration is not confirmed",
+				});
+			}
+
+			const [updated] = await tx
+				.update(subscriptions)
+				.set({
+					status: "attended",
+					updatedAt: new Date(),
+				})
+				.where(eq(subscriptions.id, record.subscription.id))
+				.returning();
+
+			if (!updated) {
+				throw new InternalServerErrorException({
+					status: "invalid_subscription",
+					message: "Unable to record check-in",
+				});
+			}
+
+			return {
+				status: "success",
+				message: "Check-in completed",
+				attendeeName: record.user.name,
+				subscription: this.toSubscriptionResponse(updated),
+			};
+		});
 	}
 
 	/**
