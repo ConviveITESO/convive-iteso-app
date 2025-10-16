@@ -1,3 +1,5 @@
+/** biome-ignore-all lint/suspicious/noExplicitAny: <> */
+/** biome-ignore-all lint/style/noNonNullAssertion: <explanation> */
 import { config } from "dotenv";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -5,9 +7,30 @@ import { Pool } from "pg";
 import { AppDatabase } from "@/modules/database/connection";
 import * as schemas from "../modules/database/schemas";
 
+function getRandomNumber(min: number, max: number): number {
+	return Math.floor(min + Math.random() * (max - min + 1));
+}
+
 function selectRandomFromArray<T>(array: T[]): T {
-	const randomIndex = Math.floor(Math.random() * array.length);
+	const randomIndex = getRandomNumber(0, array.length - 1);
 	return array[randomIndex] as T;
+}
+
+function getRandomDate(startDate: Date, endDate: Date): Date {
+	const start = startDate.getTime();
+	const end = endDate.getTime();
+	const randomTime = getRandomNumber(start, end);
+	return new Date(randomTime);
+}
+
+function getRandomItems(array: string[]): string[] {
+	const shuffled = [...array];
+	for (let i = shuffled.length - 1; i > 0; i--) {
+		const j = getRandomNumber(0, i);
+		[shuffled[i], shuffled[j]] = [shuffled[j]!, shuffled[i]!];
+	}
+	const n = getRandomNumber(1, array.length - 1);
+	return shuffled.slice(0, n);
 }
 
 async function resetDatabase(db: AppDatabase): Promise<void> {
@@ -29,7 +52,7 @@ async function seedUsers(db: AppDatabase, count: number): Promise<string[]> {
 		await db.insert(schemas.users).values({
 			email: `user${i}@iteso.mx`,
 			name: `User${i} Name`,
-			status: selectRandomFromArray(["active", "deleted"]) as UserStatus,
+			status: selectRandomFromArray(["active", "deleted"]),
 		});
 	}
 	return (
@@ -45,7 +68,7 @@ async function seedBadges(db: AppDatabase, count: number, userIds: string[]): Pr
 			name: `Badge${i}`,
 			description: `This is the badge${i}`,
 			createdBy: selectRandomFromArray(userIds),
-			status: selectRandomFromArray(["active", "deleted"]) as RegisterStatus,
+			status: selectRandomFromArray(["active", "deleted"]),
 		});
 	}
 	return (
@@ -73,7 +96,7 @@ async function seedCategories(db: AppDatabase, userIds: string[]): Promise<strin
 		names.map((name) => ({
 			name,
 			createdBy: selectRandomFromArray(userIds),
-			status: selectRandomFromArray(["active", "deleted"]) as RegisterStatus,
+			status: selectRandomFromArray(["active", "deleted"]) as any,
 		})),
 	);
 	return (
@@ -95,18 +118,84 @@ async function seedLocations(db: AppDatabase, userIds: string[]): Promise<string
 		"Arrupe Auditorium",
 		"Auditorium D1",
 	];
-	await db.delete(schemas.events);
-	await db.delete(schemas.locations);
 	await db.insert(schemas.locations).values(
 		names.map((name) => ({
 			name,
 			createdBy: selectRandomFromArray(userIds),
-			status: selectRandomFromArray(["active", "deleted"]) as RegisterStatus,
+			status: selectRandomFromArray(["active", "deleted"]) as any,
 		})),
 	);
 	return (
 		await db.query.locations.findMany({
 			where: eq(schemas.locations.status, "active"),
+		})
+	).map((register) => register.id);
+}
+
+async function seedEvents(
+	db: AppDatabase,
+	count: number,
+	userIds: string[],
+	badgeIds: string[],
+	categoryIds: string[],
+	locationIds: string[],
+): Promise<string[]> {
+	for (let i = 0; i < count; i++) {
+		const groupResult = await db
+			.insert(schemas.groups)
+			.values({
+				name: `Group for Event${i}`,
+				description: `This is a description for Event${i}'s group`,
+			})
+			.returning({
+				id: schemas.groups.id,
+			});
+		const groupId = groupResult[0]!.id;
+		const userId = selectRandomFromArray(userIds);
+		await db.insert(schemas.usersGroups).values({
+			userId,
+			groupId,
+		});
+		const initialDate = new Date("2025-01-01T00:00:00.000Z");
+		const startDate = getRandomDate(initialDate, new Date());
+		const endDate = selectRandomFromArray([true, false])
+			? getRandomDate(startDate, new Date())
+			: startDate;
+		const eventResult = await db
+			.insert(schemas.events)
+			.values({
+				name: `Event${i}`,
+				description: `This is a description for Event${i}`,
+				startDate,
+				endDate,
+				quota: getRandomNumber(1, 100),
+				createdBy: userId,
+				groupId,
+				locationId: selectRandomFromArray(locationIds),
+				status: selectRandomFromArray(["active", "deleted"]),
+			})
+			.returning({
+				id: schemas.events.id,
+			});
+		const eventId = eventResult[0]!.id;
+		const badgeIdsToInsert = getRandomItems(badgeIds);
+		const categoryIdsToInsert = getRandomItems(categoryIds);
+		await db.insert(schemas.eventsBadges).values(
+			badgeIdsToInsert.map((badgeId) => ({
+				eventId,
+				badgeId,
+			})),
+		);
+		await db.insert(schemas.eventsCategories).values(
+			categoryIdsToInsert.map((categoryId) => ({
+				eventId,
+				categoryId,
+			})),
+		);
+	}
+	return (
+		await db.query.events.findMany({
+			where: eq(schemas.events.status, "active"),
 		})
 	).map((register) => register.id);
 }
@@ -123,15 +212,12 @@ async function main() {
 		status: "active",
 	});
 	const userIds = await seedUsers(db, 20);
-	await seedBadges(db, 10, userIds);
-	await seedCategories(db, userIds);
-	await seedLocations(db, userIds);
+	const badgeIds = await seedBadges(db, 10, userIds);
+	const categoryIds = await seedCategories(db, userIds);
+	const locationIds = await seedLocations(db, userIds);
+	await seedEvents(db, 20, userIds, badgeIds, categoryIds, locationIds);
 	await pool.end();
 }
-
-type UserStatus = "active" | "deleted";
-
-type RegisterStatus = "active" | "deleted";
 
 config();
 main().catch((error) => {
