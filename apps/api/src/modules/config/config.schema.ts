@@ -12,6 +12,11 @@ export const configSchema = z.object({
 	APP_VERSION: z.string().default("1.0.0"),
 	REDIRECT_URI: z.url().default("http://localhost:8080/auth/oauth-callback"),
 	ADMIN_TOKEN: z.string().min(1),
+	SMTP_NAME: z.string(),
+	SMTP_ADDRESS: z.email(),
+	LOCAL_SMTP_HOST: z.string(),
+	LOCAL_SMTP_PORT: z.coerce.number().int(),
+	MAILTRAP_API_KEY: z.string(),
 });
 
 export type ConfigSchema = z.infer<typeof configSchema>;

@@ -13,6 +13,9 @@ function selectRandomFromArray<T>(array: T[]): T {
 async function resetDatabase(db: AppDatabase): Promise<void> {
 	await db.delete(schemas.eventsCategories);
 	await db.delete(schemas.eventsBadges);
+	await db.delete(schemas.usersGroups);
+	await db.delete(schemas.subscriptions);
+	await db.delete(schemas.reminders);
 	await db.delete(schemas.events);
 	await db.delete(schemas.groups);
 	await db.delete(schemas.locations);

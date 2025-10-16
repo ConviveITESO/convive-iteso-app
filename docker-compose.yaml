@@ -26,3 +26,11 @@ services:
       - AWS_REGION=us-east-1
     depends_on:
       - db
+
+  mailhog:
+    image: mailhog/mailhog
+    container_name: smtp-server
+    restart: always
+    ports:
+      - "1025:1025"   # SMTP server
+      - "8025:8025"   # Web UI

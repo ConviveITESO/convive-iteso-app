@@ -26,6 +26,7 @@ export default function EditEventPage() {
 	const { data: badges = [], isLoading: badgesLoading } = useBadges(isAuthenticated);
 
 	useEffect(() => {
+		setEventLoading(true);
 		if (!isAuthenticated) return;
 
 		const loadEvent = async () => {
@@ -79,7 +80,7 @@ export default function EditEventPage() {
 	};
 
 	const handleCancel = () => {
-		router.push("/manage-events");
+		router.back();
 	};
 
 	return (
