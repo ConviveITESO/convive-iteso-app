@@ -1,5 +1,4 @@
 import type { EventResponseSchema } from "@repo/schemas";
-import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { getApiUrl } from "@/lib/api";
 import { validateAuth } from "@/lib/auth";
@@ -10,13 +9,10 @@ interface PageProps {
 }
 
 async function fetchEvent(id: string): Promise<EventResponseSchema | null> {
-	const cookieStore = await cookies();
-	const token = cookieStore.get("idToken")?.value;
-
 	try {
 		const response = await fetch(`${getApiUrl()}/events/${id}`, {
 			method: "GET",
-			headers: token ? { cookie: `idToken=${token}` } : undefined,
+			credentials: "include",
 			cache: "no-store",
 		});
 

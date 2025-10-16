@@ -131,11 +131,42 @@ export function CheckInScanner({ eventId, eventName }: CheckInScannerProps) {
 					}),
 				});
 
-				let payload: SubscriptionCheckInResponseSchema | null = null;
+				let payload: unknown = null;
 				try {
-					payload = (await response.json()) as SubscriptionCheckInResponseSchema;
+					payload = await response.json();
 				} catch (_error) {
 					// ignore json parse errors and use fallback
+				}
+
+				if (!response.ok) {
+					let message = "Registration not found.";
+					let status: SubscriptionCheckInResponseSchema["status"] = "invalid_subscription";
+					if (
+						typeof payload === "object" &&
+						payload !== null &&
+						("message" in payload || "status" in payload)
+					) {
+						const { message: bodyMessage, status: errorStatus } = payload as {
+							message?: unknown;
+							status?: unknown;
+						};
+						if (Array.isArray(bodyMessage)) {
+							message = bodyMessage.join(", ");
+						} else if (typeof bodyMessage === "string") {
+							message = bodyMessage;
+						}
+						if (errorStatus === "invalid_event" || errorStatus === "invalid_subscription") {
+							status = errorStatus;
+						}
+					}
+
+					setResult({
+						status,
+						message,
+						scannedCode: trimmedCode,
+					});
+					setIsDialogOpen(true);
+					return;
 				}
 
 				const fallback: SubscriptionCheckInResponseSchema = {
@@ -143,7 +174,7 @@ export function CheckInScanner({ eventId, eventName }: CheckInScannerProps) {
 					message: "Unable to verify the registration. Please try again.",
 				};
 
-				const data = payload ?? fallback;
+				const data = (payload as SubscriptionCheckInResponseSchema | null | undefined) ?? fallback;
 
 				setResult({
 					...data,

@@ -1,4 +1,5 @@
 import {
+	BadRequestException,
 	ForbiddenException,
 	Inject,
 	Injectable,
@@ -20,10 +21,7 @@ import { events, Subscription, subscriptions, users } from "../database/schemas"
 
 @Injectable()
 export class SubscriptionsService {
-	private hasEnsuredAttendedStatus = false;
-
 	constructor(@Inject(DATABASE_CONNECTION) private readonly db: AppDatabase) {}
-
 	/**
 	 * Gets the QR code data for a specific event and user
 	 * @param eventId The event ID
@@ -71,8 +69,6 @@ export class SubscriptionsService {
 		eventId: string,
 		subscriptionId: string,
 	): Promise<SubscriptionCheckInResponseSchema> {
-		await this.ensureAttendedStatusValue();
-
 		return await this.db.transaction(async (tx) => {
 			const [record] = await tx
 				.select({
@@ -87,17 +83,17 @@ export class SubscriptionsService {
 				.limit(1);
 
 			if (!record) {
-				return {
+				throw new NotFoundException({
 					status: "invalid_subscription",
 					message: "Registration not found",
-				};
+				});
 			}
 
 			if (record.event.id !== eventId) {
-				return {
+				throw new BadRequestException({
 					status: "invalid_event",
 					message: "Registration does not belong to this event",
-				};
+				});
 			}
 
 			if (record.subscription.status === "attended") {
@@ -110,10 +106,10 @@ export class SubscriptionsService {
 			}
 
 			if (record.subscription.status !== "registered") {
-				return {
+				throw new BadRequestException({
 					status: "invalid_subscription",
 					message: "Registration is not confirmed",
-				};
+				});
 			}
 
 			const [updated] = await tx
@@ -126,10 +122,10 @@ export class SubscriptionsService {
 				.returning();
 
 			if (!updated) {
-				return {
+				throw new InternalServerErrorException({
 					status: "invalid_subscription",
 					message: "Unable to record check-in",
-				};
+				});
 			}
 
 			return {
@@ -139,21 +135,6 @@ export class SubscriptionsService {
 				subscription: this.toSubscriptionResponse(updated),
 			};
 		});
-	}
-
-	private async ensureAttendedStatusValue() {
-		if (this.hasEnsuredAttendedStatus) {
-			return;
-		}
-
-		try {
-			await this.db.execute(
-				sql`ALTER TYPE "subscription_status" ADD VALUE IF NOT EXISTS 'attended'`,
-			);
-			this.hasEnsuredAttendedStatus = true;
-		} catch {
-			// Ignore failures; if the value already exists, the update will succeed.
-		}
 	}
 
 	/**
