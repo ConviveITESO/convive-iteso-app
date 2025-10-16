@@ -5,8 +5,8 @@ import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useCategories } from "@/hooks/use-categories";
 import { useEvents } from "@/hooks/use-events";
+import { EventsGrid } from "../../components/events/_events-grid";
 import { CategoriesFilter } from "./_categories-filter";
-import { EventsGrid } from "./_events-grid";
 import { SearchHeader } from "./_search-header";
 
 export default function FeedPage() {
