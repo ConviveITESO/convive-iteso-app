@@ -1,14 +1,37 @@
 import type { EventResponseArraySchema } from "@repo/schemas";
-import { Image, MapPin } from "lucide-react";
+import { Bell, Edit, Eye, Image, MapPin, Share2, Trash2, UserMinus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { formatDate } from "@/lib/date-utils";
 
 interface EventCardProps {
 	event: EventResponseArraySchema[number];
 	onClick: () => void;
+	mode?: "admin" | "subscription";
+	onEdit?: () => void;
+	onDelete?: () => void;
+	onShare?: () => void;
+	onNotify?: () => void;
+	onViewStats?: () => void;
+	onUnsubscribe?: () => void;
 }
 
-export function EventCard({ event, onClick }: EventCardProps) {
+export function EventCard({
+	event,
+	onClick,
+	mode,
+	onEdit,
+	onDelete,
+	onShare,
+	onNotify,
+	onViewStats,
+	onUnsubscribe,
+}: EventCardProps) {
+	const handleActionClick = (e: React.MouseEvent, action?: () => void) => {
+		e.stopPropagation();
+		action?.();
+	};
+
 	return (
 		<Card
 			className="cursor-pointer overflow-hidden p-2 transition-shadow hover:shadow-lg"
@@ -36,6 +59,65 @@ export function EventCard({ event, onClick }: EventCardProps) {
 						<span className="text-[13px] text-muted-foreground">{event.location.name}</span>
 					</div>
 				</div>
+
+				{/* Action buttons based on mode */}
+				{mode === "admin" && (
+					<div className="flex shrink-0 items-center gap-1">
+						<Button
+							variant="ghost"
+							size="icon"
+							className="size-8"
+							onClick={(e) => handleActionClick(e, onEdit)}
+						>
+							<Edit className="size-4" />
+						</Button>
+						<Button
+							variant="ghost"
+							size="icon"
+							className="size-8"
+							onClick={(e) => handleActionClick(e, onDelete)}
+						>
+							<Trash2 className="size-4" />
+						</Button>
+						<Button
+							variant="ghost"
+							size="icon"
+							className="size-8"
+							onClick={(e) => handleActionClick(e, onShare)}
+						>
+							<Share2 className="size-4" />
+						</Button>
+						<Button
+							variant="ghost"
+							size="icon"
+							className="size-8"
+							onClick={(e) => handleActionClick(e, onNotify)}
+						>
+							<Bell className="size-4" />
+						</Button>
+						<Button
+							variant="ghost"
+							size="icon"
+							className="size-8"
+							onClick={(e) => handleActionClick(e, onViewStats)}
+						>
+							<Eye className="size-4" />
+						</Button>
+					</div>
+				)}
+
+				{mode === "subscription" && (
+					<div className="flex shrink-0 items-center">
+						<Button
+							variant="ghost"
+							size="icon"
+							className="size-8"
+							onClick={(e) => handleActionClick(e, onUnsubscribe)}
+						>
+							<UserMinus className="size-4" />
+						</Button>
+					</div>
+				)}
 			</div>
 		</Card>
 	);
