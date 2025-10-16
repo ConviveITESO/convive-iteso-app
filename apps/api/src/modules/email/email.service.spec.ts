@@ -22,7 +22,7 @@ jest.mock("mailtrap", () => ({
 describe("EmailService", () => {
 	let service: EmailService;
 	const configService = {
-		getOrThrow: jest.fn()
+		getOrThrow: jest.fn(),
 	};
 	const sendMailMock = jest.fn().mockResolvedValue({ accepted: ["user@example.com"] });
 
@@ -31,10 +31,7 @@ describe("EmailService", () => {
 			sendMail: sendMailMock,
 		});
 		const module: TestingModule = await Test.createTestingModule({
-			providers: [
-				EmailService,
-				{ provide: ConfigService, useValue: configService },
-			],
+			providers: [EmailService, { provide: ConfigService, useValue: configService }],
 		}).compile();
 		service = module.get<EmailService>(EmailService);
 		jest.clearAllMocks();
