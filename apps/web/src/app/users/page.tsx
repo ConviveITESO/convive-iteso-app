@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import AddUserDialog from "@/app/users/_add-user-dialog";
 import UserCard from "@/app/users/_user-card";
+import { useAuth } from "@/hooks/use-auth";
+import { getApiUrl } from "@/lib/api";
 
 interface User {
 	id: string;
@@ -11,18 +13,26 @@ interface User {
 	age: number;
 	birthDate: string;
 	createdAt?: string;
+	redirectTo?: string;
 }
 
 export default function UsersPage() {
+	const { isAuthenticated } = useAuth();
 	const [users, setUsers] = useState<User[]>([]);
 	const [loading, setLoading] = useState(true);
 
 	const fetchUsers = useCallback(async () => {
 		try {
 			setLoading(true);
-			const response = await fetch("http://localhost:8080/user");
-			const data = (await response.json()) as User[];
-			setUsers(data);
+			const response = await fetch(`${getApiUrl()}/user`, {
+				credentials: "include",
+			});
+			const data = await response.json();
+			if (data.redirectTo) {
+				window.location.href = data.redirectTo;
+			} else {
+				setUsers(data as User[]);
+			}
 		} catch {
 			// Handle error appropriately in production
 		} finally {
@@ -31,8 +41,14 @@ export default function UsersPage() {
 	}, []);
 
 	useEffect(() => {
-		fetchUsers();
-	}, [fetchUsers]);
+		if (isAuthenticated) {
+			fetchUsers();
+		}
+	}, [isAuthenticated, fetchUsers]);
+
+	if (!isAuthenticated) {
+		return <div className="text-center p-10">Loading...</div>;
+	}
 
 	return (
 		<div className="flex flex-col h-screen">

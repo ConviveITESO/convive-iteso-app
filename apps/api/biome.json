@@ -27,7 +27,8 @@
 		"rules": {
 			"style": {
 				"useImportType": "off",
-				"useNodejsImportProtocol": "error"
+				"useNodejsImportProtocol": "error",
+				"noProcessEnv": "error"
 			},
 			"suspicious": {
 				"noExplicitAny": "error",
@@ -39,9 +40,6 @@
 			},
 			"security": {
 				"noGlobalEval": "error"
-			},
-			"correctness": {
-				"noProcessGlobal": "error"
 			}
 		}
 	}

@@ -18,11 +18,15 @@
 		}
 	],
 	"settings": {
+		"files.associations": {
+			"*.css": "tailwindcss"
+		},
+		"material-icon-theme.activeIconPack": "nest",
 		"biome.enabled": true,
 		"biome.requireConfiguration": true,
 		"biome.lsp.trace.server": "verbose",
 		"editor.codeActionsOnSave": {
-			"quickfix.biome": "explicit",
+			"quickfix.biome": "never",
 			"source.action.useSortedKeys.biome": "explicit",
 			"source.fixAll.biome": "explicit",
 			"source.organizeImports.biome": "explicit"
@@ -47,11 +51,10 @@
 		},
 		"[css]": {
 			"editor.defaultFormatter": "biomejs.biome"
-		}
+		},
+		"cSpell.words": ["treeify", "unregisters", "Unregistration", "waitlist", "waitlisted"]
 	},
 	"extensions": {
-		"recommendations": [
-			"biomejs.biome"
-		]
+		"recommendations": ["biomejs.biome"]
 	}
 }

@@ -1,0 +1,175 @@
+name: Validate Code
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 10.15.1
+          run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "pnpm"
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          echo "node version: $(node -v)"
+          echo "pnpm version: $(pnpm -v)"
+          pnpm install --frozen-lockfile # Second run to ensure everything is locked
+
+      - name: Run lint
+        run: pnpm run lint
+
+      - name: Run tests
+        run: pnpm test
+
+  security-sast:
+    needs: [lint-and-test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Copy .env.example to .env api
+        run: cp apps/api/.env.example apps/api/.env
+      - name: Copy .env.example to .env web
+        run: cp apps/web/.env.example apps/web/.env
+
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 10.15.1
+          run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "pnpm"
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          echo "node version: $(node -v)"
+          echo "pnpm version: $(pnpm -v)"
+          pnpm install --frozen-lockfile # Second run to ensure everything is locked
+
+      - name: Install Snyk CLI
+        run: pnpm add -g snyk
+
+      - name: Run Snyk test
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: snyk test --all-projects
+
+      - name: Monitor project with Snyk (optional)
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: snyk monitor --all-projects
+
+  security-dast:
+    needs: [lint-and-test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 10.15.1
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "pnpm"
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          echo "node version: $(node -v)"
+          echo "pnpm version: $(pnpm -v)"
+          pnpm install --frozen-lockfile # Second run to ensure everything is locked
+
+      - name: Copy .env.example to .env api
+        run: cp apps/api/.env.example apps/api/.env
+
+      - name: Copy .env.example to .env web
+        run: cp apps/web/.env.example apps/web/.env
+
+      - name: Update DATABASE_URL for Docker network
+        run: sed -i 's|localhost:5432|db:5432|g' apps/api/.env
+
+      - name: Start DB with Docker Compose
+        run: make prod-up-ci
+
+      - name: Update DATABASE_URL for local seed
+        run: sed -i 's|db:5432|localhost:5432|g' apps/api/.env
+      - name: Wait for database to be ready
+        run: |
+          echo "Waiting for database to be ready..."
+          for i in {1..30}; do
+            if docker exec convive-iteso-database pg_isready -U user >/dev/null 2>&1; then
+              echo "✅ Database is ready."
+              exit 0
+            fi
+            echo "⏳ Database not ready yet, retrying in 2s..."
+            sleep 2
+          done
+          echo "❌ Database did not become ready in time"
+          exit 1
+
+      - name: create database
+        run: pnpm db:push
+
+      - name: seed database
+        run: pnpm db:seed
+      - name: Start Server with Docker Compose
+        run: docker ps -a
+      - name: Wait for API readiness (HTTP)
+        run: |
+          echo "Waiting for API (http://localhost:8080/health)..."
+          for i in {1..30}; do
+            if curl -sSf http://localhost:8080/health >/dev/null; then
+              echo "✅ API is responding."
+              exit 0
+            fi
+            echo "⏳ Not ready yet, retrying in 5s..."
+            sleep 5
+          done
+          echo "❌ API did not become ready in time"
+          exit 1
+      - name: Prepare ZAP reports folder
+        run: |
+          mkdir -p reports
+          chmod -R a+rw reports
+      - name: Run OWASP ZAP Baseline Scan manually
+        run: |
+          docker pull ghcr.io/zaproxy/zaproxy:stable
+          docker run --network=host \
+            --rm \
+            -v "${{ github.workspace }}/reports":/zap/wrk:rw \
+            ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
+              --autooff \
+              -t http://localhost:8080 \
+              -a \
+              -J /zap/wrk/report_json.json \
+              -w /zap/wrk/report_md.md \
+              -r /zap/wrk/report_html.html
+
+      - name: Shut down containers
+        if: always()
+        run: make prod-down-ci

@@ -1,14 +1,28 @@
 /** biome-ignore-all lint/suspicious/noConsole: main file not logger  */
-import process from "node:process";
+/** biome-ignore-all lint/style/noProcessEnv: main doesn't use the config module */
 import { NestFactory } from "@nestjs/core";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
+import cookieParser from "cookie-parser";
 import { AppModule } from "./app.module";
 
 async function bootstrap() {
 	const app = await NestFactory.create(AppModule);
+
+	// Remove X-Powered-By header for security
+	app.getHttpAdapter().getInstance().disable("x-powered-by");
+
+	// Add Cookie parser
+	app.use(cookieParser());
+
+	// Configure CORS properly
 	app.enableCors({
-		origin: process.env.FRONTEND_URL ?? "http://localhost:3001",
+		origin:
+			process.env.NODE_ENV === "production"
+				? ["https://your-production-domain.com"] // Replace with actual production domain
+				: ["http://localhost:3000", "http://localhost:3001"], // Development origins
 		credentials: true,
+		methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+		allowedHeaders: ["Content-Type", "Authorization", "Cache-Control", "Pragma"],
 	});
 
 	// Swagger setup

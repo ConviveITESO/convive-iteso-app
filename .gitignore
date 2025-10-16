@@ -85,9 +85,6 @@ next-env.d.ts
 .venv
 __pycache__
 
-# drizzle
-drizzle/
-
 # Terraform
 */*.tfstate
 */*.tfstate.*

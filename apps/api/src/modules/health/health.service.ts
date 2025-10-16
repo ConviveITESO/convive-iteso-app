@@ -1,23 +1,30 @@
-import process from "node:process";
 import { Inject, Injectable } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { ConfigSchema } from "../config/config.schema";
 import { AppDatabase, DATABASE_CONNECTION } from "../database/connection";
 
 @Injectable()
 export class HealthService {
-	constructor(@Inject(DATABASE_CONNECTION) private readonly db: AppDatabase) {}
+	constructor(
+		@Inject(DATABASE_CONNECTION) private readonly db: AppDatabase,
+		private readonly configService: ConfigService<ConfigSchema>,
+	) {}
 
 	/**
 	 * Get basic health status
 	 * @returns Basic health information
 	 */
 	getHealthStatus() {
+		const version = this.configService.getOrThrow("APP_VERSION");
+		const environment = this.configService.getOrThrow("NODE_ENV");
+
 		return {
 			status: "ok",
 			service: "ConviveITESO API",
 			timestamp: new Date().toISOString(),
 			uptime: process.uptime(),
-			version: process.env.npm_package_version || "1.0.0",
-			environment: process.env.NODE_ENV || "development",
+			version,
+			environment,
 		};
 	}
 

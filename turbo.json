@@ -62,6 +62,16 @@
 				"package.json"
 			],
 			"outputs": []
+		},
+		"type-check": {
+			"cache": true,
+			"inputs": [
+				"src/**/*.{ts,tsx,js,jsx,json}",
+				"*.{ts,tsx,js,jsx,json}",
+				"biome.json",
+				"package.json"
+			],
+			"outputs": []
 		}
 	},
 	"ui": "tui"

@@ -5,7 +5,6 @@ import { Pool } from "pg";
 import { DATABASE_CONNECTION } from "./connection";
 import { DatabaseHealthService } from "./database-health.service";
 import * as schemas from "./schemas";
-import { InitialDataService } from "./seed/initial-data.service";
 
 @Module({
 	providers: [
@@ -19,7 +18,7 @@ import { InitialDataService } from "./seed/initial-data.service";
 			 */
 			useFactory(configService: ConfigService) {
 				const pool = new Pool({
-					connectionString: configService.getOrThrow("DATABASE_URL"),
+					connectionString: configService.getOrThrow<string>("database.url"),
 				});
 				return drizzle(pool, {
 					schema: {
@@ -29,7 +28,6 @@ import { InitialDataService } from "./seed/initial-data.service";
 			},
 			inject: [ConfigService],
 		},
-		InitialDataService,
 	],
 	exports: [DATABASE_CONNECTION],
 })

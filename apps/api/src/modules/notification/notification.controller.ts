@@ -1,16 +1,17 @@
-import { Body, Controller, Delete, Get, Param, Post, Req } from "@nestjs/common";
-import type { Request } from "express";
+import { Body, Controller, Delete, Get, Param, Post, Req, UseGuards } from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
 import {
+	type NotificationKind,
 	notificationIdParamSchema,
 	notificationSchema,
 	notificationsResponseSchema,
-	type NotificationKind,
 } from "@repo/schemas";
+import type { Request } from "express";
 import { ZodOk, ZodParam, ZodValidationPipe } from "@/pipes/zod-validation/zod-validation.pipe";
+import { AuthGuard } from "../auth/guards/auth.guard";
 import { NotificationService } from "./notification.service";
 
-const DEV_USER_ID = 1; // 👈 entero
+const DEV_USER_ID = 1;
 type RequestWithUser = Request & {
 	user?: {
 		id?: number;
@@ -43,6 +44,7 @@ const userIdFromReq = (req: RequestWithUser): number => {
 
 @ApiTags("Notification")
 @Controller("notifications")
+@UseGuards(AuthGuard)
 export class NotificationController {
 	constructor(private readonly service: NotificationService) {}
 
