@@ -69,6 +69,9 @@ The configuration is organized into namespaces:
   - `clientId`: OAuth client ID
   - `clientSecret`: OAuth client secret
   - `redirectUri`: OAuth redirect URI
+- `queue`: Background job queue settings
+  - `redis.host`: Redis hostname
+  - `redis.port`: Redis port
 
 ## Environment Variables
 
@@ -83,6 +86,8 @@ DATABASE_URL=postgresql://user:password@localhost:5432/db
 CLIENT_ID=your-client-id
 CLIENT_SECRET=your-client-secret
 REDIRECT_URI=http://localhost:8080/auth/oauth-callback
+REDIS_HOST=127.0.0.1
+REDIS_PORT=6379
 ```
 
 ## Validation

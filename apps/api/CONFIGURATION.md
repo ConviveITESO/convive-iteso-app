@@ -39,6 +39,10 @@ FRONTEND_URL=http://localhost:3000
 # === Database ===
 DATABASE_URL=postgresql://user:password@localhost:5432/db
 
+# === Cache ===
+REDIS_HOST=127.0.0.1
+REDIS_PORT=6379
+
 # === OAuth ===
 CLIENT_ID=your-client-id
 CLIENT_SECRET=your-client-secret
@@ -112,6 +116,8 @@ The configuration is organized into the following namespaces:
 | `auth`     | `clientId`     | string | OAuth client ID            |
 | `auth`     | `clientSecret` | string | OAuth client secret        |
 | `auth`     | `redirectUri`  | string | OAuth redirect URI         |
+| `queue`    | `redis.host`   | string | Redis hostname for queues  |
+| `queue`    | `redis.port`   | number | Redis port for queues      |
 
 ## ✅ Validation
 
