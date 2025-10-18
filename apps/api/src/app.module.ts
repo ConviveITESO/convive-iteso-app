@@ -12,6 +12,7 @@ import { GroupModule } from "./modules/group/group.module";
 import { HealthModule } from "./modules/health/health.module";
 import { LocationModule } from "./modules/location/location.module";
 import { NotificationsModule } from "./modules/notifications/notifications.module";
+import { S3Module } from "./modules/s3/s3.module";
 import { SubscriptionsModule } from "./modules/subscriptions/subscriptions.module";
 import { UserModule } from "./modules/user/user.module";
 
@@ -32,6 +33,7 @@ import { UserModule } from "./modules/user/user.module";
 		NotificationsModule,
 		EmailModule,
 		EventAnalyticsModule,
+		S3Module,
 	],
 	controllers: [],
 	providers: [],

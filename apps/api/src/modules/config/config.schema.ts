@@ -19,6 +19,12 @@ export const configSchema = z.object({
 	MAILTRAP_API_KEY: z.string(),
 	REDIS_HOST: z.string().default("127.0.0.1"),
 	REDIS_PORT: z.coerce.number().int().default(6379),
+	AWS_REGION: z.string().default("us-east-1"),
+	AWS_ACCESS_KEY_ID: z.string().min(1),
+	AWS_SECRET_ACCESS_KEY: z.string().min(1),
+	AWS_SESSION_TOKEN: z.string().optional(), // Required for AWS Learner Lab
+	AWS_ENDPOINT_URL: z.string().optional(),
+	S3_BUCKET_NAME: z.string().min(1),
 });
 
 export type ConfigSchema = z.infer<typeof configSchema>;
