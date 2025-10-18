@@ -17,6 +17,8 @@ export const configSchema = z.object({
 	LOCAL_SMTP_HOST: z.string(),
 	LOCAL_SMTP_PORT: z.coerce.number().int(),
 	MAILTRAP_API_KEY: z.string(),
+	REDIS_HOST: z.string().default("127.0.0.1"),
+	REDIS_PORT: z.coerce.number().int().default(6379),
 });
 
 export type ConfigSchema = z.infer<typeof configSchema>;
