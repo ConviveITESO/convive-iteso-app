@@ -10,6 +10,7 @@ import { EventReminderModule } from "./modules/event-reminder/event-reminder.mod
 import { GroupModule } from "./modules/group/group.module";
 import { HealthModule } from "./modules/health/health.module";
 import { LocationModule } from "./modules/location/location.module";
+import { NotificationsModule } from "./modules/notifications/notifications.module";
 import { SubscriptionsModule } from "./modules/subscriptions/subscriptions.module";
 import { UserModule } from "./modules/user/user.module";
 
@@ -27,6 +28,7 @@ import { UserModule } from "./modules/user/user.module";
 		SubscriptionsModule,
 		AuthModule,
 		EventReminderModule,
+		NotificationsModule,
 		EmailModule,
 	],
 	controllers: [],
