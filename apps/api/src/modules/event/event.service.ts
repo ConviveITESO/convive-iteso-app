@@ -8,7 +8,7 @@ import {
 	UpdateEventSchema,
 	UserResponseSchema,
 } from "@repo/schemas";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, gte, sql } from "drizzle-orm";
 import { BadgeService } from "../badge/badge.service";
 import { CategoryService } from "../category/category.service";
 import { AppDatabase, DATABASE_CONNECTION } from "../database/connection";
@@ -44,7 +44,7 @@ export class EventService {
 	) {}
 
 	async getEvents(filters: GetEventsQuerySchema): Promise<EventResponseSchema[]> {
-		const where = [eq(events.status, "active")];
+		const where = [eq(events.status, "active"), gte(events.startDate, new Date())];
 		if (filters.name) {
 			where.push(eq(events.name, filters.name));
 		}

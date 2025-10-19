@@ -38,7 +38,7 @@ export default function AppHeader() {
 							variant="ghost"
 							size="icon"
 							onClick={showBackButton ? handleBack : toggleMenu}
-							className="hover:bg-white/20 text-white h-14 w-14 rounded-full text-4xl"
+							className="hover:bg-white/20 text-white h-14 w-14 rounded-full text-4xl cursor-pointer hover:text-white"
 						>
 							{showBackButton ? (
 								<ArrowLeft className="h-12 w-12" />

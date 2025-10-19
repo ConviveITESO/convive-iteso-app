@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { getApiUrl } from "@/lib/api";
+import { cn } from "@/lib/utils";
 import { EventDetails } from "./_event-details";
 import { EventHeader } from "./_event-header";
 import { EventImage } from "./_event-image";
@@ -123,6 +124,7 @@ export default function EventPage() {
 
 	const now = new Date();
 	const eventHasStarted = now >= startDate;
+	const isFull = stats?.spotsLeft === 0;
 
 	return (
 		<div className="min-h-screen bg-background">
@@ -134,13 +136,18 @@ export default function EventPage() {
 					<EventDetails description={event.description} startDate={startDate} endDate={endDate} />
 					<EventStats registeredCount={registeredCount} quota={event.quota} spotsLeft={spotsLeft} />
 					<Button
-						className="w-full h-10 bg-primary text-primary-foreground hover:bg-primary/90"
+						className={cn(
+							"w-full h-10",
+							isFull
+								? "bg-secondary text-secondary-foreground hover:bg-secondary/90"
+								: "bg-primary text-primary-foreground hover:bg-primary/90",
+						)}
 						onClick={handleRegister}
 						disabled={eventHasStarted}
 					>
 						{eventHasStarted
 							? "Event has started"
-							: stats?.spotsLeft === 0
+							: isFull
 								? "Enter waitlist"
 								: "Register for event"}
 					</Button>
