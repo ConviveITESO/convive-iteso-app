@@ -45,6 +45,7 @@ export default function AddUserDialog({ onUserAdded }: AddUserDialogProps) {
 	const [open, setOpen] = useState(false);
 	const [loading, setLoading] = useState(false);
 	const [errors, setErrors] = useState<FormErrors>({});
+	const [submitError, setSubmitError] = useState<string | null>(null);
 
 	const nameId = useId();
 	const emailId = useId();
@@ -91,7 +92,7 @@ export default function AddUserDialog({ onUserAdded }: AddUserDialogProps) {
 		if (!validatedData) return;
 
 		setLoading(true);
-		console.log(createUserSchema.encode(validatedData));
+		setSubmitError(null);
 
 		try {
 			const response = await fetch(`${getApiUrl()}/user`, {
@@ -114,12 +115,10 @@ export default function AddUserDialog({ onUserAdded }: AddUserDialogProps) {
 				setErrors({});
 				onUserAdded();
 			} else {
-				// Handle error appropriately in production
-				await response.json();
-				window.location.href = "/";
+				setSubmitError("We could not create the user. Please try again.");
 			}
 		} catch {
-			// Handle error appropriately in production
+			setSubmitError("Unexpected error while creating the user. Please try again.");
 		} finally {
 			setLoading(false);
 		}
@@ -138,6 +137,11 @@ export default function AddUserDialog({ onUserAdded }: AddUserDialogProps) {
 					</DialogDescription>
 				</DialogHeader>
 				<form onSubmit={handleSubmit}>
+					{submitError && (
+						<p role="alert" className="mb-3 text-sm text-red-600">
+							{submitError}
+						</p>
+					)}
 					<div className="grid gap-4 py-4">
 						<div className="grid grid-cols-4 items-center gap-4">
 							<Label htmlFor={nameId} className="text-right">
