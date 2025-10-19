@@ -1,4 +1,5 @@
 import {
+	BadRequestException,
 	Body,
 	Controller,
 	Delete,
@@ -8,8 +9,11 @@ import {
 	Put,
 	Query,
 	Req,
+	UploadedFile,
 	UseGuards,
+	UseInterceptors,
 } from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express/multer/interceptors/file.interceptor";
 import { ApiTags } from "@nestjs/swagger";
 import {
 	CreateEventSchema,
@@ -66,12 +70,27 @@ export class EventController {
 	@Post()
 	@ZodBody(createEventSchema)
 	@ZodCreated(eventResponseSchema)
+	@UseInterceptors(FileInterceptor("image"))
 	async createEvent(
-		@Body(new ZodValidationPipe(createEventSchema)) data: CreateEventSchema,
+		@Body() rawBody: Record<string, unknown>,
 		@Req() req: UserRequest,
+		@UploadedFile() imageFile: Express.Multer.File,
 	): Promise<EventResponseSchema> {
+		const json = rawBody.data;
+		if (!json) throw new BadRequestException("Missing event data");
+
+		const result = createEventSchema.safeParse(JSON.parse(json as string));
+		if (!result.success) {
+			throw new BadRequestException("Invalid event data");
+		}
+
+		if (!imageFile || !imageFile.mimetype.startsWith("image/")) {
+			throw new BadRequestException("Invalid or missing image file");
+		}
+
+		const data: CreateEventSchema = result.data;
 		const userId = req.user.id;
-		const eventId = await this.eventsService.createEvent(data, userId);
+		const eventId = await this.eventsService.createEvent(data, userId, imageFile);
 		const event = await this.eventsService.getEventByIdOrThrow(eventId);
 		return event;
 	}

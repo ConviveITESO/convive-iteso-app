@@ -122,6 +122,7 @@ export const eventResponseSchema = z
 		group: groupResponseSchema,
 		categories: categoryResponseArraySchema,
 		badges: badgeResponseArraySchema,
+		imageUrl: z.string(),
 	})
 	.openapi("EventResponseSchema", {
 		example: eventResponseSchemaExample,
@@ -140,6 +141,7 @@ export const eventResponseArraySchemaExample = [
 		group: groupResponseSchemaExample,
 		categories: categoryResponseArraySchemaExample,
 		badges: badgeResponseArraySchemaExample,
+		imageUrl: "https://your-s3-bucket-url/events/550e8400-e29b-41d4-a716-446655440000.jpg",
 	},
 	{
 		id: "550e8400-e29b-41d4-a716-446655440000",
@@ -153,6 +155,7 @@ export const eventResponseArraySchemaExample = [
 		group: groupResponseSchemaExample,
 		categories: categoryResponseArraySchemaExample,
 		badges: badgeResponseArraySchemaExample,
+		imageUrl: "https://your-s3-bucket-url/events/550e8400-e29b-41d4-a716-446655440000.jpg",
 	},
 ];
 

@@ -31,6 +31,7 @@ interface EventFormData {
 	categoryIds: string[];
 	badgeIds: string[];
 	quota: number | "";
+	image?: unknown;
 }
 
 interface EventFormProps {
@@ -40,7 +41,7 @@ interface EventFormProps {
 	categories?: CategoryResponseSchema[];
 	badges?: BadgeResponseSchema[];
 	locations?: LocationResponseSchema[];
-	onSave?: (data: CreateEventSchema) => void | Promise<void>;
+	onSave?: (data: CreateEventSchema, imageFile: File) => void | Promise<void>;
 	onCancel?: () => void;
 }
 
@@ -88,8 +89,13 @@ const EventForm = ({
 
 	const [showCategoriesModal, setShowCategoriesModal] = useState(false);
 	const [showBadgesModal, setShowBadgesModal] = useState(false);
-	const [errors, setErrors] = useState<Partial<Record<keyof EventFormData, string>>>({});
+	const [errors, setErrors] = useState<Partial<Record<string, string>>>({});
 	const [isSubmitting, setIsSubmitting] = useState(false);
+	const [imageFile, setImageFile] = useState<File>();
+
+	const handleFileChange = (file?: File | null) => {
+		setImageFile(file ?? undefined);
+	};
 
 	const handleInputChange = (field: keyof EventFormData, value: string | number) => {
 		setFormData((prev) => ({ ...prev, [field]: value }));
@@ -126,7 +132,7 @@ const EventForm = ({
 	};
 
 	const validateForm = (): boolean => {
-		const newErrors: Partial<Record<keyof EventFormData, string>> = {};
+		const newErrors: Partial<Record<string, string>> = {};
 
 		const dataToValidate = {
 			name: formData.name,
@@ -137,6 +143,7 @@ const EventForm = ({
 			locationId: formData.locationId,
 			categoryIds: formData.categoryIds,
 			badgeIds: formData.badgeIds,
+			image: formData.image,
 		};
 
 		const result = createEventSchema.safeParse(dataToValidate);
@@ -158,10 +165,14 @@ const EventForm = ({
 						newErrors.endDate = issue.message;
 					}
 				} else {
-					const field = path as keyof EventFormData;
-					newErrors[field] = issue.message;
+					//const field = path as keyof EventFormData;
+					newErrors[path] = issue.message;
 				}
 			});
+		}
+
+		if (mode === "create" && !imageFile) {
+			newErrors.imageFile = "An image file is required";
 		}
 
 		setErrors(newErrors);
@@ -188,7 +199,7 @@ const EventForm = ({
 			};
 
 			if (onSave) {
-				await onSave(eventData);
+				await onSave(eventData, imageFile as File);
 			}
 		} catch (error) {
 			// Handle error appropriately
@@ -271,6 +282,27 @@ const EventForm = ({
 							{errors.description}
 						</p>
 					)}
+				</div>
+
+				{/* Image Field (required for create) */}
+				<div className="space-y-2">
+					<Label htmlFor="image" className="text-sm font-medium text-foreground">
+						Image {mode === "create" && <span className="text-destructive">*</span>}
+					</Label>
+					<Input
+						id="image"
+						type="file"
+						accept="image/*"
+						required={mode === "create"}
+						onChange={(e) => handleFileChange(e.target.files?.[0] ?? null)}
+						className="w-full"
+					/>
+					{errors.image && (
+						<p id="image-error" className="text-sm text-destructive">
+							{errors.image}
+						</p>
+					)}
+					{imageFile && <p className="text-sm text-muted-foreground">{imageFile.name}</p>}
 				</div>
 
 				{/* Start Date & Time Field */}

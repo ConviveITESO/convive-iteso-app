@@ -15,6 +15,7 @@ export const events = pgTable("events", {
 	opensAt: timestamp("opens_at", { mode: "date" }),
 	closesAt: timestamp("closes_at", { mode: "date" }),
 	unregisterClosesAt: timestamp("unregister_closes_at", { mode: "date" }),
+	imageUrl: varchar("image_url", { length: 1024 }).notNull(),
 	createdBy: uuid("created_by")
 		.notNull()
 		.references(() => users.id),

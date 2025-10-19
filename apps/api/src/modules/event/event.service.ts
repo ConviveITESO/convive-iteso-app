@@ -28,6 +28,7 @@ import {
 } from "../database/schemas";
 import { GroupService } from "../group/group.service";
 import { LocationService } from "../location/location.service";
+import { S3Service } from "../s3/s3.service";
 import { UserService } from "../user/user.service";
 
 @Injectable()
@@ -39,6 +40,7 @@ export class EventService {
 		private readonly locationService: LocationService,
 		private readonly categoryService: CategoryService,
 		private readonly badgeService: BadgeService,
+		private readonly s3Service: S3Service,
 	) {}
 
 	async getEvents(filters: GetEventsQuerySchema): Promise<EventResponseSchema[]> {
@@ -180,12 +182,20 @@ export class EventService {
 		return event;
 	}
 
-	async createEvent(data: CreateEventSchema, userId: string): Promise<string> {
+	async createEvent(
+		data: CreateEventSchema,
+		userId: string,
+		imageFile: Express.Multer.File,
+	): Promise<string> {
+		const s3Key = `events/${Date.now()}-${imageFile.originalname}`;
+		await this.s3Service.uploadFile(s3Key, imageFile.buffer, imageFile.mimetype);
+		const imageUrl = await this.s3Service.getFileUrl(s3Key);
+
 		return this.db.transaction(async () => {
 			await this.assertLocationCategoriesBadgesExist(data);
 			const groupId = await this.createEventGroup(data);
 			await this.groupService.createSubscription(groupId, userId);
-			const eventId = await this._createEvent(data, userId, groupId);
+			const eventId = await this._createEvent(data, userId, groupId, imageUrl);
 			await this.createCategoryBadgeRelations(data, eventId);
 			return eventId;
 		});
@@ -233,6 +243,7 @@ export class EventService {
 			group,
 			categories: eventCategories,
 			badges: eventBadges,
+			imageUrl: event.imageUrl,
 		};
 	}
 
@@ -264,6 +275,7 @@ export class EventService {
 		data: CreateEventSchema,
 		userId: string,
 		groupId: string,
+		imageUrl: string,
 	): Promise<string> {
 		const [event] = await this.db
 			.insert(events)
@@ -276,6 +288,7 @@ export class EventService {
 				locationId: data.locationId,
 				createdBy: userId,
 				groupId,
+				imageUrl,
 			})
 			.returning({ id: events.id });
 		// biome-ignore lint/style/noNonNullAssertion: <>
@@ -338,5 +351,38 @@ export class EventService {
 			0,
 			1023,
 		);
+	}
+
+	async updateEventImage(eventId: string, imageFile: Express.Multer.File) {
+		const existingEvent = await this.db.query.events.findFirst({
+			where: eq(events.id, eventId),
+		});
+
+		if (existingEvent?.imageUrl) {
+			const oldKey = this.extractKeyFromUrl(existingEvent.imageUrl);
+			if (oldKey) {
+				await this.s3Service.deleteFile(oldKey);
+			}
+		}
+
+		const key = `events/${Date.now()}-${imageFile.originalname}`;
+		await this.s3Service.uploadFile(key, imageFile.buffer, imageFile.mimetype);
+		const newImageUrl = await this.s3Service.getFileUrl(key);
+
+		const updated = await this.db
+			.update(events)
+			.set({ imageUrl: newImageUrl })
+			.where(eq(events.id, eventId))
+			.returning();
+
+		return updated[0];
+	}
+
+	private extractKeyFromUrl(url: string): string | null {
+		// Extract key from S3 URL
+		// For LocalStack: http://localhost:4566/bucket/key
+		// For AWS: https://bucket.s3.region.amazonaws.com/key
+		const match = url.match(/\/([^/]+\/[^/]+)$/);
+		return match?.[1] ?? null;
 	}
 }

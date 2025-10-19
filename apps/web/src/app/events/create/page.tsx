@@ -30,12 +30,15 @@ export default function EditEventPage() {
 		badgeIds: [],
 	};
 
-	const handleSave = async (data: CreateEventSchema) => {
+	const handleSave = async (data: CreateEventSchema, imageFile: File) => {
 		try {
+			const formData = new FormData();
+			formData.append("image", imageFile);
+			formData.append("data", JSON.stringify(data));
+
 			const response = await fetch(`${getApiUrl()}/events`, {
 				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(data),
+				body: formData,
 				credentials: "include",
 			});
 
