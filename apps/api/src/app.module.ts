@@ -6,6 +6,7 @@ import { ConfigModule } from "./modules/config";
 import { DatabaseModule } from "./modules/database/database.module";
 import { EmailModule } from "./modules/email/email.module";
 import { EventModule } from "./modules/event/event.module";
+import { EventAnalyticsModule } from "./modules/event-analytics/event-analytics.module";
 import { EventReminderModule } from "./modules/event-reminder/event-reminder.module";
 import { GroupModule } from "./modules/group/group.module";
 import { HealthModule } from "./modules/health/health.module";
@@ -28,6 +29,7 @@ import { UserModule } from "./modules/user/user.module";
 		AuthModule,
 		EventReminderModule,
 		EmailModule,
+		EventAnalyticsModule,
 	],
 	controllers: [],
 	providers: [],
