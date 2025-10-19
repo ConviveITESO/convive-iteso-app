@@ -16,6 +16,7 @@ type MockedSubscriptionsService = jest.Mocked<
 	Pick<
 		SubscriptionsService,
 		| "getUserSubscriptions"
+		| "getUserSubscribedEvents"
 		| "getSubscriptionById"
 		| "getEventStats"
 		| "getEventAlreadyRegistered"
@@ -32,6 +33,7 @@ describe("SubscriptionsController", () => {
 	beforeEach(async () => {
 		service = {
 			getUserSubscriptions: jest.fn(),
+			getUserSubscribedEvents: jest.fn(),
 			getSubscriptionById: jest.fn(),
 			getEventStats: jest.fn(),
 			getEventAlreadyRegistered: jest.fn(),
@@ -69,6 +71,19 @@ describe("SubscriptionsController", () => {
 
 			expect(service.getUserSubscriptions).toHaveBeenCalledWith(req.user.id, query);
 			expect(result).toBe(subscriptions);
+		});
+	});
+
+	describe("getUserSubscribedEvents", () => {
+		it("should return subscribed events for the authenticated user", async () => {
+			const req = { user: { id: "user-987" } } as UserRequest;
+			const events = [{ id: "event-1" }];
+			service.getUserSubscribedEvents.mockResolvedValue(events as never);
+
+			const result = await controller.getUserSubscribedEvents(req);
+
+			expect(service.getUserSubscribedEvents).toHaveBeenCalledWith(req.user.id);
+			expect(result).toBe(events);
 		});
 	});
 

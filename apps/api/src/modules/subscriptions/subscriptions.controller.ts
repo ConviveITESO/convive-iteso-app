@@ -71,7 +71,7 @@ export class SubscriptionsController {
 	) {
 		return await this.subscriptionsService.checkIn(body.eventId, body.subscriptionId);
 	}
-	
+
 	@Get("events")
 	@ZodOk(subscribedEventResponseArraySchema)
 	getUserSubscribedEvents(@Req() req: UserRequest) {

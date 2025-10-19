@@ -106,6 +106,45 @@ describe("SubscriptionsService", () => {
 		mockNotificationsQueue.enqueueSubscriptionCreated.mockResolvedValue("job-123");
 	});
 
+	describe("getUserSubscribedEvents", () => {
+		beforeEach(() => {
+			jest.clearAllMocks();
+		});
+
+		it("should return formatted events for the authenticated user", async () => {
+			const userId = "user-123";
+			const rawRow = {
+				id: "event-1",
+				name: "Event 1",
+				startDate: new Date("2025-09-21T19:45:00Z"),
+				locationName: "Main Hall",
+			};
+			(mockDb.where as jest.Mock).mockResolvedValueOnce([rawRow]);
+
+			const result = await service.getUserSubscribedEvents(userId);
+
+			expect(mockDb.select).toHaveBeenCalled();
+			expect(mockDb.innerJoin).toHaveBeenCalled();
+			expect(mockDb.where).toHaveBeenCalled();
+			expect(result).toEqual([
+				{
+					id: rawRow.id,
+					name: rawRow.name,
+					startDate: rawRow.startDate.toISOString(),
+					location: { name: rawRow.locationName },
+				},
+			]);
+		});
+
+		it("should return empty array when no subscribed events found", async () => {
+			(mockDb.where as jest.Mock).mockResolvedValueOnce([]);
+
+			const result = await service.getUserSubscribedEvents("user-123");
+
+			expect(result).toEqual([]);
+		});
+	});
+
 	describe("getUserSubscriptions", () => {
 		beforeEach(() => {
 			jest.clearAllMocks();
