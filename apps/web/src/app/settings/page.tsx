@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
+import { HeaderTitle } from "@/hooks/use-header-title";
 import { getApiUrl } from "@/lib/api";
 
 interface UserProfile {
@@ -106,13 +107,7 @@ export default function ProfileSettingsPage() {
 
 	return (
 		<div className="min-h-screen bg-background">
-			{/* Header */}
-			<div className="bg-card border-b border-border px-4 py-3 flex items-center sticky top-0 z-10">
-				<Button variant="ghost" size="sm" className="p-0 mr-3" onClick={() => router.back()}>
-					<ArrowLeft className="h-5 w-5" />
-				</Button>
-				<h1 className="text-lg font-semibold text-foreground">Profile Settings</h1>
-			</div>
+			<HeaderTitle title="Profile Settings" />
 
 			{/* Content */}
 			<div className="p-4 space-y-6 max-w-md mx-auto lg:max-w-2xl">

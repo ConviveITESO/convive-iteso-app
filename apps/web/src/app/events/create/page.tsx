@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { useBadges } from "@/hooks/use-badges";
 import { useCategories } from "@/hooks/use-categories";
+import { useHeaderTitle } from "@/hooks/use-header-title";
 import { useLocations } from "@/hooks/use-locations";
 import { getApiUrl } from "@/lib/api";
 import EventForm from "../_event-form";
@@ -13,6 +14,7 @@ import EventForm from "../_event-form";
 export default function EditEventPage() {
 	const { isAuthenticated } = useAuth();
 	const router = useRouter();
+	useHeaderTitle("Create event", { showBackButton: true });
 
 	const { data: locations = [], isLoading: locationsLoading } = useLocations(isAuthenticated);
 	const { data: categories = [], isLoading: categoriesLoading } = useCategories(isAuthenticated);

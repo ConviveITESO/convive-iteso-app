@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useCategories } from "@/hooks/use-categories";
 import { useEvents } from "@/hooks/use-events";
+import { DEFAULT_HEADER_TITLE, useHeaderTitle } from "@/hooks/use-header-title";
 import { EventsGrid } from "../../components/events/_events-grid";
 import { CategoriesFilter } from "./_categories-filter";
 import { SearchHeader } from "./_search-header";
@@ -14,6 +15,8 @@ export default function FeedPage() {
 	const router = useRouter();
 	const [searchQuery, setSearchQuery] = useState("");
 	const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
+	useHeaderTitle(DEFAULT_HEADER_TITLE);
 
 	const { data: events = [], isLoading: eventsLoading } = useEvents(isAuthenticated);
 	const { data: categories = [], isLoading: categoriesLoading } = useCategories(isAuthenticated);

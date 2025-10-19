@@ -347,8 +347,7 @@ export function CheckInScanner({ eventId, eventName }: CheckInScannerProps) {
 		<div className="min-h-screen bg-background">
 			<div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-8">
 				<div className="rounded-lg border bg-card p-6 shadow-sm">
-					<h1 className="text-2xl font-semibold">Event Check-in</h1>
-					<p className="text-muted-foreground">Event: {eventName}</p>
+					<p className="text-muted-foreground">{eventName}</p>
 				</div>
 
 				<div className="grid gap-6 md:grid-cols-[2fr,1fr]">

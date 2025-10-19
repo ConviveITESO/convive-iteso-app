@@ -1,4 +1,5 @@
 import type { NotificationResponse } from "@repo/schemas";
+import { HeaderTitle } from "@/hooks/use-header-title";
 import { validateAuth } from "@/lib/auth";
 import NotificationHeader from "./_components/notification-header";
 import NotificationList from "./_components/notification-list";
@@ -50,6 +51,7 @@ export default async function NotificationsPage() {
 	await validateAuth();
 	return (
 		<main className="pb-8">
+			<HeaderTitle title="Notifications Playground" showBackButton={true} />
 			<NotificationHeader
 				rightAction={
 					<button type="button" className="text-xs text-gray-500 hover:underline">

@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useBadges } from "@/hooks/use-badges";
 import { useCategories } from "@/hooks/use-categories";
+import { useHeaderTitle } from "@/hooks/use-header-title";
 import { useLocations } from "@/hooks/use-locations";
 import { getApiUrl } from "@/lib/api";
 import EventForm from "../../_event-form";
@@ -16,6 +17,9 @@ export default function EditEventPage() {
 	const router = useRouter();
 	const { isAuthenticated } = useAuth();
 	const eventId = params.id as string;
+
+	useHeaderTitle("Edit event", { showBackButton: true });
+
 	const [initialData, setInitialData] = useState<CreateEventSchema & EventResponseSchema>(
 		{} as CreateEventSchema & EventResponseSchema,
 	);

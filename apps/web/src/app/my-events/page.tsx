@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/use-auth";
+import { useHeaderTitle } from "@/hooks/use-header-title";
 import { useSubscribedEvents } from "@/hooks/use-subscribed-events";
 import { getApiUrl } from "@/lib/api";
 
@@ -56,6 +57,7 @@ export default function MyEventsPage() {
 			setSelectedEvent(null);
 		}
 	}, []);
+	useHeaderTitle("My events");
 
 	if (!isAuthenticated || isLoading) {
 		return (

@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { HeaderTitle } from "@/hooks/use-header-title";
 import { validateAuth } from "@/lib/auth";
 import { ManageEventQrPageClient } from "./_check-in-qr-client";
 
@@ -14,5 +15,10 @@ export default async function ManageEventQrPage({ params }: PageProps) {
 		notFound();
 	}
 
-	return <ManageEventQrPageClient eventId={id} />;
+	return (
+		<>
+			<HeaderTitle title="Event Check-in" showBackButton={true} />
+			<ManageEventQrPageClient eventId={id} />
+		</>
+	);
 }

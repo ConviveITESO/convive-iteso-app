@@ -4,7 +4,7 @@ import type {
 	LocationResponseSchema,
 } from "@repo/schemas";
 import { type CreateEventSchema, createEventSchema } from "@repo/schemas";
-import { ArrowLeft, Calendar } from "lucide-react";
+import { Calendar } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -229,20 +229,10 @@ const EventForm = ({
 		return `${formData.badgeIds.length} badges selected`;
 	};
 
-	const pageTitle = mode === "edit" ? "Edit Event" : "Create Event";
 	const submitButtonText = mode === "edit" ? "Save changes" : "Create event";
 
 	return (
 		<div className="min-h-screen bg-background">
-			{/* Header */}
-			<div className="bg-card border-b border-border px-4 py-3 flex items-center sticky top-0 z-10">
-				<Button variant="ghost" size="sm" className="p-0 mr-3" onClick={handleExitWithoutSaving}>
-					<ArrowLeft className="h-5 w-5" />
-				</Button>
-				<h1 className="text-lg font-semibold text-foreground">{pageTitle}</h1>
-			</div>
-
-			{/* Form Content */}
 			<div className="p-4 space-y-6 max-w-md mx-auto lg:max-w-2xl pb-32">
 				{/* Name Field */}
 				<div className="space-y-2">

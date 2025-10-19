@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useCategories } from "@/hooks/use-categories";
 import { useDeleteEvent } from "@/hooks/use-delete-event";
 import { useEvents } from "@/hooks/use-events";
+import { HeaderTitle } from "@/hooks/use-header-title";
 import { EventsGrid } from "../../components/events/_events-grid";
 import { CategoriesFilter } from "../feed/_categories-filter";
 import { SearchHeader } from "../feed/_search-header";
@@ -86,12 +87,12 @@ export default function ManageEventsPage() {
 
 	return (
 		<div className="min-h-screen bg-background">
+			<HeaderTitle title="Manage events" />
 			<SearchHeader searchQuery={searchQuery} onSearchChange={setSearchQuery} />
 
 			<div className="mx-auto max-w-7xl px-4 py-8">
 				<div className="mb-6">
-					<h1 className="text-3xl font-bold">Manage Events</h1>
-					<p className="text-muted-foreground mt-1">View and manage all events in the system</p>
+					<h2 className="text-muted-foreground mt-1">View and manage all events in the system</h2>
 				</div>
 
 				<CategoriesFilter

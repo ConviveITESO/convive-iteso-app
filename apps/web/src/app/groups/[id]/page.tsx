@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/hooks/use-auth";
 import { useGroupMessages, useSendGroupMessage } from "@/hooks/use-group-messages";
+import { useHeaderTitle } from "@/hooks/use-header-title";
 
 export default function ChatPage() {
 	const { isAuthenticated } = useAuth();
@@ -18,6 +19,8 @@ export default function ChatPage() {
 	const groupId = Array.isArray(rawGroupId) ? rawGroupId[0] : rawGroupId;
 	const [input, setInput] = useState("");
 	const scrollRef = useRef<HTMLDivElement>(null);
+	const { id } = useParams();
+	useHeaderTitle(`Group ${id ?? ""}`, { showBackButton: true });
 
 	const { data: messages = [], isLoading, isError } = useGroupMessages(groupId);
 	const { mutate: sendMessage, isPending: sending } = useSendGroupMessage(groupId);
