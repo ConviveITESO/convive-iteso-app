@@ -4,14 +4,14 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
+import { useHeaderTitle } from "@/hooks/use-header-title";
 import { getApiUrl } from "@/lib/api";
 import { cn } from "@/lib/utils";
-import { EventDetails } from "./_event-details";
-import { EventHeader } from "./_event-header";
-import { EventImage } from "./_event-image";
-import { EventPass } from "./_event-pass";
-import { EventStats } from "./_event-stats";
-import { SubscriptionStatus } from "./_subscription-status";
+import { EventDetails } from "./_components/_event-details";
+import { EventImage } from "./_components/_event-image";
+import { EventPass } from "./_components/_event-pass";
+import { EventStats } from "./_components/_event-stats";
+import { SubscriptionStatus } from "./_components/_subscription-status";
 import { useEventData } from "./_use-event-data";
 
 export default function EventPage() {
@@ -22,6 +22,8 @@ export default function EventPage() {
 
 	const eventId = Array.isArray(id) ? id[0] : id;
 	const { event, stats, subscription, isLoading } = useEventData(eventId);
+	const headerTitle = event?.name ?? "Event details";
+	useHeaderTitle(headerTitle, { showBackButton: true });
 
 	if (!isAuthenticated) {
 		return (
@@ -95,7 +97,6 @@ export default function EventPage() {
 		return (
 			<div className="min-h-screen bg-background">
 				<div className="max-w-md mx-auto shadow-lg overflow-hidden">
-					<EventHeader eventName={event.name} />
 					<EventImage imageUrl={event.imageUrl} name={event.name} />
 
 					<div className="px-8 pb-8">
@@ -129,7 +130,6 @@ export default function EventPage() {
 	return (
 		<div className="min-h-screen bg-background">
 			<div className="max-w-md mx-auto shadow-lg overflow-hidden">
-				<EventHeader eventName={event.name} />
 				<EventImage imageUrl={event.imageUrl} name={event.name} />
 
 				<div className="px-8 pb-8">
