@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useCategories } from "@/hooks/use-categories";
 import { useEvents } from "@/hooks/use-events";
 import { DEFAULT_HEADER_TITLE, useHeaderTitle } from "@/hooks/use-header-title";
-import { EventsGrid } from "../../components/events/_events-grid";
+import { EventsGrid } from "../../../components/events/_events-grid";
 import { CategoriesFilter } from "./_categories-filter";
 import { SearchHeader } from "./_search-header";
 
