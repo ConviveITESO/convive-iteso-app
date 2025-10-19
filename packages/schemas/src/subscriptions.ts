@@ -162,6 +162,7 @@ export const subscriptionCheckInResponseSchema = z
 
 export const subscribedEventResponseSchema = z
 	.object({
+		subscriptionId: z.uuid(),
 		id: z.uuid(),
 		name: z.string(),
 		startDate: z.iso.datetime(),
@@ -177,6 +178,7 @@ export const subscribedEventResponseSchema = z
 	})
 	.openapi("SubscribedEventResponseSchema", {
 		example: {
+			subscriptionId: "111e8400-e29b-41d4-a716-446655440000",
 			id: "550e8400-e29b-41d4-a716-446655440000",
 			name: "Event 1",
 			startDate: "2025-09-21T19:45:00Z",
@@ -191,6 +193,7 @@ export const subscribedEventResponseArraySchema = z
 	.openapi("SubscribedEventResponseArraySchema", {
 		example: [
 			{
+				subscriptionId: "111e8400-e29b-41d4-a716-446655440000",
 				id: "550e8400-e29b-41d4-a716-446655440000",
 				name: "Event 1",
 				startDate: "2025-09-21T19:45:00Z",

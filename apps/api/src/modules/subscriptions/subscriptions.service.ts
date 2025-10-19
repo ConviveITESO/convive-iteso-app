@@ -394,6 +394,7 @@ export class SubscriptionsService {
 	async getUserSubscribedEvents(userId: string): Promise<SubscribedEventResponseArraySchema> {
 		const rows = await this.db
 			.select({
+				subscriptionId: subscriptions.id,
 				id: events.id,
 				name: events.name,
 				startDate: events.startDate,
@@ -416,6 +417,7 @@ export class SubscriptionsService {
 			);
 
 		return rows.map((row) => ({
+			subscriptionId: row.subscriptionId,
 			id: row.id,
 			name: row.name,
 			startDate: row.startDate instanceof Date ? row.startDate.toISOString() : row.startDate,

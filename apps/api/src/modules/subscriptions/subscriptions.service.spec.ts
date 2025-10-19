@@ -114,6 +114,7 @@ describe("SubscriptionsService", () => {
 		it("should return formatted events for the authenticated user", async () => {
 			const userId = "user-123";
 			const rawRow = {
+				subscriptionId: "sub-1",
 				id: "event-1",
 				name: "Event 1",
 				startDate: new Date("2025-09-21T19:45:00Z"),
@@ -128,6 +129,7 @@ describe("SubscriptionsService", () => {
 			expect(mockDb.where).toHaveBeenCalled();
 			expect(result).toEqual([
 				{
+					subscriptionId: rawRow.subscriptionId,
 					id: rawRow.id,
 					name: rawRow.name,
 					startDate: rawRow.startDate.toISOString(),

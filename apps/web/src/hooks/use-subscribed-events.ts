@@ -1,6 +1,6 @@
 "use client";
 
-import type { EventResponseArraySchema } from "@repo/schemas";
+import type { SubscribedEventResponseArraySchema } from "@repo/schemas";
 import { useQuery } from "@tanstack/react-query";
 import { getApiUrl } from "@/lib/api";
 
@@ -21,7 +21,7 @@ export function useSubscribedEvents(enabled = true) {
 				throw new Error(`Failed to fetch subscribed events: ${res.status}`);
 			}
 
-			return res.json() as Promise<EventResponseArraySchema>;
+			return res.json() as Promise<SubscribedEventResponseArraySchema>;
 		},
 		enabled,
 	});
