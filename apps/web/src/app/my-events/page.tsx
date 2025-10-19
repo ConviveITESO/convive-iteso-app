@@ -2,7 +2,6 @@
 
 import type { SubscribedEventResponseSchema } from "@repo/schemas";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Menu } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import { EventsGrid } from "@/components/events/_events-grid";
@@ -96,9 +95,6 @@ export default function MyEventsPage() {
 				<div className="border-b bg-background">
 					<div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
 						<div className="flex items-center gap-3">
-							<Button variant="ghost" size="icon">
-								<Menu className="size-5" />
-							</Button>
 							<h1 className="text-xl font-semibold">Your events</h1>
 						</div>
 					</div>
