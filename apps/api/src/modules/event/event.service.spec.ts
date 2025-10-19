@@ -9,6 +9,7 @@ import { DATABASE_CONNECTION } from "../database/connection";
 import { Event, Group, Location, User } from "../database/schemas";
 import { GroupService } from "../group/group.service";
 import { LocationService } from "../location/location.service";
+import { S3Service } from "../s3/s3.service";
 import { UserService } from "../user/user.service";
 import { EventService } from "./event.service";
 
@@ -31,6 +32,10 @@ describe("EventService", () => {
 	const mockCategoryService = { formatCategory: jest.fn(), assertCategoriesExist: jest.fn() };
 	const mockBadgeService = { formatBadge: jest.fn(), assertBadgesExist: jest.fn() };
 	const mockConfigService = { get: jest.fn() };
+	const mockS3Service = {
+		uploadFile: jest.fn(),
+		getFileUrl: jest.fn(),
+	};
 
 	beforeEach(async () => {
 		const module: TestingModule = await Test.createTestingModule({
@@ -43,6 +48,7 @@ describe("EventService", () => {
 				{ provide: CategoryService, useValue: mockCategoryService },
 				{ provide: BadgeService, useValue: mockBadgeService },
 				{ provide: ConfigService, useValue: mockConfigService },
+				{ provide: S3Service, useValue: mockS3Service },
 			],
 		}).compile();
 		service = module.get<EventService>(EventService);
@@ -253,6 +259,7 @@ describe("EventService", () => {
 			const startDate = new Date();
 			const endDate = new Date();
 			const quota = 10;
+			const imageUrl = "http://example.com/image.jpg";
 			const mockEvent: Event = {
 				id,
 				name,
@@ -260,6 +267,7 @@ describe("EventService", () => {
 				startDate,
 				endDate,
 				quota,
+				imageUrl,
 				opensAt: new Date(),
 				closesAt: new Date(),
 				unregisterClosesAt: new Date(),
@@ -340,6 +348,7 @@ describe("EventService", () => {
 				startDate: startDate.toISOString(),
 				endDate: endDate.toISOString(),
 				quota,
+				imageUrl,
 				createdBy: mockUser,
 				group: mockGroup,
 				location: mockLocation,
@@ -351,6 +360,11 @@ describe("EventService", () => {
 
 	describe("createEvent", () => {
 		it("should call required services and return event id", async () => {
+			const file = {
+				originalname: "test.png",
+				buffer: Buffer.from("test"),
+				mimetype: "image/png",
+			} as Express.Multer.File;
 			const id = "eventId";
 			const name = "Test event";
 			const description = "This is a test event";
@@ -382,6 +396,7 @@ describe("EventService", () => {
 					badgeIds,
 				},
 				createdBy,
+				file,
 			);
 			expect(mockLocationService.getLocationByIdOrThrow).toHaveBeenCalledWith(locationId);
 			expect(mockCategoryService.assertCategoriesExist).toHaveBeenCalledWith(categoryIds);

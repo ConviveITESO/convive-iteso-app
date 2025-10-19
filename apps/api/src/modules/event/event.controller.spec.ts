@@ -1,5 +1,6 @@
+import { randomUUID } from "node:crypto";
 import { Test, TestingModule } from "@nestjs/testing";
-import { CreateEventSchema, UpdateEventSchema } from "@repo/schemas";
+import { UpdateEventSchema } from "@repo/schemas";
 import { UserRequest } from "@/types/user.request";
 import { EventController } from "./event.controller";
 import { EventService } from "./event.service";
@@ -101,12 +102,34 @@ describe("EventController", () => {
 		it("should call service and return event", async () => {
 			const id = "eventId";
 			const mockEvent = { name: "Test event 1" };
-			const mockEventCreated = { name: "Test event 2" };
+			const mockEventCreated = {
+				name: "Test event 2",
+				description: "This is a test event",
+				startDate: new Date().toISOString(),
+				endDate: new Date().toISOString(),
+				quota: 10,
+				locationId: randomUUID(),
+				categoryIds: [randomUUID(), randomUUID()],
+				badgeIds: [randomUUID(), randomUUID()],
+			};
 			const req = { user: { id: "userId" } } as UserRequest;
+			const file = {
+				originalname: "test.png",
+				buffer: Buffer.from("test"),
+				mimetype: "image/png",
+			} as Express.Multer.File;
 			mockEventService.createEvent.mockResolvedValue(id);
 			mockEventService.getEventByIdOrThrow.mockResolvedValue(mockEvent);
-			const result = await controller.createEvent(mockEventCreated as CreateEventSchema, req);
-			expect(mockEventService.createEvent).toHaveBeenCalledWith(mockEventCreated, req.user.id);
+			const result = await controller.createEvent(
+				{ data: JSON.stringify(mockEventCreated) },
+				req,
+				file,
+			);
+			expect(mockEventService.createEvent).toHaveBeenCalledWith(
+				mockEventCreated,
+				req.user.id,
+				file,
+			);
 			expect(mockEventService.getEventByIdOrThrow).toHaveBeenCalledWith(id);
 			expect(result).toEqual(mockEvent);
 		});
