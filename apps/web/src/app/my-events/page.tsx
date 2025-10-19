@@ -7,14 +7,14 @@ import { EventsGrid } from "@/components/events/_events-grid";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/use-auth";
-import { useEvents } from "@/hooks/use-events";
+import { useSubscribedEvents } from "@/hooks/use-subscribed-events";
 
 export default function MyEventsPage() {
 	const { isAuthenticated } = useAuth();
 	const router = useRouter();
 	const [activeTab, setActiveTab] = useState("upcoming");
 
-	const { data: events = [], isLoading } = useEvents(isAuthenticated);
+	const { data: events = [], isLoading } = useSubscribedEvents(isAuthenticated);
 
 	if (!isAuthenticated || isLoading) {
 		return (

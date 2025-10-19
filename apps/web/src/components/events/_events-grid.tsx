@@ -1,8 +1,8 @@
-import type { EventResponseArraySchema } from "@repo/schemas";
+import type { SubscribedEventResponseArraySchema } from "@repo/schemas";
 import { EventCard } from "./_event-card";
 
 interface EventsGridProps {
-	events: EventResponseArraySchema;
+	events: SubscribedEventResponseArraySchema;
 	onEventClick: (eventId: string) => void;
 	mode?: "admin" | "subscription";
 	onEdit?: (eventId: string) => void;

@@ -1,11 +1,11 @@
-import type { EventResponseArraySchema } from "@repo/schemas";
+import type { SubscribedEventResponseArraySchema } from "@repo/schemas";
 import { Bell, Edit, Eye, Image, MapPin, Share2, Trash2, UserMinus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { formatDate } from "@/lib/date-utils";
 
 interface EventCardProps {
-	event: EventResponseArraySchema[number];
+	event: SubscribedEventResponseArraySchema[number];
 	onClick: () => void;
 	mode?: "admin" | "subscription";
 	onEdit?: () => void;
