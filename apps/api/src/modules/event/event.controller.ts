@@ -1,4 +1,15 @@
-import { Body, Controller, Get, Param, Post, Put, Query, Req, UseGuards } from "@nestjs/common";
+import {
+	Body,
+	Controller,
+	Delete,
+	Get,
+	Param,
+	Post,
+	Put,
+	Query,
+	Req,
+	UseGuards,
+} from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
 import {
 	CreateEventSchema,
@@ -77,5 +88,18 @@ export class EventController {
 		const userId = req.user.id;
 		await this.eventsService.updateEvent(data, id, userId);
 		return this.eventsService.getEventByIdOrThrow(id);
+	}
+
+	// DELETE /events/:id
+	@Delete(":id")
+	@ZodParam(eventIdParamSchema, "id")
+	@ZodOk(eventResponseSchema)
+	async deleteEvent(
+		@Param(new ZodValidationPipe(eventIdParamSchema)) idParam: EventIdParamSchema,
+		@Req() req: UserRequest,
+	): Promise<{ message: string }> {
+		const user = req.user;
+		await this.eventsService.deleteEvent(idParam.id, user);
+		return { message: "Event deleted successfully" };
 	}
 }

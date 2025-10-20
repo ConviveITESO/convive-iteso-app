@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/use-auth";
 import { useCategories } from "@/hooks/use-categories";
+import { useDeleteEvent } from "@/hooks/use-delete-event";
 import { useEvents } from "@/hooks/use-events";
 import { EventsGrid } from "../../components/events/_events-grid";
 import { CategoriesFilter } from "../feed/_categories-filter";
@@ -18,6 +19,7 @@ export default function ManageEventsPage() {
 	const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 	const [eventToDelete, setEventToDelete] = useState<string | null>(null);
+	const { mutate: deleteEvent, isPending: isDeleting } = useDeleteEvent();
 	const [showCopiedMessage, setShowCopiedMessage] = useState(false);
 
 	const { data: events = [], isLoading: eventsLoading } = useEvents(isAuthenticated);
@@ -49,13 +51,21 @@ export default function ManageEventsPage() {
 	const handleDelete = (eventId: string) => {
 		setEventToDelete(eventId);
 		setDeleteDialogOpen(true);
-		console.log(eventToDelete);
 	};
 
 	const confirmDelete = () => {
-		// TODO: Implement delete API call when endpoint is ready
-		setDeleteDialogOpen(false);
-		setEventToDelete(null);
+		if (!eventToDelete) return;
+
+		deleteEvent(eventToDelete, {
+			onSuccess: () => {
+				setDeleteDialogOpen(false);
+				setEventToDelete(null);
+			},
+			onError: (error) => {
+				console.error("Failed to delete event:", error);
+				setDeleteDialogOpen(false);
+			},
+		});
 	};
 
 	const handleShare = (eventId: string) => {
@@ -101,6 +111,12 @@ export default function ManageEventsPage() {
 					onViewStats={handleViewStats}
 				/>
 
+				<div className="mt-8 flex justify-center">
+					<Button onClick={() => router.push("/events/create")} size="lg" className="gap-2">
+						Create Event
+					</Button>
+				</div>
+
 				{showCopiedMessage && (
 					<div className="fixed bottom-4 right-4 bg-foreground text-background px-4 py-2 rounded-md shadow-lg">
 						Link copied to clipboard
@@ -119,8 +135,14 @@ export default function ManageEventsPage() {
 						</p>
 					</div>
 					<div className="flex flex-col gap-2">
-						<Button type="button" variant="destructive" onClick={confirmDelete} className="w-full">
-							Delete
+						<Button
+							type="button"
+							variant="destructive"
+							onClick={confirmDelete}
+							className="w-full"
+							disabled={isDeleting}
+						>
+							{isDeleting ? "Deleting..." : "Delete"}
 						</Button>
 						<Button
 							type="button"
