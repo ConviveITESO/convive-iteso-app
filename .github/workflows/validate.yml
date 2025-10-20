@@ -39,6 +39,12 @@ jobs:
       - name: Run tests with coverage
         run: pnpm run test:cov
 
+      - name: Jest coverage report
+        uses: ArtiomTr/jest-coverage-report-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          coverage-file: apps/api/coverage/lcov.info
+
       - name: Upload coverage report
         if: success()
         uses: actions/upload-artifact@v4
