@@ -103,6 +103,7 @@
 		},
 		"coverageReporters": [
 			"text",
+			"json-summary",
 			"text-summary",
 			"html",
 			"lcov"
