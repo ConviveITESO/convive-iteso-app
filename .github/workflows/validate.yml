@@ -8,6 +8,7 @@ on:
 permissions:
   contents: read
   issues: write
+  pull-requests: write
 
 jobs:
   lint-and-test:
@@ -102,6 +103,11 @@ jobs:
             const issue_number = context.payload.pull_request?.number;
             if (!issue_number) {
               throw new Error("Missing pull request number in context");
+            }
+            const pr = context.payload.pull_request;
+            if (pr && pr.head?.repo?.full_name !== context.payload.repository?.full_name) {
+              core.info("Skipping coverage comment for pull requests from forks (insufficient token permissions).");
+              return;
             }
             const { data: comments } = await github.rest.issues.listComments({ owner, repo, issue_number, per_page: 100 });
             const existing = comments.find((comment) => comment.user?.login === "github-actions[bot]" && comment.body.includes(marker));
