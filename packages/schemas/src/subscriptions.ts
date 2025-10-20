@@ -166,6 +166,7 @@ export const subscribedEventResponseSchema = z
 		id: z.uuid(),
 		name: z.string(),
 		startDate: z.iso.datetime(),
+		imageUrl: z.string(),
 		location: z
 			.object({
 				name: z.string(),

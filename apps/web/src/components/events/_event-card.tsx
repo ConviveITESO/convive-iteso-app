@@ -1,5 +1,6 @@
 import type { EventResponseArraySchema, SubscribedEventResponseArraySchema } from "@repo/schemas";
-import { Bell, Edit, Eye, Image, MapPin, Share2, Trash2, UserMinus } from "lucide-react";
+import { Bell, Edit, Eye, MapPin, Share2, Trash2, UserMinus } from "lucide-react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { formatDate } from "@/lib/date-utils";
@@ -44,8 +45,8 @@ export function EventCard({
 		>
 			<div className="flex items-start gap-4">
 				{/* Image placeholder */}
-				<div className="flex size-[92px] shrink-0 items-center justify-center rounded-xl bg-muted shadow-sm">
-					<Image className="size-6 text-muted-foreground" />
+				<div className="relative flex h-[92px] w-[92px] shrink-0 items-center justify-center rounded-xl bg-muted shadow-sm">
+					<Image className="rounded-xl object-cover" src={event.imageUrl} alt={event.name} fill />
 				</div>
 
 				{/* Event details */}
