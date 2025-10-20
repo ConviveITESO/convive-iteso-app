@@ -8,6 +8,7 @@ on:
 permissions:
   contents: read
   issues: write
+  pull-requests: write
 
 jobs:
   lint-and-test:
@@ -36,8 +37,102 @@ jobs:
       - name: Run lint
         run: pnpm run lint
 
-      - name: Run tests
-        run: pnpm test
+      - name: Run tests with coverage
+        run: pnpm run test:cov
+
+      - name: Generate coverage summary
+        if: success()
+        run: |
+          node <<'NODE'
+          const fs = require("fs");
+          const path = "apps/api/coverage/coverage-summary.json";
+          if (!fs.existsSync(path)) {
+            console.error(`Coverage summary not found at ${path}`);
+            process.exit(1);
+          }
+          const summary = JSON.parse(fs.readFileSync(path, "utf8"));
+          const total = summary.total ?? {};
+          const metrics = [
+            { key: "lines", label: "Lines" },
+            { key: "statements", label: "Statements" },
+            { key: "branches", label: "Branches" },
+            { key: "functions", label: "Functions" },
+          ];
+          const rows = metrics.map(({ key, label }) => {
+            const data = total[key] ?? {};
+            const covered = data.covered ?? 0;
+            const totalCount = data.total ?? 0;
+            const pct = data.pct ?? (totalCount === 0 ? 0 : (covered / totalCount) * 100);
+            return `| ${label} | ${covered} | ${totalCount} | ${pct.toFixed(2)}% |`;
+          });
+          const markdown = [
+            "| Metric | Covered | Total | % |",
+            "| --- | --- | --- | --- |",
+            ...rows,
+          ].join("\n");
+          fs.writeFileSync("coverage-summary.md", markdown);
+          const outputPath = process.env.GITHUB_OUTPUT;
+          if (outputPath) {
+            fs.appendFileSync(outputPath, `summary<<EOF\n${markdown}\nEOF\n`);
+          }
+          NODE
+
+      - name: Comment coverage on PR
+        if: success() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require("fs");
+            const marker = "<!-- coverage-comment -->";
+            const summaryPath = "coverage-summary.md";
+            if (!fs.existsSync(summaryPath)) {
+              throw new Error(`Missing coverage summary at ${summaryPath}`);
+            }
+            const summary = fs.readFileSync(summaryPath, "utf8");
+            const bodyLines = [
+              marker,
+              "### API Coverage",
+              "",
+              summary,
+              "",
+              "Coverage generated from `pnpm run test:cov`.",
+            ];
+            const body = bodyLines.join("\n");
+            const { owner, repo } = context.repo;
+            const issue_number = context.payload.pull_request?.number;
+            if (!issue_number) {
+              throw new Error("Missing pull request number in context");
+            }
+            const pr = context.payload.pull_request;
+            if (pr && pr.head?.repo?.full_name !== context.payload.repository?.full_name) {
+              core.info("Skipping coverage comment for pull requests from forks (insufficient token permissions).");
+              return;
+            }
+            const { data: comments } = await github.rest.issues.listComments({ owner, repo, issue_number, per_page: 100 });
+            const existing = comments.find((comment) => comment.user?.login === "github-actions[bot]" && comment.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number,
+                body,
+              });
+            }
+
+      - name: Upload coverage report
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-coverage-report
+          path: apps/api/coverage
 
   security-sast:
     needs: [lint-and-test]
