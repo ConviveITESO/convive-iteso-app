@@ -101,6 +101,12 @@
 		"moduleNameMapper": {
 			"^@/(.*)$": "<rootDir>/$1"
 		},
+		"coverageReporters": [
+			"text",
+			"text-summary",
+			"html",
+			"lcov"
+		],
 		"transformIgnorePatterns": [
 			"node_modules/(?!(jose)/)"
 		]
