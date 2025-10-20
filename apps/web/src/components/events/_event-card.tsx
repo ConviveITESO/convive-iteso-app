@@ -37,7 +37,7 @@ export function EventCard({
 			className="cursor-pointer overflow-hidden p-2 transition-shadow hover:shadow-lg"
 			onClick={onClick}
 		>
-			<div className="flex items-center gap-4">
+			<div className="flex items-start gap-4">
 				{/* Image placeholder */}
 				<div className="flex size-[92px] shrink-0 items-center justify-center rounded-xl bg-muted shadow-sm">
 					<Image className="size-6 text-muted-foreground" />
@@ -62,47 +62,51 @@ export function EventCard({
 
 				{/* Action buttons based on mode */}
 				{mode === "admin" && (
-					<div className="flex shrink-0 items-center gap-1">
-						<Button
-							variant="ghost"
-							size="icon"
-							className="size-8"
-							onClick={(e) => handleActionClick(e, onEdit)}
-						>
-							<Edit className="size-4" />
-						</Button>
-						<Button
-							variant="ghost"
-							size="icon"
-							className="size-8"
-							onClick={(e) => handleActionClick(e, onDelete)}
-						>
-							<Trash2 className="size-4" />
-						</Button>
-						<Button
-							variant="ghost"
-							size="icon"
-							className="size-8"
-							onClick={(e) => handleActionClick(e, onShare)}
-						>
-							<Share2 className="size-4" />
-						</Button>
-						<Button
-							variant="ghost"
-							size="icon"
-							className="size-8"
-							onClick={(e) => handleActionClick(e, onNotify)}
-						>
-							<Bell className="size-4" />
-						</Button>
-						<Button
-							variant="ghost"
-							size="icon"
-							className="size-8"
-							onClick={(e) => handleActionClick(e, onViewStats)}
-						>
-							<Eye className="size-4" />
-						</Button>
+					<div className="flex shrink-0 flex-col gap-1">
+						<div className="flex gap-1">
+							<Button
+								variant="ghost"
+								size="icon"
+								className="size-8"
+								onClick={(e) => handleActionClick(e, onEdit)}
+							>
+								<Edit className="size-4" />
+							</Button>
+							<Button
+								variant="ghost"
+								size="icon"
+								className="size-8"
+								onClick={(e) => handleActionClick(e, onDelete)}
+							>
+								<Trash2 className="size-4" />
+							</Button>
+							<Button
+								variant="ghost"
+								size="icon"
+								className="size-8"
+								onClick={(e) => handleActionClick(e, onShare)}
+							>
+								<Share2 className="size-4" />
+							</Button>
+						</div>
+						<div className="flex gap-1 justify-center">
+							<Button
+								variant="ghost"
+								size="icon"
+								className="size-8"
+								onClick={(e) => handleActionClick(e, onNotify)}
+							>
+								<Bell className="size-4" />
+							</Button>
+							<Button
+								variant="ghost"
+								size="icon"
+								className="size-8"
+								onClick={(e) => handleActionClick(e, onViewStats)}
+							>
+								<Eye className="size-4" />
+							</Button>
+						</div>
 					</div>
 				)}
 

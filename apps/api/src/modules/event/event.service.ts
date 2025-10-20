@@ -6,6 +6,7 @@ import {
 	EventResponseSchema,
 	GetEventsQuerySchema,
 	UpdateEventSchema,
+	UserResponseSchema,
 } from "@repo/schemas";
 import { and, eq, sql } from "drizzle-orm";
 import { BadgeService } from "../badge/badge.service";
@@ -199,6 +200,14 @@ export class EventService {
 			await this._updateEvent(data, id);
 			await this.updateCategoryBadgeRelations(data, id);
 		});
+	}
+
+	async deleteEvent(id: string, user: UserResponseSchema): Promise<void> {
+		const event = await this.getEventByIdOrThrow(id);
+		if (event.createdBy.id !== user.id && user.role !== "admin") {
+			throw new ForbiddenException("You do not have permission to delete this event");
+		}
+		await this.db.update(events).set({ status: "deleted" }).where(eq(events.id, id));
 	}
 
 	formatEvent(
