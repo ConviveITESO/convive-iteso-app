@@ -65,7 +65,7 @@ export class EventController {
 		return event;
 	}
 
-	// PUT /events/:id
+	// PUT /events/:id/edit
 	@Put(":id")
 	@ZodBody(updateEventSchema)
 	@ZodOk(eventResponseSchema)
