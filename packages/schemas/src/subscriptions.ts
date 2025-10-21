@@ -160,6 +160,50 @@ export const subscriptionCheckInResponseSchema = z
 		},
 	});
 
+export const subscribedEventResponseSchema = z
+	.object({
+		subscriptionId: z.uuid(),
+		id: z.uuid(),
+		name: z.string(),
+		startDate: z.iso.datetime(),
+		location: z
+			.object({
+				name: z.string(),
+			})
+			.openapi("SubscribedEventLocationSchema", {
+				example: {
+					name: "Main Hall",
+				},
+			}),
+	})
+	.openapi("SubscribedEventResponseSchema", {
+		example: {
+			subscriptionId: "111e8400-e29b-41d4-a716-446655440000",
+			id: "550e8400-e29b-41d4-a716-446655440000",
+			name: "Event 1",
+			startDate: "2025-09-21T19:45:00Z",
+			location: {
+				name: "Main Hall",
+			},
+		},
+	});
+
+export const subscribedEventResponseArraySchema = z
+	.array(subscribedEventResponseSchema)
+	.openapi("SubscribedEventResponseArraySchema", {
+		example: [
+			{
+				subscriptionId: "111e8400-e29b-41d4-a716-446655440000",
+				id: "550e8400-e29b-41d4-a716-446655440000",
+				name: "Event 1",
+				startDate: "2025-09-21T19:45:00Z",
+				location: {
+					name: "Main Hall",
+				},
+			},
+		],
+	});
+
 export const eventStatsResponseSchema = z
 	.object({
 		eventId: z.uuid(),
@@ -200,3 +244,5 @@ export type SubscriptionIdResponseSchema = z.infer<typeof subscriptionIdResponse
 export type SubscriptionCheckInRequestSchema = z.infer<typeof subscriptionCheckInRequestSchema>;
 export type SubscriptionCheckInResponseSchema = z.infer<typeof subscriptionCheckInResponseSchema>;
 export type SubscriptionCreatedTestPayload = z.infer<typeof subscriptionCreatedSchema>;
+export type SubscribedEventResponseSchema = z.infer<typeof subscribedEventResponseSchema>;
+export type SubscribedEventResponseArraySchema = z.infer<typeof subscribedEventResponseArraySchema>;

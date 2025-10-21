@@ -9,6 +9,7 @@ import {
 import {
 	CreateSubscriptionSchema,
 	EventStatsResponseSchema,
+	SubscribedEventResponseArraySchema,
 	SubscriptionCheckInResponseSchema,
 	SubscriptionIdResponseSchema,
 	SubscriptionQuerySchema,
@@ -17,7 +18,7 @@ import {
 } from "@repo/schemas";
 import { and, eq, gte, isNull, max, ne, SQL, sql } from "drizzle-orm";
 import { AppDatabase, DATABASE_CONNECTION, Transaction } from "../database/connection";
-import { events, Subscription, subscriptions, users } from "../database/schemas";
+import { events, groups, locations, Subscription, subscriptions, users } from "../database/schemas";
 import { NotificationsQueueService } from "../notifications/notifications.service";
 
 @Injectable()
@@ -388,6 +389,42 @@ export class SubscriptionsService {
 		}
 
 		return { id: subscription.id };
+	}
+
+	async getUserSubscribedEvents(userId: string): Promise<SubscribedEventResponseArraySchema> {
+		const rows = await this.db
+			.select({
+				subscriptionId: subscriptions.id,
+				id: events.id,
+				name: events.name,
+				startDate: events.startDate,
+				locationName: locations.name,
+			})
+			.from(subscriptions)
+			.innerJoin(events, and(eq(events.id, subscriptions.eventId), eq(events.status, "active")))
+			.innerJoin(users, and(eq(users.id, events.createdBy), eq(users.status, "active")))
+			.innerJoin(groups, and(eq(groups.id, events.groupId), eq(groups.status, "active")))
+			.innerJoin(
+				locations,
+				and(eq(locations.id, events.locationId), eq(locations.status, "active")),
+			)
+			.where(
+				and(
+					eq(subscriptions.userId, userId),
+					ne(subscriptions.status, "cancelled"),
+					isNull(subscriptions.deletedAt),
+				),
+			);
+
+		return rows.map((row) => ({
+			subscriptionId: row.subscriptionId,
+			id: row.id,
+			name: row.name,
+			startDate: row.startDate instanceof Date ? row.startDate.toISOString() : row.startDate,
+			location: {
+				name: row.locationName,
+			},
+		}));
 	}
 
 	/**

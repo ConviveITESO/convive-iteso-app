@@ -1,8 +1,11 @@
-import type { EventResponseArraySchema } from "@repo/schemas";
+import type { EventResponseArraySchema, SubscribedEventResponseArraySchema } from "@repo/schemas";
 import { EventCard } from "./_event-card";
 
+type GridEvent = EventResponseArraySchema[number] | SubscribedEventResponseArraySchema[number];
+type GridEventArray = GridEvent[];
+
 interface EventsGridProps {
-	events: EventResponseArraySchema;
+	events: GridEventArray;
 	onEventClick: (eventId: string) => void;
 	mode?: "admin" | "subscription";
 	onEdit?: (eventId: string) => void;
@@ -10,7 +13,7 @@ interface EventsGridProps {
 	onShare?: (eventId: string) => void;
 	onNotify?: (eventId: string) => void;
 	onViewStats?: (eventId: string) => void;
-	onUnsubscribe?: (eventId: string) => void;
+	onUnsubscribe?: (event: SubscribedEventResponseArraySchema[number]) => void;
 }
 
 export function EventsGrid({
@@ -45,7 +48,11 @@ export function EventsGrid({
 					onShare={onShare ? () => onShare(event.id) : undefined}
 					onNotify={onNotify ? () => onNotify(event.id) : undefined}
 					onViewStats={onViewStats ? () => onViewStats(event.id) : undefined}
-					onUnsubscribe={onUnsubscribe ? () => onUnsubscribe(event.id) : undefined}
+					onUnsubscribe={
+						onUnsubscribe && "subscriptionId" in event
+							? () => onUnsubscribe(event as SubscribedEventResponseArraySchema[number])
+							: undefined
+					}
 				/>
 			))}
 		</div>

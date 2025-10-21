@@ -1,11 +1,13 @@
-import type { EventResponseArraySchema } from "@repo/schemas";
+import type { EventResponseArraySchema, SubscribedEventResponseArraySchema } from "@repo/schemas";
 import { Bell, Edit, Eye, Image, MapPin, Share2, Trash2, UserMinus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { formatDate } from "@/lib/date-utils";
 
+type CardEvent = EventResponseArraySchema[number] | SubscribedEventResponseArraySchema[number];
+
 interface EventCardProps {
-	event: EventResponseArraySchema[number];
+	event: CardEvent;
 	onClick: () => void;
 	mode?: "admin" | "subscription";
 	onEdit?: () => void;
@@ -32,6 +34,9 @@ export function EventCard({
 		action?.();
 	};
 
+	const locationName = "location" in event && event.location ? event.location.name : "";
+	const canUnsubscribe = mode === "subscription" && "subscriptionId" in event;
+
 	return (
 		<Card
 			className="cursor-pointer overflow-hidden p-2 transition-shadow hover:shadow-lg"
@@ -56,7 +61,7 @@ export function EventCard({
 					{/* Location */}
 					<div className="flex items-center gap-1.5">
 						<MapPin className="size-3.5 text-muted-foreground" />
-						<span className="text-[13px] text-muted-foreground">{event.location.name}</span>
+						<span className="text-[13px] text-muted-foreground">{locationName}</span>
 					</div>
 				</div>
 
@@ -110,7 +115,7 @@ export function EventCard({
 					</div>
 				)}
 
-				{mode === "subscription" && (
+				{canUnsubscribe && (
 					<div className="flex shrink-0 items-center">
 						<Button
 							variant="ghost"

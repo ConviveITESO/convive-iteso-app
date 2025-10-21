@@ -55,6 +55,7 @@ export default function EventPage() {
 			await Promise.all([
 				queryClient.invalidateQueries({ queryKey: ["event-stats", eventId] }),
 				queryClient.invalidateQueries({ queryKey: ["subscription-check", eventId] }),
+				queryClient.invalidateQueries({ queryKey: ["subscriptions", "events"] }),
 			]);
 
 			// Optionally show success message or redirect

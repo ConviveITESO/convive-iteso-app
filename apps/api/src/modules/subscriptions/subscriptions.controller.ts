@@ -20,6 +20,7 @@ import {
 	SubscriptionCheckInRequestSchema,
 	SubscriptionIdParamSchema,
 	SubscriptionQuerySchema,
+	subscribedEventResponseArraySchema,
 	subscriptionArrayResponseSchema,
 	subscriptionCheckInRequestSchema,
 	subscriptionCheckInResponseSchema,
@@ -69,6 +70,13 @@ export class SubscriptionsController {
 		body: SubscriptionCheckInRequestSchema,
 	) {
 		return await this.subscriptionsService.checkIn(body.eventId, body.subscriptionId);
+	}
+
+	@Get("events")
+	@ZodOk(subscribedEventResponseArraySchema)
+	getUserSubscribedEvents(@Req() req: UserRequest) {
+		const userId = req.user.id;
+		return this.subscriptionsService.getUserSubscribedEvents(userId);
 	}
 
 	// GET /subscriptions
