@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { EventsGrid } from "@/components/events/_events-grid";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/use-auth";
@@ -9,7 +10,6 @@ import { useCategories } from "@/hooks/use-categories";
 import { useDeleteEvent } from "@/hooks/use-delete-event";
 import { useEvents } from "@/hooks/use-events";
 import { HeaderTitle } from "@/hooks/use-header-title";
-import { EventsGrid } from "../../components/events/_events-grid";
 import { CategoriesFilter } from "../feed/_categories-filter";
 import { SearchHeader } from "../feed/_search-header";
 

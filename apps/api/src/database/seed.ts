@@ -224,7 +224,7 @@ async function seedEvents(
 				startDate,
 				endDate,
 				quota: getRandomNumber(1, 100),
-				imageUrl: `https://via.placeholder.com/400x300?text=Event${i}`,
+				imageUrl: `https://picsum.photos/seed/event${i}/400/300`,
 				createdBy: userId,
 				groupId,
 				locationId: selectRandomFromArray(locationIds),

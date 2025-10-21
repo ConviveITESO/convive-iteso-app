@@ -63,6 +63,7 @@ export default function EventAnalytics() {
 					className="flex items-center justify-center w-10/12 h-40 bg-white rounded-4xl shadow-lg"
 					style={{ boxShadow: "0px 2px 8px 0px rgba(99, 99, 99, 0.2)" }}
 				>
+					{/* TODO: Add event image */}
 					<Image className="h-12 w-12 text-gray-400" />
 				</div>
 			</div>
