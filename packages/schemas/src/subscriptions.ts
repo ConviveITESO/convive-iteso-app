@@ -44,6 +44,13 @@ export const createSubscriptionSchema = z
 		},
 	});
 
+export const subscriptionCreatedSchema = z.object({
+	creatorEmail: z.string().email(),
+	creatorName: z.string().min(1),
+	eventName: z.string().min(1),
+	subscriberName: z.string().min(1),
+});
+
 export const updateSubscriptionSchema = z
 	.object({
 		status: z
@@ -192,3 +199,4 @@ export type EventStatsResponseSchema = z.infer<typeof eventStatsResponseSchema>;
 export type SubscriptionIdResponseSchema = z.infer<typeof subscriptionIdResponseSchema>;
 export type SubscriptionCheckInRequestSchema = z.infer<typeof subscriptionCheckInRequestSchema>;
 export type SubscriptionCheckInResponseSchema = z.infer<typeof subscriptionCheckInResponseSchema>;
+export type SubscriptionCreatedTestPayload = z.infer<typeof subscriptionCreatedSchema>;

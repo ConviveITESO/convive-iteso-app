@@ -18,10 +18,14 @@ import {
 import { and, eq, gte, isNull, max, ne, SQL, sql } from "drizzle-orm";
 import { AppDatabase, DATABASE_CONNECTION, Transaction } from "../database/connection";
 import { events, Subscription, subscriptions, users } from "../database/schemas";
+import { NotificationsQueueService } from "../notifications/notifications.service";
 
 @Injectable()
 export class SubscriptionsService {
-	constructor(@Inject(DATABASE_CONNECTION) private readonly db: AppDatabase) {}
+	constructor(
+		@Inject(DATABASE_CONNECTION) private readonly db: AppDatabase,
+		private readonly notificationsQueue: NotificationsQueueService,
+	) {}
 	/**
 	 * Gets the QR code data for a specific event and user
 	 * @param eventId The event ID
@@ -396,87 +400,152 @@ export class SubscriptionsService {
 		userId: string,
 		data: CreateSubscriptionSchema,
 	): Promise<SubscriptionResponseSchema> {
-		return await this.db.transaction(async (tx): Promise<SubscriptionResponseSchema> => {
-			// Check if user is already registered for this event
-			const [existingSubscription] = await tx
-				.select()
-				.from(subscriptions)
-				.where(and(eq(subscriptions.userId, userId), eq(subscriptions.eventId, data.eventId)))
-				.limit(1);
+		const { notificationPayload, subscription } = await this.db.transaction(
+			async (
+				tx,
+			): Promise<{
+				subscription: SubscriptionResponseSchema;
+				notificationPayload: {
+					creatorEmail: string;
+					creatorName: string;
+					eventName: string;
+					subscriberName: string;
+				} | null;
+			}> => {
+				// Check if user is already registered for this event
+				const [existingSubscription] = await tx
+					.select()
+					.from(subscriptions)
+					.where(and(eq(subscriptions.userId, userId), eq(subscriptions.eventId, data.eventId)))
+					.limit(1);
 
-			// Get event details
-			const [event] = await tx.select().from(events).where(eq(events.id, data.eventId)).limit(1);
+				// Get event details
+				const [event] = await tx.select().from(events).where(eq(events.id, data.eventId)).limit(1);
 
-			if (!event) {
-				throw new NotFoundException("Event not found");
-			}
-
-			if (existingSubscription) {
-				// Check if subscription was deleted
-				if (existingSubscription.deletedAt || existingSubscription.status === "cancelled") {
-					// Determine if user can be registered or should be waitlisted
-					const { status, position } = await this.determineSubscriptionStatus(
-						tx,
-						data.eventId,
-						event.quota,
-					);
-
-					// Restore subscription by clearing deletedAt and updating status
-					const [restored] = await tx
-						.update(subscriptions)
-						.set({
-							status,
-							position,
-							deletedAt: null,
-							updatedAt: new Date(),
-						})
-						.where(eq(subscriptions.id, existingSubscription.id))
-						.returning();
-
-					if (!restored) {
-						throw new InternalServerErrorException("Failed to restore subscription");
-					}
-
-					return this.toSubscriptionResponse(restored);
+				if (!event) {
+					throw new NotFoundException("Event not found");
 				}
 
-				// Idempotent - return existing subscription
-				return this.toSubscriptionResponse(existingSubscription);
-			}
+				const [eventCreator] = await tx
+					.select({
+						id: users.id,
+						name: users.name,
+						email: users.email,
+					})
+					.from(users)
+					.where(eq(users.id, event.createdBy))
+					.limit(1);
 
-			// Check registration window
-			const now = new Date();
-			if (event.opensAt && now < event.opensAt) {
-				throw new ForbiddenException("Registration not yet open");
-			}
-			if (event.closesAt && now > event.closesAt) {
-				throw new ForbiddenException("Registration has closed");
-			}
+				if (!eventCreator) {
+					throw new NotFoundException("Event creator not found");
+				}
 
-			// Determine subscription status and position
-			const { status, position } = await this.determineSubscriptionStatus(
-				tx,
-				data.eventId,
-				event.quota,
-			);
+				const [subscriber] = await tx
+					.select({
+						id: users.id,
+						name: users.name,
+						email: users.email,
+					})
+					.from(users)
+					.where(eq(users.id, userId))
+					.limit(1);
 
-			// Create subscription
-			const [result] = await tx
-				.insert(subscriptions)
-				.values({
-					userId,
-					eventId: data.eventId,
-					status,
-					position,
-				})
-				.returning();
+				if (!subscriber) {
+					throw new NotFoundException("Subscriber not found");
+				}
 
-			if (!result) {
-				throw new InternalServerErrorException("Failed to create subscription");
-			}
+				if (existingSubscription) {
+					// Check if subscription was deleted
+					if (existingSubscription.deletedAt || existingSubscription.status === "cancelled") {
+						// Determine if user can be registered or should be waitlisted
+						const { status, position } = await this.determineSubscriptionStatus(
+							tx,
+							data.eventId,
+							event.quota,
+						);
 
-			return this.toSubscriptionResponse(result);
-		});
+						// Restore subscription by clearing deletedAt and updating status
+						const [restored] = await tx
+							.update(subscriptions)
+							.set({
+								status,
+								position,
+								deletedAt: null,
+								updatedAt: new Date(),
+							})
+							.where(eq(subscriptions.id, existingSubscription.id))
+							.returning();
+
+						if (!restored) {
+							throw new InternalServerErrorException("Failed to restore subscription");
+						}
+
+						return {
+							subscription: this.toSubscriptionResponse(restored),
+							notificationPayload: {
+								creatorEmail: eventCreator.email,
+								creatorName: eventCreator.name,
+								eventName: event.name,
+								subscriberName: subscriber.name,
+							},
+						};
+					}
+
+					// Idempotent - return existing subscription
+					return {
+						subscription: this.toSubscriptionResponse(existingSubscription),
+						notificationPayload: null,
+					};
+				}
+
+				// Check registration window
+				const now = new Date();
+				if (event.opensAt && now < event.opensAt) {
+					throw new ForbiddenException("Registration not yet open");
+				}
+				if (event.closesAt && now > event.closesAt) {
+					throw new ForbiddenException("Registration has closed");
+				}
+
+				// Determine subscription status and position
+				const { status, position } = await this.determineSubscriptionStatus(
+					tx,
+					data.eventId,
+					event.quota,
+				);
+
+				// Create subscription
+				const [result] = await tx
+					.insert(subscriptions)
+					.values({
+						userId,
+						eventId: data.eventId,
+						status,
+						position,
+					})
+					.returning();
+
+				if (!result) {
+					throw new InternalServerErrorException("Failed to create subscription");
+				}
+
+				return {
+					subscription: this.toSubscriptionResponse(result),
+					notificationPayload: {
+						creatorEmail: eventCreator.email,
+						creatorName: eventCreator.name,
+						eventName: event.name,
+						subscriberName: subscriber.name,
+					},
+				};
+			},
+		);
+
+		if (notificationPayload) {
+			await this.notificationsQueue.enqueueSubscriptionCreated(notificationPayload);
+		}
+
+		return subscription;
 	}
 
 	/**
