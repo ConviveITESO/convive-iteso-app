@@ -16,6 +16,15 @@ resource "aws_instance" "web_server" {
     db_password   = var.db_password
     db_name       = var.db_name
     admin_email   = var.admin_email
+    client_id     = var.client_id
+    client_secret = var.client_secret
+    redirect_uri  = var.redirect_uri
+    aws_region            = var.aws_region
+    aws_access_key_id     = var.aws_access_key_id
+    aws_secret_access_key = var.aws_secret_access_key
+    aws_session_token     = var.aws_session_token
+    aws_endpoint_url      = var.aws_endpoint_url != "" ? var.aws_endpoint_url : format("https://%s", aws_s3_bucket.app.bucket_regional_domain_name)
+    s3_bucket_name        = aws_s3_bucket.app.bucket
   })
 
   tags = {

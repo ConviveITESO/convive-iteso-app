@@ -34,22 +34,51 @@ sudo ln -sf /snap/bin/certbot /usr/bin/certbot
 # === Clone private repo using GitHub token ===
 cd /home/ubuntu
 git clone https://${github_user}:${github_token}@github.com/${github_org}/${project_name}.git
+
 sudo chown -R ubuntu:ubuntu /home/ubuntu/${project_name}
 git config --global --add safe.directory /home/ubuntu/${project_name}
 
-# === Create .env file ===
+cd /home/ubuntu/${project_name}
 
-cat <<EOF > apps/api/.env
+# === Create .env file ===
+cat <<'EOF' > /home/ubuntu/${project_name}/apps/web/.env.local
+# API Configuration
+NEXT_PUBLIC_API_URL=http://conviveitesofront.ricardonavarro.mx
+EOF
+
+cat <<'EOF' > /home/ubuntu/${project_name}/apps/api/.env
 # === Environment variables ===
 NODE_ENV=production
 BACKEND_URL=http://conviveitesoback.ricardonavarro.mx
 FRONTEND_URL=http://conviveitesofront.ricardonavarro.mx
 # === Database ===
 DATABASE_URL=postgresql://${db_username}:${db_password}@${db_host}:5432/${db_name}
+# === Cache ===
+REDIS_HOST=127.0.0.1
+REDIS_PORT=6379
+# === OAuth ===
+CLIENT_ID=${client_id}
+CLIENT_SECRET=${client_secret}
+REDIRECT_URI=${redirect_uri}
+# === SMTP server ===
+SMTP_NAME="Convive ITESO"
+SMTP_ADDRESS=convive-iteso-noreply@iteso.mx
+LOCAL_SMTP_HOST=127.0.0.1
+LOCAL_SMTP_PORT=1025
+MAILTRAP_API_KEY=your-mailtrap-token
+# === Admin  ===
+ADMIN_TOKEN=your_admin_token_here
+# === AWS S3 Configuration ===
+AWS_REGION=${aws_region}
+AWS_ACCESS_KEY_ID=${aws_access_key_id}
+AWS_SECRET_ACCESS_KEY=${aws_secret_access_key}
+AWS_SESSION_TOKEN=${aws_session_token}
+AWS_ENDPOINT_URL=${aws_endpoint_url}
+S3_BUCKET_NAME=${s3_bucket_name}
 EOF
 
 # === Start container ===
-docker compose up --build -d
+sudo -u ubuntu -H bash -lc "cd /home/ubuntu/${project_name} && make prod-up"
 
 # === Nginx reverse proxy ===
 sudo bash -c 'cat <<EOF > /etc/nginx/sites-available/conviveitesofront
@@ -90,9 +119,9 @@ sudo nginx -t && sudo systemctl reload nginx
 
 # === HTTPS with Certbot ===
 sudo certbot --nginx --non-interactive --agree-tos --redirect \
-  -m ricardog.navi20@gmail.com -d conviveitesofront.ricardonavarro.mx
+  -m ${admin_email} -d conviveitesofront.ricardonavarro.mx
 
 sudo certbot --nginx --non-interactive --agree-tos --redirect \
-  -m ricardog.navi20@gmail.com -d conviveitesoback.ricardonavarro.mx
+  -m ${admin_email} -d conviveitesoback.ricardonavarro.mx
 
 echo "✅ EC2 setup complete (safe ownership)."

@@ -21,3 +21,15 @@ admin_email   =
 # S3
 s3_bucket_name      = ""
 s3_enable_versioning = true
+
+# OAuth
+client_id     = ""
+client_secret = ""
+redirect_uri  = ""
+
+# AWS credentials
+aws_region            = "us-east-1"
+aws_access_key_id     = ""
+aws_secret_access_key = ""
+aws_session_token     = ""
+aws_endpoint_url      = ""
