@@ -1,61 +1,19 @@
 "use client";
 
 import { Image } from "lucide-react";
-/* import { useEffect, useState } from "react"; */
-import { useParams, useSearchParams } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useAuth } from "@/hooks/use-auth";
 import { EventAnalyticsChart } from "./_event-analysis-chart";
-import EventAnalyticsEngagement from "./_event-analysis-engagement";
 import EventAnalyticsAssistants from "./_event-analytics-assistants";
 
 export default function EventAnalytics() {
-	const { isAuthenticated } = useAuth();
-	// ---- obtain page id ----
-	const params = useParams();
-	const searchParams = useSearchParams();
-	const first = (v?: string | string[] | null) => (Array.isArray(v) ? v[0] : (v ?? null));
-
-	const pageId = first(params.id) ?? searchParams.get("id") ?? null;
-
-	if (!isAuthenticated) return <div>Loading...</div>;
-
-	// ---- eAPI state ----
-	/* const [apiData, setApiData] = useState<any>(null); */
-
-	/*   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null); */
-
-	/* useEffect(() => {
-		if (!pageId) return;
-		const ac = new AbortController();
-
-		(async () => {
-			try {
-				const res = await fetch(`/api/events/${encodeURIComponent(pageId)}`, {
-					signal: ac.signal,
-				});
-				if (!res.ok) throw new Error(`HTTP ${res.status}`);
-				const json = await res.json();
-				// setApiData(json)
-			} catch (err) {
-				if ((err as any).name !== "AbortError") {
-					// setError(String(err))
-				}
-			}
-		})();
-
-		return () => ac.abort();
-	}, [pageId]); // deps correctas */
-
 	return (
 		<>
 			<div className="px-4 pt-4">
-				{pageId && (
+				{/* {pageId && (
 					<p className="text-xs text-gray-500">
 						ID: <span className="font-mono">{pageId}</span>
 					</p>
-				)}
+				)} */}
 				{/* {loading && <p className="text-sm text-gray-600">Cargando datos…</p>}
 				{error && <p className="text-sm text-red-600">Error: {error}</p>} */}
 			</div>
@@ -79,9 +37,9 @@ export default function EventAnalytics() {
 						<TabsTrigger className="rounded-2xl" value="Chart">
 							Chart
 						</TabsTrigger>
-						<TabsTrigger className="rounded-2xl" value="Engagement">
+						{/* <TabsTrigger className="rounded-2xl" value="Engagement">
 							Engagement
-						</TabsTrigger>
+						</TabsTrigger> */}
 					</TabsList>
 
 					<TabsContent value="Assistants">
@@ -93,9 +51,9 @@ export default function EventAnalytics() {
 						<EventAnalyticsChart />
 					</TabsContent>
 
-					<TabsContent value="Engagement">
+					{/* <TabsContent value="Engagement">
 						<EventAnalyticsEngagement />
-					</TabsContent>
+					</TabsContent> */}
 				</Tabs>
 			</div>
 		</>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useParams, useSearchParams } from "next/navigation";
 import * as React from "react";
 import { Label, Pie, PieChart, Sector } from "recharts";
 import type { PieSectorDataItem } from "recharts/types/polar/Pie";
@@ -11,25 +12,78 @@ import {
 	ChartTooltip,
 	ChartTooltipContent,
 } from "@/components/ui/chart";
+import { getApiUrl } from "@/lib/api";
 
-export const description = "Attendees: Enrolled vs Confirmed";
-
-const attendeesData = [
-	{ status: "enrolled", count: 14, fill: "var(--color-enrolled)" },
-	{ status: "confirmed", count: 5, fill: "var(--color-confirmed)" },
-	{ status: "Aforo", count: 7, fill: "var(--color-aforo)" },
-];
+type SliceName = "registered" | "waitlisted" | "cancelled" | "attended" | "quota";
+type ApiSlice = { name: SliceName; count: number };
 
 const chartConfig = {
-	attendees: { label: "Attendees" },
-	enrolled: { label: "Enrolled", color: "var(--chart-1)" },
-	confirmed: { label: "Confirmed", color: "var(--chart-2)" },
-	aforo: { label: "Aforo", color: "var(--chart-3)" },
+	registered: { label: "Registered", color: "var(--chart-1)" },
+	waitlisted: { label: "Waitlisted", color: "var(--chart-2)" },
+	cancelled: { label: "Cancelled", color: "var(--chart-3)" },
+	attended: { label: "Attended", color: "var(--chart-4)" },
+	quota: { label: "Quota", color: "var(--chart-5)" },
 } satisfies ChartConfig;
 
 export function EventAnalyticsChart() {
 	const id = "pie-attendees";
 	const [activeIndex, setActiveIndex] = React.useState(0);
+	const [data, setData] = React.useState<ApiSlice[]>([]);
+	const [loading, setLoading] = React.useState(true);
+
+	// obtener id (igual que en tus otros componentes)
+	const params = useParams();
+	const searchParams = useSearchParams();
+	const first = (v?: string | string[] | null) => (Array.isArray(v) ? v[0] : (v ?? null));
+	const pageId = first(params.id) ?? searchParams.get("id") ?? null;
+
+	React.useEffect(() => {
+		const run = async () => {
+			if (!pageId) return;
+			try {
+				setLoading(true);
+				const res = await fetch(`${getApiUrl()}/event-analytics/${pageId}/chart`, {
+					credentials: "include",
+				});
+				if (!res.ok) {
+					setData([]);
+					return;
+				}
+				const json = (await res.json()) as ApiSlice[];
+
+				// filtra slices con count 0 si no quieres mostrarlos
+				const cleaned = json.filter((s) => s.count > 0);
+
+				setData(cleaned);
+				setActiveIndex(0);
+			} finally {
+				setLoading(false);
+			}
+		};
+		run();
+	}, [pageId]);
+
+	if (loading) {
+		return (
+			<Card className="border-none">
+				<CardContent>Loading…</CardContent>
+			</Card>
+		);
+	}
+
+	if (!data.length) {
+		return (
+			<Card className="border-none">
+				<CardHeader className="pb-0">
+					<CardTitle>Attendees</CardTitle>
+				</CardHeader>
+				<CardContent className="text-sm text-muted-foreground">No data</CardContent>
+			</Card>
+		);
+	}
+
+	// añade color al dataset para Recharts
+	const pieData = data.map((d) => ({ ...d, fill: chartConfig[d.name].color }));
 
 	return (
 		<Card data-chart={id} className="flex flex-col border-none">
@@ -39,13 +93,13 @@ export function EventAnalyticsChart() {
 			</CardHeader>
 
 			<CardContent className="flex flex-1 justify-center pb-0">
-				<ChartContainer id={id} config={chartConfig} className="mx-auto aspect-square w-full ">
+				<ChartContainer id={id} config={chartConfig} className="mx-auto aspect-square w-full">
 					<PieChart>
 						<ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
 						<Pie
-							data={attendeesData}
+							data={pieData}
 							dataKey="count"
-							nameKey="status"
+							nameKey="name"
 							innerRadius={60}
 							strokeWidth={5}
 							activeIndex={activeIndex}
@@ -64,6 +118,7 @@ export function EventAnalyticsChart() {
 							<Label
 								content={({ viewBox }) => {
 									if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+										const current = pieData[activeIndex];
 										return (
 											<text
 												x={viewBox.cx}
@@ -76,16 +131,14 @@ export function EventAnalyticsChart() {
 													y={viewBox.cy}
 													className="fill-foreground text-3xl font-bold"
 												>
-													{attendeesData?.[activeIndex]?.count.toLocaleString()}
+													{current?.count.toLocaleString()}
 												</tspan>
 												<tspan
 													x={viewBox.cx}
 													y={(viewBox.cy || 0) + 24}
 													className="fill-muted-foreground"
 												>
-													{chartConfig[
-														attendeesData[activeIndex]?.status as keyof typeof chartConfig
-													]?.label ?? "Attendees"}
+													{chartConfig[current?.name as SliceName]?.label ?? "Attendees"}
 												</tspan>
 											</text>
 										);

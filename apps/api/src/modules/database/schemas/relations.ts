@@ -1,6 +1,7 @@
 import { relations } from "drizzle-orm";
 import { badges } from "./badges";
 import { categories } from "./categories";
+import { eventImpressions } from "./event-impressions";
 import { events } from "./events";
 import { eventsBadges } from "./events-badges";
 import { eventsCategories } from "./events-categories";
@@ -14,6 +15,7 @@ export const usersRelations = relations(users, ({ many }) => ({
 	createdBadges: many(badges),
 	createdCategories: many(categories),
 	createdLocations: many(locations),
+	impressions: many(eventImpressions),
 }));
 
 export const eventsRelations = relations(events, ({ one, many }) => ({
@@ -31,6 +33,7 @@ export const eventsRelations = relations(events, ({ one, many }) => ({
 	}),
 	eventsBadges: many(eventsBadges),
 	eventsCategories: many(eventsCategories),
+	impressions: many(eventImpressions),
 }));
 
 export const groupsRelations = relations(groups, ({ one }) => ({
@@ -83,5 +86,16 @@ export const eventsCategoriesRelations = relations(eventsCategories, ({ one }) =
 	category: one(categories, {
 		fields: [eventsCategories.categoryId],
 		references: [categories.id],
+	}),
+}));
+
+export const eventImpressionsRelations = relations(eventImpressions, ({ one }) => ({
+	event: one(events, {
+		fields: [eventImpressions.eventId],
+		references: [events.id],
+	}),
+	user: one(users, {
+		fields: [eventImpressions.userId],
+		references: [users.id],
 	}),
 }));
