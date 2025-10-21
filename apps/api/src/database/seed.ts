@@ -1,5 +1,3 @@
-/** biome-ignore-all lint/suspicious/noExplicitAny: <> */
-/** biome-ignore-all lint/style/noNonNullAssertion: <explanation> */
 import { config } from "dotenv";
 import { eq, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -27,7 +25,12 @@ function getRandomItems(array: string[]): string[] {
 	const shuffled = [...array];
 	for (let i = shuffled.length - 1; i > 0; i--) {
 		const j = getRandomNumber(0, i);
-		[shuffled[i], shuffled[j]] = [shuffled[j]!, shuffled[i]!];
+		const temp = shuffled[i];
+		const swapValue = shuffled[j];
+		if (temp !== undefined && swapValue !== undefined) {
+			shuffled[i] = swapValue;
+			shuffled[j] = temp;
+		}
 	}
 	const n = getRandomNumber(1, array.length - 1);
 	return shuffled.slice(0, n);
@@ -96,7 +99,7 @@ async function seedCategories(db: AppDatabase, userIds: string[]): Promise<strin
 		names.map((name) => ({
 			name,
 			createdBy: selectRandomFromArray(userIds),
-			status: selectRandomFromArray(["active", "deleted"]) as any,
+			status: selectRandomFromArray(["active", "deleted"] as const),
 		})),
 	);
 	return (
@@ -122,7 +125,7 @@ async function seedLocations(db: AppDatabase, userIds: string[]): Promise<string
 		names.map((name) => ({
 			name,
 			createdBy: selectRandomFromArray(userIds),
-			status: selectRandomFromArray(["active", "deleted"]) as any,
+			status: selectRandomFromArray(["active", "deleted"] as const),
 		})),
 	);
 	return (
@@ -150,7 +153,10 @@ async function seedEvents(
 			.returning({
 				id: schemas.groups.id,
 			});
-		const groupId = groupResult[0]!.id;
+		const groupId = groupResult[0]?.id;
+		if (!groupId) {
+			continue;
+		}
 		const userId = selectRandomFromArray(userIds);
 		await db.insert(schemas.usersGroups).values({
 			userId,
@@ -169,6 +175,7 @@ async function seedEvents(
 				startDate,
 				endDate,
 				quota: getRandomNumber(1, 100),
+				imageUrl: `https://via.placeholder.com/400x300?text=Event${i}`,
 				createdBy: userId,
 				groupId,
 				locationId: selectRandomFromArray(locationIds),
@@ -177,7 +184,10 @@ async function seedEvents(
 			.returning({
 				id: schemas.events.id,
 			});
-		const eventId = eventResult[0]!.id;
+		const eventId = eventResult[0]?.id;
+		if (!eventId) {
+			continue;
+		}
 		const badgeIdsToInsert = getRandomItems(badgeIds);
 		const categoryIdsToInsert = getRandomItems(categoryIds);
 		await db.insert(schemas.eventsBadges).values(
@@ -219,7 +229,12 @@ async function seedSubscriptions(
 		const shuffledUsers = [...userIds];
 		for (let i = shuffledUsers.length - 1; i > 0; i--) {
 			const j = getRandomNumber(0, i);
-			[shuffledUsers[i], shuffledUsers[j]] = [shuffledUsers[j]!, shuffledUsers[i]!];
+			const temp = shuffledUsers[i];
+			const swapValue = shuffledUsers[j];
+			if (temp !== undefined && swapValue !== undefined) {
+				shuffledUsers[i] = swapValue;
+				shuffledUsers[j] = temp;
+			}
 		}
 		const maxRegistrations = Math.min(event.quota ?? 0, shuffledUsers.length);
 		if (maxRegistrations === 0) {
@@ -231,15 +246,22 @@ async function seedSubscriptions(
 			remainingUsers.length === 0 ? 0 : getRandomNumber(0, Math.min(5, remainingUsers.length));
 		const subscriptionsToInsert: schemas.NewSubscription[] = [];
 		for (let index = 0; index < registeredCount; index++) {
+			const userId = shuffledUsers[index];
+			if (!userId) {
+				continue;
+			}
 			subscriptionsToInsert.push({
-				userId: shuffledUsers[index]!,
+				userId,
 				eventId: event.id,
 				status: "registered",
 				position: index + 1,
 			});
 		}
 		for (let index = 0; index < waitlistedCount; index++) {
-			const userId = remainingUsers[index]!;
+			const userId = remainingUsers[index];
+			if (!userId) {
+				continue;
+			}
 			subscriptionsToInsert.push({
 				userId,
 				eventId: event.id,

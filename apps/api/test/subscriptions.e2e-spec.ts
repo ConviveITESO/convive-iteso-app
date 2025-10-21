@@ -8,6 +8,7 @@ import { AppModule } from "../src/app.module";
 import { AuthGuard } from "../src/modules/auth/guards/auth.guard";
 import { DATABASE_CONNECTION } from "../src/modules/database/connection";
 import { DatabaseHealthService } from "../src/modules/database/database-health.service";
+import { NotificationsQueueService } from "../src/modules/notifications/notifications.service";
 
 jest.mock("jose", () => ({
 	// biome-ignore lint/style/useNamingConvention: external library name
@@ -44,6 +45,11 @@ describe("SubscriptionsModule (e2e)", () => {
 
 	const mockDatabaseHealthService = {
 		onModuleInit: jest.fn(),
+	};
+
+	const mockNotificationsQueue = {
+		enqueueSubscriptionCreated: jest.fn().mockResolvedValue(undefined),
+		enqueueSubscriptionCancelled: jest.fn().mockResolvedValue(undefined),
 	};
 
 	const mockUser = {
@@ -147,6 +153,8 @@ describe("SubscriptionsModule (e2e)", () => {
 			.useValue(mockDatabaseHealthService)
 			.overrideProvider(DATABASE_CONNECTION)
 			.useValue(mockDb)
+			.overrideProvider(NotificationsQueueService)
+			.useValue(mockNotificationsQueue)
 			.overrideGuard(AuthGuard)
 			.useValue(mockAuthGuard)
 			.compile();
@@ -259,11 +267,27 @@ describe("SubscriptionsModule (e2e)", () => {
 
 		it("/subscriptions (POST) should create a subscription", () => {
 			const mockTransaction = createMockTransaction();
-			(mockDb.transaction as jest.Mock).mockImplementation((callback) => callback(mockTransaction));
+			(mockDb.transaction as jest.Mock).mockImplementation(
+				async (callback) => await callback(mockTransaction),
+			);
+
+			const mockEventCreator = {
+				id: mockEvent.createdBy,
+				name: "Event Creator",
+				email: "creator@example.com",
+			};
+
+			const mockSubscriber = {
+				id: mockUser.id,
+				name: mockUser.name,
+				email: mockUser.email,
+			};
 
 			(mockTransaction.limit as jest.Mock)
-				.mockResolvedValueOnce([])
-				.mockResolvedValueOnce([mockEvent]);
+				.mockResolvedValueOnce([]) // existingSubscription
+				.mockResolvedValueOnce([mockEvent]) // event
+				.mockResolvedValueOnce([mockEventCreator]) // eventCreator
+				.mockResolvedValueOnce([mockSubscriber]); // subscriber
 			(mockTransaction.$count as jest.Mock).mockResolvedValue(1);
 			(mockTransaction.returning as jest.Mock).mockResolvedValue([mockSubscriptionResponse]);
 

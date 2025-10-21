@@ -95,7 +95,7 @@ export default function EventPage() {
 			<div className="min-h-screen bg-background">
 				<div className="max-w-md mx-auto shadow-lg overflow-hidden">
 					<EventHeader eventName={event.name} />
-					<EventImage />
+					<EventImage imageUrl={event.imageUrl} name={event.name} />
 
 					<div className="px-8 pb-8">
 						<EventDetails description={event.description} startDate={startDate} endDate={endDate} />
@@ -128,7 +128,7 @@ export default function EventPage() {
 		<div className="min-h-screen bg-background">
 			<div className="max-w-md mx-auto shadow-lg overflow-hidden">
 				<EventHeader eventName={event.name} />
-				<EventImage />
+				<EventImage imageUrl={event.imageUrl} name={event.name} />
 
 				<div className="px-8 pb-8">
 					<EventDetails description={event.description} startDate={startDate} endDate={endDate} />
