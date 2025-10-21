@@ -398,6 +398,7 @@ export class SubscriptionsService {
 				id: events.id,
 				name: events.name,
 				startDate: events.startDate,
+				imageUrl: events.imageUrl,
 				locationName: locations.name,
 			})
 			.from(subscriptions)
@@ -421,6 +422,7 @@ export class SubscriptionsService {
 			id: row.id,
 			name: row.name,
 			startDate: row.startDate instanceof Date ? row.startDate.toISOString() : row.startDate,
+			imageUrl: row.imageUrl,
 			location: {
 				name: row.locationName,
 			},
