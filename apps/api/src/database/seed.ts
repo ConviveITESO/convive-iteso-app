@@ -204,16 +204,16 @@ async function seedEvents(
 			startDate = getRandomDate(initialDate, now);
 			endDate = selectRandomFromArray([true, false]) ? getRandomDate(startDate, now) : startDate;
 		}
-		let _quotaa = getRandomNumber(1, 100);
+		let quota = getRandomNumber(1, 100);
 		let status: "active" | "deleted" = selectRandomFromArray(["active", "deleted"]);
 		if (i === 0) {
-			_quotaa = Math.max(1, Math.min(userIds.length, 10));
+			quota = Math.max(1, Math.min(userIds.length, 10));
 			status = "active";
 		} else if (i === 1) {
-			_quotaa = Math.max(2, Math.min(userIds.length, 12));
+			quota = Math.max(2, Math.min(userIds.length, 12));
 			status = "active";
 		} else if (i === 2) {
-			_quotaa = Math.max(10, Math.min(userIds.length, 40));
+			quota = Math.max(10, Math.min(userIds.length, 40));
 			status = "active";
 		}
 		const eventResult = await db
@@ -223,7 +223,7 @@ async function seedEvents(
 				description: `This is a description for Event${i}`,
 				startDate,
 				endDate,
-				quota: getRandomNumber(1, 100),
+				quota: quota,
 				imageUrl: `https://picsum.photos/seed/event${i}/400/300`,
 				createdBy: userId,
 				groupId,

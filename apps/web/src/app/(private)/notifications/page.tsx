@@ -51,7 +51,7 @@ export default async function NotificationsPage() {
 	await validateAuth();
 	return (
 		<main className="pb-8">
-			<HeaderTitle title="Notifications Playground" showBackButton={true} />
+			<HeaderTitle title="Notifications" showBackButton={true} />
 			<NotificationHeader
 				rightAction={
 					<button type="button" className="text-xs text-gray-500 hover:underline">

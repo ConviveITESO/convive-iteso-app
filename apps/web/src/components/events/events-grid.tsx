@@ -11,6 +11,14 @@ type GridEvent =
 	| CreatorEventResponseArraySchema[number];
 type GridEventArray = GridEvent[];
 
+/**
+ * Type guard to check if event has a group object with id property
+ * Only EventResponseArraySchema[number] has the full group object
+ */
+export function hasGroupWithId(event: GridEvent): event is CreatorEventResponseArraySchema[number] {
+	return "groupId" in event;
+}
+
 interface EventsGridProps {
 	events: GridEventArray;
 	onEventClick: (eventId: string) => void;
@@ -19,7 +27,7 @@ interface EventsGridProps {
 	onDelete?: (eventId: string) => void;
 	onShare?: (eventId: string) => void;
 	onScanQr?: (eventId: string) => void;
-	onChat?: (eventId: string) => void;
+	onChat?: (groupId: string) => void;
 	onViewStats?: (eventId: string) => void;
 	onUnsubscribe?: (event: SubscribedEventResponseArraySchema[number]) => void;
 }
@@ -56,7 +64,7 @@ export function EventsGrid({
 					onDelete={onDelete ? () => onDelete(event.id) : undefined}
 					onShare={onShare ? () => onShare(event.id) : undefined}
 					onScanQr={onScanQr ? () => onScanQr(event.id) : undefined}
-					onChat={onChat ? () => onChat(event.id) : undefined}
+					onChat={onChat && hasGroupWithId(event) ? () => onChat(event.groupId) : undefined}
 					onViewStats={onViewStats ? () => onViewStats(event.id) : undefined}
 					onUnsubscribe={
 						onUnsubscribe && "subscriptionId" in event

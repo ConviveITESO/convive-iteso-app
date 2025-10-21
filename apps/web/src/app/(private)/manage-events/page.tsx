@@ -74,8 +74,8 @@ export default function ManageEventsPage() {
 		router.push(`/manage-events/${eventId}/qr`);
 	};
 
-	const handleChat = (eventId: string) => {
-		router.push(`/groups/${eventId}`);
+	const handleChat = (groupId: string) => {
+		router.push(`/groups/${groupId}`);
 	};
 
 	const handleViewStats = (eventId: string) => {
