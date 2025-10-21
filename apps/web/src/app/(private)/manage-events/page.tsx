@@ -77,8 +77,7 @@ export default function ManageEventsPage() {
 	};
 
 	const handleNotify = (eventId: string) => {
-		// TODO: Implement when notifications module is ready
-		console.log(eventId);
+		router.push(`/manage-events/${eventId}/qr`);
 	};
 
 	const handleViewStats = (eventId: string) => {
@@ -108,7 +107,7 @@ export default function ManageEventsPage() {
 					onEdit={handleEdit}
 					onDelete={handleDelete}
 					onShare={handleShare}
-					onNotify={handleNotify}
+					onScanQr={handleNotify}
 					onViewStats={handleViewStats}
 				/>
 

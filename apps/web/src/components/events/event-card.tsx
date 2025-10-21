@@ -1,5 +1,5 @@
 import type { EventResponseArraySchema, SubscribedEventResponseArraySchema } from "@repo/schemas";
-import { Bell, Edit, Eye, MapPin, Share2, Trash2, UserMinus } from "lucide-react";
+import { Edit, Eye, MapPin, QrCode, Share2, Trash2, UserMinus } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -14,7 +14,7 @@ interface EventCardProps {
 	onEdit?: () => void;
 	onDelete?: () => void;
 	onShare?: () => void;
-	onNotify?: () => void;
+	onScanQr?: () => void;
 	onViewStats?: () => void;
 	onUnsubscribe?: () => void;
 }
@@ -26,7 +26,7 @@ export function EventCard({
 	onEdit,
 	onDelete,
 	onShare,
-	onNotify,
+	onScanQr,
 	onViewStats,
 	onUnsubscribe,
 }: EventCardProps) {
@@ -100,9 +100,9 @@ export function EventCard({
 								variant="ghost"
 								size="icon"
 								className="size-8"
-								onClick={(e) => handleActionClick(e, onNotify)}
+								onClick={(e) => handleActionClick(e, onScanQr)}
 							>
-								<Bell className="size-4" />
+								<QrCode className="size-4" />
 							</Button>
 							<Button
 								variant="ghost"
