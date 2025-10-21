@@ -1,7 +1,6 @@
 "use client";
 
-import { ArrowLeft, User } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +17,6 @@ interface UserProfile {
 }
 
 export default function ProfileSettingsPage() {
-	const router = useRouter();
 	const { isAuthenticated } = useAuth();
 	const [profile, setProfile] = useState<UserProfile | null>(null);
 	const [username, setUsername] = useState("");
