@@ -1,11 +1,18 @@
-import type { EventResponseArraySchema, SubscribedEventResponseArraySchema } from "@repo/schemas";
+import type {
+	CreatorEventResponseArraySchema,
+	EventResponseArraySchema,
+	SubscribedEventResponseArraySchema,
+} from "@repo/schemas";
 import { Edit, Eye, MapPin, QrCode, Share2, Trash2, UserMinus } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { formatDate } from "@/lib/date-utils";
 
-type CardEvent = EventResponseArraySchema[number] | SubscribedEventResponseArraySchema[number];
+type CardEvent =
+	| EventResponseArraySchema[number]
+	| SubscribedEventResponseArraySchema[number]
+	| CreatorEventResponseArraySchema[number];
 
 interface EventCardProps {
 	event: CardEvent;

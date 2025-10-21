@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/use-auth";
 import { useCategories } from "@/hooks/use-categories";
+import { useCreatedEvents } from "@/hooks/use-created-events";
 import { useDeleteEvent } from "@/hooks/use-delete-event";
-import { useEvents } from "@/hooks/use-events";
 import { HeaderTitle } from "@/hooks/use-header-title";
 import { CategoriesFilter } from "../feed/_categories-filter";
 import { SearchHeader } from "../feed/_search-header";
@@ -23,9 +23,8 @@ export default function ManageEventsPage() {
 	const { mutate: deleteEvent, isPending: isDeleting } = useDeleteEvent();
 	const [showCopiedMessage, setShowCopiedMessage] = useState(false);
 
-	const { data: events = [], isLoading: eventsLoading } = useEvents(isAuthenticated);
+	const { data: events = [], isLoading: eventsLoading } = useCreatedEvents(isAuthenticated);
 	const { data: categories = [], isLoading: categoriesLoading } = useCategories(isAuthenticated);
-
 	const loading = eventsLoading || categoriesLoading;
 
 	if (!isAuthenticated || loading) {
@@ -33,12 +32,8 @@ export default function ManageEventsPage() {
 	}
 
 	const filteredEvents = events.filter((event) => {
-		const matchesSearch =
-			event.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-			event.description.toLowerCase().includes(searchQuery.toLowerCase());
-		const matchesCategory =
-			!selectedCategory || event.categories.some((cat) => cat.id === selectedCategory);
-		return matchesSearch && matchesCategory;
+		const matchesSearch = event.name.toLowerCase().includes(searchQuery.toLowerCase());
+		return matchesSearch;
 	});
 
 	const handleEventClick = (eventId: string) => {
@@ -62,8 +57,7 @@ export default function ManageEventsPage() {
 				setDeleteDialogOpen(false);
 				setEventToDelete(null);
 			},
-			onError: (error) => {
-				console.error("Failed to delete event:", error);
+			onError: () => {
 				setDeleteDialogOpen(false);
 			},
 		});
@@ -91,7 +85,7 @@ export default function ManageEventsPage() {
 
 			<div className="mx-auto max-w-7xl px-4 py-8">
 				<div className="mb-6">
-					<h2 className="text-muted-foreground mt-1">View and manage all events in the system</h2>
+					<h2 className="text-muted-foreground mt-1">View and manage your created events</h2>
 				</div>
 
 				<CategoriesFilter

@@ -1,7 +1,14 @@
-import type { EventResponseArraySchema, SubscribedEventResponseArraySchema } from "@repo/schemas";
+import type {
+	CreatorEventResponseArraySchema,
+	EventResponseArraySchema,
+	SubscribedEventResponseArraySchema,
+} from "@repo/schemas";
 import { EventCard } from "./event-card";
 
-type GridEvent = EventResponseArraySchema[number] | SubscribedEventResponseArraySchema[number];
+type GridEvent =
+	| EventResponseArraySchema[number]
+	| SubscribedEventResponseArraySchema[number]
+	| CreatorEventResponseArraySchema[number];
 type GridEventArray = GridEvent[];
 
 interface EventsGridProps {
