@@ -3,6 +3,7 @@ export * from "./categories";
 export * from "./events";
 export * from "./events-badges";
 export * from "./events-categories";
+export * from "./group-messages";
 export * from "./groups";
 export * from "./locations";
 export * from "./relations";

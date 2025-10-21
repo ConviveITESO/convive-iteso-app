@@ -20,6 +20,7 @@ export default function EditEventPage() {
 		{} as CreateEventSchema & EventResponseSchema,
 	);
 	const [eventLoading, setEventLoading] = useState(true);
+	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
 	const { data: locations = [], isLoading: locationsLoading } = useLocations(isAuthenticated);
 	const { data: categories = [], isLoading: categoriesLoading } = useCategories(isAuthenticated);
@@ -27,6 +28,7 @@ export default function EditEventPage() {
 
 	useEffect(() => {
 		setEventLoading(true);
+		setErrorMessage(null);
 		if (!isAuthenticated) return;
 
 		const loadEvent = async () => {
@@ -47,8 +49,9 @@ export default function EditEventPage() {
 					badgeIds: event.badges.map((badge) => badge.id),
 				});
 				setEventLoading(false);
-			} catch (err) {
-				console.error("Error loading data", err);
+			} catch (_err) {
+				setErrorMessage("We could not load the event. Please refresh and try again.");
+				setEventLoading(false);
 			}
 		};
 
@@ -60,6 +63,7 @@ export default function EditEventPage() {
 	if (!isAuthenticated || loading) return <div>Loading...</div>;
 
 	const handleSave = async (data: CreateEventSchema) => {
+		setErrorMessage(null);
 		try {
 			const response = await fetch(`${getApiUrl()}/events/${initialData.id}`, {
 				method: "PUT",
@@ -69,13 +73,13 @@ export default function EditEventPage() {
 			});
 
 			if (!response.ok) {
-				console.error("Failed to update event");
+				setErrorMessage("We couldn't update the event. Please try again.");
 				return;
 			}
 
 			router.push("/manage-events");
-		} catch (err) {
-			console.error("Unexpected error while updating event", err);
+		} catch (_err) {
+			setErrorMessage("Unexpected error while updating event. Please try again.");
 		}
 	};
 
@@ -85,6 +89,11 @@ export default function EditEventPage() {
 
 	return (
 		<div className="p-4">
+			{errorMessage && (
+				<p role="alert" className="mb-4 text-sm text-red-600">
+					{errorMessage}
+				</p>
+			)}
 			<EventForm
 				mode="edit"
 				eventId={initialData.id}

@@ -22,13 +22,13 @@ export default () => ({
 			host: process.env.REDIS_HOST || "127.0.0.1",
 			port: Number.parseInt(process.env.REDIS_PORT || "6379", 10),
 		},
-		s3: {
-			region: process.env.AWS_REGION || "us-east-1",
-			accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-			secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-			sessionToken: process.env.AWS_SESSION_TOKEN,
-			endpoint: process.env.AWS_ENDPOINT_URL,
-			bucketName: process.env.S3_BUCKET_NAME,
-		},
+	},
+	s3: {
+		region: process.env.AWS_REGION || "us-east-1",
+		accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+		secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+		sessionToken: process.env.AWS_SESSION_TOKEN,
+		endpoint: process.env.AWS_ENDPOINT_URL,
+		bucketName: process.env.S3_BUCKET_NAME,
 	},
 });
