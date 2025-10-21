@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Req } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Post, Req, UseGuards } from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
 import {
 	CreateNotificationTestSchema,
@@ -14,10 +14,12 @@ import {
 	ZodValidationPipe,
 } from "@/pipes/zod-validation/zod-validation.pipe";
 import { UserRequest } from "@/types/user.request";
+import { AuthGuard } from "../auth/guards/auth.guard";
 import { NotificationService } from "./notification.service";
 
 @ApiTags("Notification")
 @Controller("notifications")
+@UseGuards(AuthGuard)
 export class NotificationController {
 	constructor(private readonly service: NotificationService) {}
 
