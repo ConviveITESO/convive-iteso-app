@@ -1,5 +1,5 @@
 import type { EventResponseArraySchema, SubscribedEventResponseArraySchema } from "@repo/schemas";
-import { EventCard } from "./_event-card";
+import { EventCard } from "./event-card";
 
 type GridEvent = EventResponseArraySchema[number] | SubscribedEventResponseArraySchema[number];
 type GridEventArray = GridEvent[];

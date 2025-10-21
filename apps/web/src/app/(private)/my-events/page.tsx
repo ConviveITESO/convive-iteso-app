@@ -4,7 +4,7 @@ import type { SubscribedEventResponseSchema } from "@repo/schemas";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
-import { EventsGrid } from "@/components/events/_events-grid";
+import { EventsGrid } from "@/components/events/events-grid";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
