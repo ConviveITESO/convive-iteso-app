@@ -19,6 +19,7 @@ interface EventsGridProps {
 	onDelete?: (eventId: string) => void;
 	onShare?: (eventId: string) => void;
 	onScanQr?: (eventId: string) => void;
+	onChat?: (eventId: string) => void;
 	onViewStats?: (eventId: string) => void;
 	onUnsubscribe?: (event: SubscribedEventResponseArraySchema[number]) => void;
 }
@@ -31,6 +32,7 @@ export function EventsGrid({
 	onDelete,
 	onShare,
 	onScanQr,
+	onChat,
 	onViewStats,
 	onUnsubscribe,
 }: EventsGridProps) {
@@ -54,6 +56,7 @@ export function EventsGrid({
 					onDelete={onDelete ? () => onDelete(event.id) : undefined}
 					onShare={onShare ? () => onShare(event.id) : undefined}
 					onScanQr={onScanQr ? () => onScanQr(event.id) : undefined}
+					onChat={onChat ? () => onChat(event.id) : undefined}
 					onViewStats={onViewStats ? () => onViewStats(event.id) : undefined}
 					onUnsubscribe={
 						onUnsubscribe && "subscriptionId" in event

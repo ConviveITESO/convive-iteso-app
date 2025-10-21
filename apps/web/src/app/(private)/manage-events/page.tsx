@@ -70,8 +70,12 @@ export default function ManageEventsPage() {
 		setTimeout(() => setShowCopiedMessage(false), 2000);
 	};
 
-	const handleNotify = (eventId: string) => {
+	const handleScanQr = (eventId: string) => {
 		router.push(`/manage-events/${eventId}/qr`);
+	};
+
+	const handleChat = (eventId: string) => {
+		router.push(`/groups/${eventId}`);
 	};
 
 	const handleViewStats = (eventId: string) => {
@@ -101,7 +105,8 @@ export default function ManageEventsPage() {
 					onEdit={handleEdit}
 					onDelete={handleDelete}
 					onShare={handleShare}
-					onScanQr={handleNotify}
+					onChat={handleChat}
+					onScanQr={handleScanQr}
 					onViewStats={handleViewStats}
 				/>
 

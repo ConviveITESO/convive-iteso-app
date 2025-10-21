@@ -3,7 +3,7 @@ import type {
 	EventResponseArraySchema,
 	SubscribedEventResponseArraySchema,
 } from "@repo/schemas";
-import { Edit, Eye, MapPin, QrCode, Share2, Trash2, UserMinus } from "lucide-react";
+import { Edit, Eye, MapPin, MessageSquare, QrCode, Share2, Trash2, UserMinus } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -23,6 +23,7 @@ interface EventCardProps {
 	onShare?: () => void;
 	onScanQr?: () => void;
 	onViewStats?: () => void;
+	onChat?: () => void;
 	onUnsubscribe?: () => void;
 }
 
@@ -35,6 +36,7 @@ export function EventCard({
 	onShare,
 	onScanQr,
 	onViewStats,
+	onChat,
 	onUnsubscribe,
 }: EventCardProps) {
 	const handleActionClick = (e: React.MouseEvent, action?: () => void) => {
@@ -103,6 +105,14 @@ export function EventCard({
 							</Button>
 						</div>
 						<div className="flex gap-1 justify-center">
+							<Button
+								variant="ghost"
+								size="icon"
+								className="size-8"
+								onClick={(e) => handleActionClick(e, onChat)}
+							>
+								<MessageSquare className="size-4" />
+							</Button>
 							<Button
 								variant="ghost"
 								size="icon"
