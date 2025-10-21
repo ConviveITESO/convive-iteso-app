@@ -165,6 +165,56 @@ export const eventResponseArraySchema = z
 		example: eventResponseArraySchemaExample,
 	});
 
+export const creatorEventResponseSchemaExample = {
+	id: "550e8400-e29b-41d4-a716-446655440000",
+	name: "Event 1",
+	startDate: "2025-09-21T19:45:00Z",
+	endDate: "2025-09-21T19:45:00Z",
+	status: "active",
+	groupId: "3617ef1c-c37e-4383-80bd-a472577df765",
+	imageUrl: "https://your-s3-bucket-url/events/550e8400-e29b-41d4-a716-446655440000.jpg",
+	location: {
+		name: "Main Hall",
+	},
+	attendance: {
+		registered: 45,
+		waitlisted: 5,
+	},
+};
+
+export const creatorEventResponseSchema = z
+	.object({
+		id: z.uuid(),
+		name: z.string(),
+		startDate: z.iso.datetime(),
+		endDate: z.iso.datetime(),
+		status: z.enum(["active", "deleted"]),
+		groupId: z.uuid(),
+		imageUrl: z.string(),
+		location: z
+			.object({
+				name: z.string(),
+			})
+			.openapi("CreatorEventLocationSchema", {
+				example: {
+					name: "Main Hall",
+				},
+			}),
+		attendance: z.object({
+			registered: z.number().int().nonnegative(),
+			waitlisted: z.number().int().nonnegative(),
+		}),
+	})
+	.openapi("CreatorEventResponseSchema", {
+		example: creatorEventResponseSchemaExample,
+	});
+
+export const creatorEventResponseArraySchema = z
+	.array(creatorEventResponseSchema)
+	.openapi("CreatorEventResponseArraySchema", {
+		example: [creatorEventResponseSchemaExample],
+	});
+
 // ==========================================================
 // TYPE schemas
 // ==========================================================
@@ -175,3 +225,5 @@ export type CreateEventSchema = z.infer<typeof createEventSchema>;
 export type UpdateEventSchema = z.infer<typeof updateEventSchema>;
 export type EventResponseSchema = z.infer<typeof eventResponseSchema>;
 export type EventResponseArraySchema = z.infer<typeof eventResponseArraySchema>;
+export type CreatorEventResponseSchema = z.infer<typeof creatorEventResponseSchema>;
+export type CreatorEventResponseArraySchema = z.infer<typeof creatorEventResponseArraySchema>;

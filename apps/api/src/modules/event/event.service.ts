@@ -3,12 +3,13 @@ import {
 	BadgeResponseSchema,
 	CategoryResponseSchema,
 	CreateEventSchema,
+	CreatorEventResponseArraySchema,
 	EventResponseSchema,
 	GetEventsQuerySchema,
 	UpdateEventSchema,
 	UserResponseSchema,
 } from "@repo/schemas";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, gte, isNull, sql } from "drizzle-orm";
 import { BadgeService } from "../badge/badge.service";
 import { CategoryService } from "../category/category.service";
 import { AppDatabase, DATABASE_CONNECTION } from "../database/connection";
@@ -23,6 +24,7 @@ import {
 	groups,
 	Location,
 	locations,
+	subscriptions,
 	User,
 	users,
 } from "../database/schemas";
@@ -44,7 +46,7 @@ export class EventService {
 	) {}
 
 	async getEvents(filters: GetEventsQuerySchema): Promise<EventResponseSchema[]> {
-		const where = [eq(events.status, "active")];
+		const where = [eq(events.status, "active"), gte(events.startDate, new Date())];
 		if (filters.name) {
 			where.push(eq(events.name, filters.name));
 		}
@@ -117,6 +119,65 @@ export class EventService {
 		);
 	}
 
+	async getEventsCreatedByUser(userId: string): Promise<CreatorEventResponseArraySchema> {
+		const rows = await this.db
+			.select({
+				id: events.id,
+				name: events.name,
+				startDate: events.startDate,
+				endDate: events.endDate,
+				status: events.status,
+				groupId: events.groupId,
+				imageUrl: events.imageUrl,
+				locationName: locations.name,
+				registeredCount: sql<number>`COALESCE(SUM(CASE
+					WHEN ${subscriptions.status} = 'registered' AND ${subscriptions.deletedAt} IS NULL THEN 1
+					ELSE 0
+				END), 0)`,
+				waitlistedCount: sql<number>`COALESCE(SUM(CASE
+					WHEN ${subscriptions.status} = 'waitlisted' AND ${subscriptions.deletedAt} IS NULL THEN 1
+					ELSE 0
+				END), 0)`,
+			})
+			.from(events)
+			.innerJoin(
+				locations,
+				and(eq(locations.id, events.locationId), eq(locations.status, "active")),
+			)
+			.leftJoin(
+				subscriptions,
+				and(eq(subscriptions.eventId, events.id), isNull(subscriptions.deletedAt)),
+			)
+			.where(eq(events.createdBy, userId))
+			.groupBy(
+				events.id,
+				events.name,
+				events.startDate,
+				events.endDate,
+				events.status,
+				events.groupId,
+				events.imageUrl,
+				locations.name,
+			);
+
+		return rows.map((row) => ({
+			id: row.id,
+			name: row.name,
+			startDate: row.startDate instanceof Date ? row.startDate.toISOString() : row.startDate,
+			endDate: row.endDate instanceof Date ? row.endDate.toISOString() : row.endDate,
+			status: row.status,
+			groupId: row.groupId,
+			imageUrl: row.imageUrl,
+			location: {
+				name: row.locationName,
+			},
+			attendance: {
+				registered: Number(row.registeredCount ?? 0),
+				waitlisted: Number(row.waitlistedCount ?? 0),
+			},
+		}));
+	}
+
 	async getEventById(id: string): Promise<EventResponseSchema | undefined> {
 		const [event] = await this.db
 			.select({
@@ -150,7 +211,7 @@ export class EventService {
 				)`,
 			})
 			.from(events)
-			.where(and(eq(events.id, id), eq(events.status, "active")))
+			.where(eq(events.id, id))
 			.innerJoin(users, and(eq(users.id, events.createdBy), eq(users.status, "active")))
 			.innerJoin(groups, and(eq(groups.id, events.groupId), eq(groups.status, "active")))
 			.innerJoin(

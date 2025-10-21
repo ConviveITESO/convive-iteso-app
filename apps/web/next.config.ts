@@ -11,6 +11,12 @@ const nextConfig: NextConfig = {
 				port: "4566",
 				pathname: "/**",
 			},
+			// TODO: Remove picsum.photos once real event images are uploaded
+			{
+				protocol: "https",
+				hostname: "picsum.photos",
+				pathname: "/**",
+			},
 		],
 	},
 };

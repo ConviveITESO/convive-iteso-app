@@ -1,4 +1,4 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Inject, Injectable, NotFoundException } from "@nestjs/common";
 import {
 	CreateGroupSchema,
 	GroupMessageArraySchema,
@@ -67,6 +67,17 @@ export class GroupService {
 	}
 
 	async getMessages(groupId: string): Promise<GroupMessageArraySchema> {
+		// Validate group exists
+		const [group] = await this.db
+			.select({ id: groups.id })
+			.from(groups)
+			.where(eq(groups.id, groupId))
+			.limit(1);
+
+		if (!group) {
+			throw new NotFoundException(`Group with id ${groupId} not found`);
+		}
+
 		const rows = await this.db
 			.select({
 				id: groupMessages.id,
@@ -83,6 +94,17 @@ export class GroupService {
 	}
 
 	async sendMessage(groupId: string, userId: string, content: string): Promise<GroupMessageSchema> {
+		// Validate group exists
+		const [group] = await this.db
+			.select({ id: groups.id })
+			.from(groups)
+			.where(eq(groups.id, groupId))
+			.limit(1);
+
+		if (!group) {
+			throw new NotFoundException(`Group with id ${groupId} not found`);
+		}
+
 		const [row] = await this.db
 			.insert(groupMessages)
 			.values({ groupId, userId, content })

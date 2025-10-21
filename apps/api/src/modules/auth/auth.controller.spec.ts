@@ -1,3 +1,4 @@
+import { ConfigService } from "@nestjs/config";
 import { Test, TestingModule } from "@nestjs/testing";
 import { Request, Response } from "express";
 import { AuthController } from "./auth.controller";
@@ -19,6 +20,10 @@ describe("AuthController", () => {
 		validateIdToken: jest.fn(),
 	};
 
+	const mockConfigService = {
+		getOrThrow: jest.fn(),
+	};
+
 	const mockResponse = (): Response => {
 		const res: Partial<Response> = {};
 		res.redirect = jest.fn().mockReturnValue(res);
@@ -29,9 +34,13 @@ describe("AuthController", () => {
 	};
 
 	beforeEach(async () => {
+		mockConfigService.getOrThrow.mockReturnValue("http://localhost:3000");
 		const module: TestingModule = await Test.createTestingModule({
 			controllers: [AuthController],
-			providers: [{ provide: AuthService, useValue: mockAuthService }],
+			providers: [
+				{ provide: AuthService, useValue: mockAuthService },
+				{ provide: ConfigService, useValue: mockConfigService },
+			],
 		}).compile();
 
 		controller = module.get<AuthController>(AuthController);
@@ -73,7 +82,7 @@ describe("AuthController", () => {
 				httpOnly: true,
 				secure: true,
 			});
-			expect(res.redirect).toHaveBeenCalledWith("http://localhost:3000/users");
+			expect(res.redirect).toHaveBeenCalledWith("http://localhost:3000/feed");
 		});
 	});
 

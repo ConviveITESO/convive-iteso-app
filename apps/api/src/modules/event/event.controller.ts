@@ -17,7 +17,9 @@ import { FileInterceptor } from "@nestjs/platform-express/multer/interceptors/fi
 import { ApiTags } from "@nestjs/swagger";
 import {
 	CreateEventSchema,
+	CreatorEventResponseArraySchema,
 	createEventSchema,
+	creatorEventResponseArraySchema,
 	EventIdParamSchema,
 	EventResponseSchema,
 	eventIdParamSchema,
@@ -53,6 +55,13 @@ export class EventController {
 		@Query(new ZodValidationPipe(getEventsQuerySchema)) query: GetEventsQuerySchema,
 	): Promise<EventResponseSchema[]> {
 		return this.eventsService.getEvents(query);
+	}
+
+	// GET /events/created
+	@Get("created")
+	@ZodOk(creatorEventResponseArraySchema)
+	async getEventsCreatedByUser(@Req() req: UserRequest): Promise<CreatorEventResponseArraySchema> {
+		return this.eventsService.getEventsCreatedByUser(req.user.id);
 	}
 
 	// GET /events/:id

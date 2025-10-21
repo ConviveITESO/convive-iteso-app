@@ -5,6 +5,24 @@ import { Pool } from "pg";
 import { AppDatabase } from "@/modules/database/connection";
 import * as schemas from "../modules/database/schemas";
 
+type SeedEventsResult = {
+	eventIds: string[];
+	fullEventId?: string;
+	almostFullEventId?: string;
+	spaciousEventId?: string;
+};
+
+type SpecialEventConfig = {
+	fullEventId?: string;
+	almostFullEventId?: string;
+	spaciousEventId?: string;
+	fullEventExcludedUserIds?: string[];
+};
+
+function generateSeedUserEmails(count: number): string[] {
+	return Array.from({ length: count }, (_, index) => `user${index}@iteso.mx`);
+}
+
 function getRandomNumber(min: number, max: number): number {
 	return Math.floor(min + Math.random() * (max - min + 1));
 }
@@ -36,7 +54,7 @@ function getRandomItems(array: string[]): string[] {
 	return shuffled.slice(0, n);
 }
 
-async function resetDatabase(db: AppDatabase): Promise<void> {
+async function resetDatabase(db: AppDatabase, seedUserEmails: string[]): Promise<void> {
 	await db.delete(schemas.eventsCategories);
 	await db.delete(schemas.eventsBadges);
 	await db.delete(schemas.usersGroups);
@@ -47,7 +65,9 @@ async function resetDatabase(db: AppDatabase): Promise<void> {
 	await db.delete(schemas.locations);
 	await db.delete(schemas.categories);
 	await db.delete(schemas.badges);
-	await db.delete(schemas.users);
+	if (seedUserEmails.length > 0) {
+		await db.delete(schemas.users).where(inArray(schemas.users.email, seedUserEmails));
+	}
 }
 
 async function seedUsers(db: AppDatabase, count: number): Promise<string[]> {
@@ -142,7 +162,13 @@ async function seedEvents(
 	badgeIds: string[],
 	categoryIds: string[],
 	locationIds: string[],
-): Promise<string[]> {
+): Promise<SeedEventsResult> {
+	const now = new Date();
+	const futureEventsCount = Math.min(3, count);
+	const millisecondsInDay = 24 * 60 * 60 * 1000;
+	let fullEventId: string | undefined;
+	let almostFullEventId: string | undefined;
+	let spaciousEventId: string | undefined;
 	for (let i = 0; i < count; i++) {
 		const groupResult = await db
 			.insert(schemas.groups)
@@ -163,10 +189,33 @@ async function seedEvents(
 			groupId,
 		});
 		const initialDate = new Date("2025-01-01T00:00:00.000Z");
-		const startDate = getRandomDate(initialDate, new Date());
-		const endDate = selectRandomFromArray([true, false])
-			? getRandomDate(startDate, new Date())
-			: startDate;
+		let startDate: Date;
+		let endDate: Date;
+		if (i < futureEventsCount) {
+			const futureOffsetDays = getRandomNumber(1, 60);
+			startDate = new Date(now.getTime() + futureOffsetDays * millisecondsInDay);
+			if (selectRandomFromArray([true, false])) {
+				const durationDays = getRandomNumber(0, 10);
+				endDate = new Date(startDate.getTime() + durationDays * millisecondsInDay);
+			} else {
+				endDate = startDate;
+			}
+		} else {
+			startDate = getRandomDate(initialDate, now);
+			endDate = selectRandomFromArray([true, false]) ? getRandomDate(startDate, now) : startDate;
+		}
+		let quota = getRandomNumber(1, 100);
+		let status: "active" | "deleted" = selectRandomFromArray(["active", "deleted"]);
+		if (i === 0) {
+			quota = Math.max(1, Math.min(userIds.length, 10));
+			status = "active";
+		} else if (i === 1) {
+			quota = Math.max(2, Math.min(userIds.length, 12));
+			status = "active";
+		} else if (i === 2) {
+			quota = Math.max(10, Math.min(userIds.length, 40));
+			status = "active";
+		}
 		const eventResult = await db
 			.insert(schemas.events)
 			.values({
@@ -174,12 +223,12 @@ async function seedEvents(
 				description: `This is a description for Event${i}`,
 				startDate,
 				endDate,
-				quota: getRandomNumber(1, 100),
-				imageUrl: `https://via.placeholder.com/400x300?text=Event${i}`,
+				quota: quota,
+				imageUrl: `https://picsum.photos/seed/event${i}/400/300`,
 				createdBy: userId,
 				groupId,
 				locationId: selectRandomFromArray(locationIds),
-				status: selectRandomFromArray(["active", "deleted"]),
+				status,
 			})
 			.returning({
 				id: schemas.events.id,
@@ -187,6 +236,13 @@ async function seedEvents(
 		const eventId = eventResult[0]?.id;
 		if (!eventId) {
 			continue;
+		}
+		if (i === 0) {
+			fullEventId = eventId;
+		} else if (i === 1) {
+			almostFullEventId = eventId;
+		} else if (i === 2) {
+			spaciousEventId = eventId;
 		}
 		const badgeIdsToInsert = getRandomItems(badgeIds);
 		const categoryIdsToInsert = getRandomItems(categoryIds);
@@ -203,17 +259,22 @@ async function seedEvents(
 			})),
 		);
 	}
-	return (
-		await db.query.events.findMany({
-			where: eq(schemas.events.status, "active"),
-		})
-	).map((register) => register.id);
+	const activeEvents = await db.query.events.findMany({
+		where: eq(schemas.events.status, "active"),
+	});
+	return {
+		eventIds: activeEvents.map((register) => register.id),
+		fullEventId,
+		almostFullEventId,
+		spaciousEventId,
+	};
 }
 
 async function seedSubscriptions(
 	db: AppDatabase,
 	userIds: string[],
 	eventIds: string[],
+	specialEvents?: SpecialEventConfig,
 ): Promise<void> {
 	if (userIds.length === 0 || eventIds.length === 0) {
 		return;
@@ -226,7 +287,16 @@ async function seedSubscriptions(
 		},
 	});
 	for (const event of events) {
-		const shuffledUsers = [...userIds];
+		let candidateUsers = [...userIds];
+		if (
+			specialEvents?.fullEventId === event.id &&
+			specialEvents.fullEventExcludedUserIds &&
+			specialEvents.fullEventExcludedUserIds.length > 0
+		) {
+			const exclusions = new Set(specialEvents.fullEventExcludedUserIds);
+			candidateUsers = candidateUsers.filter((userId) => !exclusions.has(userId));
+		}
+		const shuffledUsers = [...candidateUsers];
 		for (let i = shuffledUsers.length - 1; i > 0; i--) {
 			const j = getRandomNumber(0, i);
 			const temp = shuffledUsers[i];
@@ -240,10 +310,25 @@ async function seedSubscriptions(
 		if (maxRegistrations === 0) {
 			continue;
 		}
-		const registeredCount = getRandomNumber(1, maxRegistrations);
+		let registeredCount: number;
+		let waitlistedCount: number;
+		if (specialEvents?.fullEventId === event.id) {
+			registeredCount = maxRegistrations;
+			waitlistedCount = 0;
+		} else if (specialEvents?.almostFullEventId === event.id) {
+			registeredCount = Math.min(Math.max((event.quota ?? 0) - 1, 1), maxRegistrations);
+			waitlistedCount = 0;
+		} else if (specialEvents?.spaciousEventId === event.id) {
+			const desired = Math.max(1, Math.floor((event.quota ?? 0) * 0.25));
+			registeredCount = Math.min(desired, maxRegistrations);
+			waitlistedCount = 0;
+		} else {
+			registeredCount = getRandomNumber(1, maxRegistrations);
+			const remainingUsers = shuffledUsers.slice(registeredCount);
+			waitlistedCount =
+				remainingUsers.length === 0 ? 0 : getRandomNumber(0, Math.min(5, remainingUsers.length));
+		}
 		const remainingUsers = shuffledUsers.slice(registeredCount);
-		const waitlistedCount =
-			remainingUsers.length === 0 ? 0 : getRandomNumber(0, Math.min(5, remainingUsers.length));
 		const subscriptionsToInsert: schemas.NewSubscription[] = [];
 		for (let index = 0; index < registeredCount; index++) {
 			const userId = shuffledUsers[index];
@@ -279,19 +364,37 @@ async function main() {
 	// biome-ignore lint/style/noProcessEnv: false positive
 	const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 	const db = drizzle(pool, { schema: schemas });
-	await resetDatabase(db);
+	const seedUserCount = 20;
+	const seedUserEmails = [...generateSeedUserEmails(seedUserCount), "admin@iteso.mx"];
+	await resetDatabase(db, seedUserEmails);
+	const preservedActiveUsers = await db.query.users.findMany({
+		where: eq(schemas.users.status, "active"),
+	});
+	const preservedActiveUserIds = preservedActiveUsers.map((user) => user.id);
 	// TODO: Remove once role management is implemented
 	await db.insert(schemas.users).values({
 		email: `admin@iteso.mx`,
 		name: `ADMIN`,
 		status: "active",
 	});
-	const userIds = await seedUsers(db, 20);
+	const userIds = await seedUsers(db, seedUserCount);
 	const badgeIds = await seedBadges(db, 10, userIds);
 	const categoryIds = await seedCategories(db, userIds);
 	const locationIds = await seedLocations(db, userIds);
-	const eventIds = await seedEvents(db, 20, userIds, badgeIds, categoryIds, locationIds);
-	await seedSubscriptions(db, userIds, eventIds);
+	const { eventIds, fullEventId, almostFullEventId, spaciousEventId } = await seedEvents(
+		db,
+		20,
+		userIds,
+		badgeIds,
+		categoryIds,
+		locationIds,
+	);
+	await seedSubscriptions(db, userIds, eventIds, {
+		fullEventId,
+		almostFullEventId,
+		spaciousEventId,
+		fullEventExcludedUserIds: preservedActiveUserIds,
+	});
 	await pool.end();
 }
 
