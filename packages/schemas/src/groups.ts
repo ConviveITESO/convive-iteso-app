@@ -75,6 +75,49 @@ export const groupResponseArraySchema = z
 		example: groupResponseArraySchemaExample,
 	});
 
+export const groupMessageSchemaExample = {
+	id: "550e8400-e29b-41d4-a716-446655440000",
+	userId: "550e8400-e29b-41d4-a716-446655440000",
+	username: "User 1",
+	content: "This is the group 1",
+	createdAt: "2025-01-01T00:00:00.000Z",
+};
+
+export const groupMessageSchema = z
+	.object({
+		id: z.uuid(),
+		userId: z.string(),
+		username: z.string(),
+		content: z.string(),
+		createdAt: z.date(),
+	})
+	.openapi("GroupMessageSchema", {
+		example: groupMessageSchemaExample,
+	});
+
+export const groupMessageArraySchemaExample = [
+	{
+		id: "550e8400-e29b-41d4-a716-446655440000",
+		userId: "550e8400-e29b-41d4-a716-446655440000",
+		username: "User 1",
+		content: "This is the group 1",
+		createdAt: "2025-01-01T00:00:00.000Z",
+	},
+	{
+		id: "550e8400-e29b-41d4-a716-446655440000",
+		userId: "550e8400-e29b-41d4-a716-446655440000",
+		username: "User 2",
+		content: "This is the group 2",
+		createdAt: "2025-01-01T00:00:00.000Z",
+	},
+];
+
+export const groupMessageArraySchema = z
+	.array(groupMessageSchema)
+	.openapi("GroupMessageArraySchema", {
+		example: groupMessageArraySchemaExample,
+	});
+
 // ==========================================================
 // TYPE schemas
 // ==========================================================
@@ -83,3 +126,5 @@ export type CreateGroupSchema = z.infer<typeof createGroupSchema>;
 export type UpdateGroupSchema = z.infer<typeof updateGroupSchema>;
 export type GroupResponseSchema = z.infer<typeof groupResponseSchema>;
 export type GroupResponseArraySchema = z.infer<typeof groupResponseArraySchema>;
+export type GroupMessageSchema = z.infer<typeof groupMessageSchema>;
+export type GroupMessageArraySchema = z.infer<typeof groupMessageArraySchema>;

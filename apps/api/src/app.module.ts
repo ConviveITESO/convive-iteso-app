@@ -2,7 +2,6 @@ import { Module } from "@nestjs/common";
 import { AuthModule } from "./modules/auth/auth.module";
 import { BadgeModule } from "./modules/badge/badge.module";
 import { CategoryModule } from "./modules/category/category.module";
-import { ChatModule } from "./modules/chat/chat.module";
 import { ConfigModule } from "./modules/config";
 import { DatabaseModule } from "./modules/database/database.module";
 import { EmailModule } from "./modules/email/email.module";
@@ -35,7 +34,6 @@ import { UserModule } from "./modules/user/user.module";
 		EmailModule,
 		EventAnalyticsModule,
 		S3Module,
-		ChatModule,
 	],
 	controllers: [],
 	providers: [],
