@@ -9,6 +9,7 @@ import {
 	Post,
 	Put,
 	Query,
+	Req,
 	UseGuards,
 } from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
@@ -32,6 +33,7 @@ import {
 	ZodQuery,
 	ZodValidationPipe,
 } from "@/pipes/zod-validation/zod-validation.pipe";
+import { UserRequest } from "@/types/user.request";
 import { AuthGuard } from "../auth/guards/auth.guard";
 import { UserService } from "./user.service";
 
@@ -47,6 +49,14 @@ export class UserController {
 	@ZodOk(userResponseArraySchema)
 	async getAllUsers(@Query() query?: UserQuerySchema) {
 		return await this.userService.getUsers(query);
+	}
+
+	// GET /me
+	@Get("me")
+	@UseGuards(AuthGuard)
+	@ZodOk(userResponseSchema)
+	async getCurrentUser(@Req() req: UserRequest) {
+		return await this.userService.getUserById({ id: req.user.id });
 	}
 
 	// GET /user/:id
