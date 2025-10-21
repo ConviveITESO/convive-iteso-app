@@ -9,3 +9,7 @@ output "rds_endpoint" {
 output "ec2_static_ip" {
   value = aws_eip.web_ip.public_ip
 }
+
+output "s3_bucket_name" {
+  value = aws_s3_bucket.app.bucket
+}

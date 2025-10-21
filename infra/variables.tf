@@ -60,3 +60,15 @@ variable "github_token" {
   type        = string
   sensitive   = true
 }
+
+variable "s3_bucket_name" {
+  description = "Name of the S3 bucket used for file storage"
+  type        = string
+  default     = ""
+}
+
+variable "s3_enable_versioning" {
+  description = "Enable versioning on the S3 bucket"
+  type        = bool
+  default     = true
+}
