@@ -1,5 +1,6 @@
-import { Module } from "@nestjs/common";
+import { MiddlewareConsumer, Module, NestModule } from "@nestjs/common";
 import { DatabaseModule } from "@/modules/database/database.module";
+import { AuthMiddleware } from "../auth/middlewares/auth.middleware";
 import { NotificationController } from "./notification.controller";
 import { NotificationService } from "./notification.service";
 
@@ -8,4 +9,8 @@ import { NotificationService } from "./notification.service";
 	providers: [NotificationService],
 	controllers: [NotificationController],
 })
-export class NotificationModule {}
+export class NotificationModule implements NestModule {
+	configure(consumer: MiddlewareConsumer) {
+		consumer.apply(AuthMiddleware).forRoutes(NotificationController);
+	}
+}

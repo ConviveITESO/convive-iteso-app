@@ -1,8 +1,8 @@
 "use client";
 
+import type { NotificationKind, NotificationResponse } from "@repo/schemas";
 import Link from "next/link";
 import { useId } from "react";
-import type { NotificationItem, NotificationKind } from "./types";
 
 const KIND = {
 	canceled: {
@@ -29,7 +29,7 @@ const KIND = {
 		iconRing: "bg-white text-emerald-600 ring-1 ring-emerald-200",
 		iconTitle: "Location update icon",
 	},
-} satisfies Record<
+} as const satisfies Record<
 	NotificationKind,
 	{
 		badge: string;
@@ -124,9 +124,9 @@ function KindIcon({
 	return null;
 }
 
-export function NotificationCard({ item }: { item: NotificationItem }) {
+export function NotificationCard({ item }: { item: NotificationResponse }) {
 	const iconTitleId = useId();
-	const date = new Date(item.dateIso);
+	const date = new Date(item.createdAt);
 	const k = KIND[item.kind];
 
 	return (

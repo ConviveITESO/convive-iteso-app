@@ -1,8 +1,8 @@
+import type { NotificationResponse } from "@repo/schemas";
 import { NotificationCard } from "./notification-card";
 import { NotificationEmpty } from "./notification-empty";
-import type { NotificationItem } from "./types";
 
-export default function NotificationList({ data }: { data: NotificationItem[] }) {
+export default function NotificationList({ data }: { data: NotificationResponse[] }) {
 	if (!data?.length) return <NotificationEmpty />;
 	return (
 		<div className="space-y-3">

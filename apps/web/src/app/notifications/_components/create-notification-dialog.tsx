@@ -1,17 +1,17 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import type { CreateNotificationTestSchema, NotificationResponse } from "@repo/schemas";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { type CreateNotificationInput, createNotification } from "@/services/notifications";
+import { useCreateNotification } from "@/hooks/use-notifications";
 
 const schema = z.object({
 	kind: z.enum(["canceled", "rescheduled", "reminder", "location"]),
 	title: z.string().min(3, "Title is required"),
 	body: z.string().min(3, "Body is required"),
-	userId: z.number().int().positive().optional(),
-	eventId: z.number().int().positive().optional(),
+	eventId: z.string().uuid("Must be a valid UUID"),
 	originalDate: z.string().optional(),
 	newDate: z.string().optional(),
 	location: z.string().optional(),
@@ -22,14 +22,16 @@ type FormValues = z.infer<typeof schema>;
 export default function CreateNotificationDialog({
 	onCreated,
 }: {
-	onCreated: (n: Awaited<ReturnType<typeof createNotification>>) => void;
+	onCreated?: (n: NotificationResponse) => void;
 }) {
 	const [open, setOpen] = useState(false);
 	const [submitError, setSubmitError] = useState<string | null>(null);
+	const { mutate: createNotification, isPending } = useCreateNotification();
+
 	const {
 		register,
 		handleSubmit,
-		formState: { errors, isSubmitting },
+		formState: { errors },
 		reset,
 	} = useForm<FormValues>({
 		resolver: zodResolver(schema),
@@ -37,30 +39,31 @@ export default function CreateNotificationDialog({
 		mode: "onSubmit",
 	});
 
-	async function onSubmit(values: FormValues) {
+	function onSubmit(values: FormValues) {
 		setSubmitError(null);
-		try {
-			const payload: CreateNotificationInput = {
-				kind: values.kind,
-				title: values.title,
-				body: values.body,
-				eventId: values.eventId,
-				userId: values.userId,
-				meta: {
-					originalDate: values.originalDate || undefined,
-					newDate: values.newDate || undefined,
-					location: values.location || undefined,
-				},
-			};
-			const created = await createNotification(payload);
-			onCreated(created);
-			reset({ kind: "reminder" });
-			setOpen(false);
-			setSubmitError(null);
-		} catch (_error) {
-			alert("No se pudo crear la notificación.");
-			setSubmitError("We could not create the notification. Please try again.");
-		}
+		const payload = {
+			kind: values.kind,
+			title: values.title,
+			body: values.body,
+			eventId: values.eventId,
+			meta: {
+				originalDate: values.originalDate || undefined,
+				newDate: values.newDate || undefined,
+				location: values.location || undefined,
+			},
+		} as CreateNotificationTestSchema;
+
+		createNotification(payload, {
+			onSuccess: (created) => {
+				onCreated?.(created);
+				reset({ kind: "reminder" });
+				setOpen(false);
+				setSubmitError(null);
+			},
+			onError: () => {
+				setSubmitError("We could not create the notification. Please try again.");
+			},
+		});
 	}
 
 	function onError() {
@@ -143,34 +146,20 @@ export default function CreateNotificationDialog({
 								{errors.body && <p className="mt-1 text-xs text-red-600">{errors.body.message}</p>}
 							</div>
 
-							<div>
-								<label className="mb-1 block text-xs font-medium" htmlFor="notification-user-id">
-									User ID
-								</label>
-								<input
-									id="notification-user-id"
-									{...register("userId", { valueAsNumber: true })}
-									className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-									placeholder="1"
-								/>
-							</div>
-
 							<div className="grid grid-cols-2 gap-3">
-								<div>
+								<div className="col-span-2">
 									<label className="mb-1 block text-xs font-medium" htmlFor="notification-event-id">
-										Event ID (optional)
+										Event ID (UUID)
 									</label>
 									<input
 										id="notification-event-id"
-										{...register("eventId", {
-											setValueAs: (v) => (v === "" || v == null ? undefined : Number(v)),
-										})}
+										{...register("eventId")}
 										className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-										placeholder="e.g. 42"
+										placeholder="e.g. 550e8400-e29b-41d4-a716-446655440000"
 									/>
 									{errors.eventId && (
 										<p className="mt-1 text-xs text-red-600">
-											{String(errors.eventId.message ?? "Invalid number")}
+											{String(errors.eventId.message ?? "Invalid UUID")}
 										</p>
 									)}
 								</div>
@@ -225,10 +214,10 @@ export default function CreateNotificationDialog({
 								</button>
 								<button
 									type="submit"
-									disabled={isSubmitting}
+									disabled={isPending}
 									className="rounded bg-black px-3 py-1.5 text-xs text-white hover:bg-gray-800 disabled:opacity-50"
 								>
-									{isSubmitting ? "Creating..." : "Create"}
+									{isPending ? "Creating..." : "Create"}
 								</button>
 							</div>
 						</form>

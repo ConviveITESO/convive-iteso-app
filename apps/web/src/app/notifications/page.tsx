@@ -1,37 +1,45 @@
+import type { NotificationResponse } from "@repo/schemas";
 import { validateAuth } from "@/lib/auth";
-import NotificationHeader from "../../components/notiications/NotificationHeader";
-import NotificationList from "../../components/notiications/NotificationList";
-import type { NotificationItem } from "../../components/notiications/types";
+import NotificationHeader from "./_components/notification-header";
+import NotificationList from "./_components/notification-list";
 
 //remplazar por servicio
-const MOCK: NotificationItem[] = [
+const MOCK: NotificationResponse[] = [
 	{
 		id: "1",
+		userId: "1",
+		eventId: "1",
 		kind: "rescheduled",
 		title: "Urban Photography Workshop",
 		body: "The Urban Photography Workshop has been moved to 6:00 PM.",
-		date: "2025-01-09T14:30:00.000Z",
+		createdAt: new Date("2025-01-09T14:30:00.000Z"),
 	},
 	{
 		id: "2",
+		userId: "1",
+		eventId: "1",
 		kind: "canceled",
 		title: "Innovation in Technology Conference",
 		body: "The conference has been canceled due to unforeseen circumstances.",
-		date: "2025-01-09T14:30:00.000Z",
+		createdAt: new Date("2025-01-09T14:30:00.000Z"),
 	},
 	{
 		id: "3",
+		userId: "1",
+		eventId: "1",
 		kind: "reminder",
 		title: "Entrepreneurship Fair",
 		body: "Tomorrow you have your registered event at Pedro Arrupe Auditorium.",
-		date: "2025-01-09T14:30:00.000Z",
+		createdAt: new Date("2025-01-09T14:30:00.000Z"),
 	},
 	{
 		id: "4",
+		userId: "1",
+		eventId: "1",
 		kind: "location",
 		title: "ITESO Jazz Concert",
 		body: "Now at the Central Garden instead of Building W.",
-		date: "2025-01-09T14:30:00.000Z",
+		createdAt: new Date("2025-01-09T14:30:00.000Z"),
 	},
 ];
 
