@@ -7,7 +7,8 @@ STATUS_FILE="$LOG_DIR/status.log"
 
 mkdir -p "$LOG_DIR"
 touch "$LOG_FILE" "$STATUS_FILE"
-chmod 644 "$LOG_FILE" "$STATUS_FILE"
+chown ubuntu:ubuntu "$LOG_FILE" "$STATUS_FILE"
+chmod 664 "$LOG_FILE" "$STATUS_FILE"
 
 log_message() {
   local level="$1"
@@ -22,13 +23,14 @@ run_step() {
   local step="$1"
   shift
   log_message INFO "START: $step"
-  if "$@"; then
+  if "$@" >>"$LOG_FILE" 2>&1; then
     log_message INFO "SUCCESS: $step"
     echo "$step|SUCCESS" >> "$STATUS_FILE"
   else
     local code=$?
     log_message ERROR "FAIL: $step (exit $code)"
     echo "$step|FAIL|$code" >> "$STATUS_FILE"
+    log_message INFO "Remaining steps skipped due to failure"
     exit "$code"
   fi
 }
@@ -51,26 +53,26 @@ sudo su - ubuntu <<EOF_SUB
 set -o pipefail
 
 log_message() {
-  local level="\$1"
+  local level="$1"
   shift
-  local message="\$*"
+  local message="$*"
   local timestamp
-  timestamp=\$(date --iso-8601=seconds)
-  echo "\$timestamp [\$level] \$message" | tee -a "\$LOG_FILE"
+  timestamp=$(date --iso-8601=seconds)
+  echo "$timestamp [$level] $message" | tee -a "$LOG_FILE"
 }
 
 run_step() {
-  local step="\$1"
+  local step="$1"
   shift
-  log_message INFO "START: \${step}"
-  if "\$@"; then
-    log_message INFO "SUCCESS: \${step}"
-    echo "\${step}|SUCCESS" >> "\$STATUS_FILE"
+  log_message INFO "START: $step"
+  if "$@" >>"$LOG_FILE" 2>&1; then
+    log_message INFO "SUCCESS: $step"
+    echo "$step|SUCCESS" >> "$STATUS_FILE"
   else
-    local code=\$?
-    log_message ERROR "FAIL: \${step} (exit \${code})"
-    echo "\${step}|FAIL|\${code}" >> "\$STATUS_FILE"
-    exit "\${code}"
+    local code=$?
+    log_message ERROR "FAIL: $step (exit $code)"
+    echo "$step|FAIL|$code" >> "$STATUS_FILE"
+    exit "$code"
   fi
 }
 
@@ -114,7 +116,7 @@ EOA"
 run_step "Start application stack" bash -c "cd /home/ubuntu/${project_name} && make prod-up"
 EOF_SUB
 
-run_step "Configure nginx frontend" bash -c "cat <<'NGINX' | tee /etc/nginx/sites-available/conviveitesofront > /dev/null
+run_step "Configure nginx frontend" bash -c "cat <<'NGINX' > /etc/nginx/sites-available/conviveitesofront
 server {
     listen 80;
     server_name conviveitesofront.ricardonavarro.mx;
@@ -122,15 +124,15 @@ server {
     location / {
         proxy_pass http://localhost:3000;
         proxy_http_version 1.1;
-        proxy_set_header Upgrade \\$http_upgrade;
-        proxy_set_header Connection \"upgrade\";
-        proxy_set_header Host \\$host;
-        proxy_cache_bypass \\$http_upgrade;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
     }
 }
 NGINX"
 
-run_step "Configure nginx backend" bash -c "cat <<'NGINX' | tee /etc/nginx/sites-available/conviveitesoback > /dev/null
+run_step "Configure nginx backend" bash -c "cat <<'NGINX' > /etc/nginx/sites-available/conviveitesoback
 server {
     listen 80;
     server_name conviveitesoback.ricardonavarro.mx;
@@ -138,16 +140,18 @@ server {
     location / {
         proxy_pass http://localhost:8080;
         proxy_http_version 1.1;
-        proxy_set_header Upgrade \\$http_upgrade;
-        proxy_set_header Connection \"upgrade\";
-        proxy_set_header Host \\$host;
-        proxy_cache_bypass \\$http_upgrade;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
     }
 }
 NGINX"
 
 run_step "Enable nginx sites" bash -c "ln -sf /etc/nginx/sites-available/conviveitesofront /etc/nginx/sites-enabled/conviveitesofront && ln -sf /etc/nginx/sites-available/conviveitesoback /etc/nginx/sites-enabled/conviveitesoback"
-run_step "Reload nginx" bash -c "nginx -t && systemctl reload nginx"
+run_step "Wait before nginx validation" bash -c "sleep 5"
+run_step "Validate nginx configuration" nginx -t
+run_step "Restart nginx" systemctl restart nginx
 run_step "Obtain HTTPS certificate (frontend)" bash -c "certbot --nginx --non-interactive --agree-tos --redirect -m ${admin_email} -d conviveitesofront.ricardonavarro.mx"
 run_step "Obtain HTTPS certificate (backend)" bash -c "certbot --nginx --non-interactive --agree-tos --redirect -m ${admin_email} -d conviveitesoback.ricardonavarro.mx"
 
