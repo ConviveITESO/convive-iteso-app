@@ -2,12 +2,12 @@
 set -o pipefail
 
 LOG_DIR="/var/log/convive-setup"
-LOG_FILE="${LOG_DIR}/setup.log"
-STATUS_FILE="${LOG_DIR}/status.log"
+LOG_FILE="$LOG_DIR/setup.log"
+STATUS_FILE="$LOG_DIR/status.log"
 
-mkdir -p "${LOG_DIR}"
-touch "${LOG_FILE}" "${STATUS_FILE}"
-chmod 644 "${LOG_FILE}" "${STATUS_FILE}"
+mkdir -p "$LOG_DIR"
+touch "$LOG_FILE" "$STATUS_FILE"
+chmod 644 "$LOG_FILE" "$STATUS_FILE"
 
 log_message() {
   local level="$1"
@@ -15,21 +15,21 @@ log_message() {
   local message="$*"
   local timestamp
   timestamp=$(date --iso-8601=seconds)
-  echo "${timestamp} [${level}] ${message}" | tee -a "${LOG_FILE}"
+  echo "$timestamp [$level] $message" | tee -a "$LOG_FILE"
 }
 
 run_step() {
   local step="$1"
   shift
-  log_message INFO "START: ${step}"
+  log_message INFO "START: $step"
   if "$@"; then
-    log_message INFO "SUCCESS: ${step}"
-    echo "${step}|SUCCESS" >> "${STATUS_FILE}"
+    log_message INFO "SUCCESS: $step"
+    echo "$step|SUCCESS" >> "$STATUS_FILE"
   else
     local code=$?
-    log_message ERROR "FAIL: ${step} (exit ${code})"
-    echo "${step}|FAIL|${code}" >> "${STATUS_FILE}"
-    exit "${code}"
+    log_message ERROR "FAIL: $step (exit $code)"
+    echo "$step|FAIL|$code" >> "$STATUS_FILE"
+    exit "$code"
   fi
 }
 
@@ -42,15 +42,13 @@ run_step "Install Docker" bash -c "curl -fsSL https://get.docker.com -o get-dock
 run_step "Add ubuntu to docker group" usermod -aG docker ubuntu
 run_step "Enable Docker service" bash -c "systemctl enable docker && systemctl start docker"
 DOCKER_PLUGIN_DIR="/usr/lib/docker/cli-plugins"
-run_step "Install Docker Compose plugin" bash -c "mkdir -p ${DOCKER_PLUGIN_DIR} && curl -SL https://github.com/docker/compose/releases/download/v2.23.3/docker-compose-linux-aarch64 -o ${DOCKER_PLUGIN_DIR}/docker-compose && chmod +x ${DOCKER_PLUGIN_DIR}/docker-compose"
+run_step "Install Docker Compose plugin" bash -c "mkdir -p $DOCKER_PLUGIN_DIR && curl -SL https://github.com/docker/compose/releases/download/v2.23.3/docker-compose-linux-aarch64 -o $DOCKER_PLUGIN_DIR/docker-compose && chmod +x $DOCKER_PLUGIN_DIR/docker-compose"
 run_step "Install Certbot" bash -c "snap install core && snap refresh core && snap install --classic certbot && ln -sf /snap/bin/certbot /usr/bin/certbot"
+
+export LOG_DIR LOG_FILE STATUS_FILE
 
 sudo su - ubuntu <<EOF_SUB
 set -o pipefail
-
-LOG_DIR="${LOG_DIR}"
-LOG_FILE="${LOG_FILE}"
-STATUS_FILE="${STATUS_FILE}"
 
 log_message() {
   local level="\$1"
@@ -58,7 +56,7 @@ log_message() {
   local message="\$*"
   local timestamp
   timestamp=\$(date --iso-8601=seconds)
-  echo "\${timestamp} [\${level}] \${message}" | tee -a "\${LOG_FILE}"
+  echo "\$timestamp [\$level] \$message" | tee -a "\$LOG_FILE"
 }
 
 run_step() {
@@ -67,11 +65,11 @@ run_step() {
   log_message INFO "START: \${step}"
   if "\$@"; then
     log_message INFO "SUCCESS: \${step}"
-    echo "\${step}|SUCCESS" >> "\${STATUS_FILE}"
+    echo "\${step}|SUCCESS" >> "\$STATUS_FILE"
   else
     local code=\$?
     log_message ERROR "FAIL: \${step} (exit \${code})"
-    echo "\${step}|FAIL|\${code}" >> "\${STATUS_FILE}"
+    echo "\${step}|FAIL|\${code}" >> "\$STATUS_FILE"
     exit "\${code}"
   fi
 }
