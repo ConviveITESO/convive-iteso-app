@@ -1,54 +1,91 @@
 #!/bin/bash
-set -euxo pipefail
+set -o pipefail
 
-# === System packages (as root) ===
-sudo apt-get update -y
-sudo apt-get upgrade -y
-sudo apt-get install -y git curl nginx ufw unzip snapd
+LOG_DIR="/var/log/convive-setup"
+LOG_FILE="${LOG_DIR}/setup.log"
+STATUS_FILE="${LOG_DIR}/status.log"
 
-# === Install Docker (as root) ===
-# Run the script as root via sudo - not piping
-curl -fsSL https://get.docker.com -o get-docker.sh
-sudo sh get-docker.sh
-rm get-docker.sh
+mkdir -p "${LOG_DIR}"
+touch "${LOG_FILE}" "${STATUS_FILE}"
+chmod 644 "${LOG_FILE}" "${STATUS_FILE}"
 
-# Allow ubuntu to use docker without sudo
-sudo usermod -aG docker ubuntu
+log_message() {
+  local level="$1"
+  shift
+  local message="$*"
+  local timestamp
+  timestamp=$(date --iso-8601=seconds)
+  echo "${timestamp} [${level}] ${message}" | tee -a "${LOG_FILE}"
+}
 
-# Enable Docker service (will require reboot or re-login to apply docker group)
-sudo systemctl enable docker
-sudo systemctl start docker
+run_step() {
+  local step="$1"
+  shift
+  log_message INFO "START: ${step}"
+  if "$@"; then
+    log_message INFO "SUCCESS: ${step}"
+    echo "${step}|SUCCESS" >> "${STATUS_FILE}"
+  else
+    local code=$?
+    log_message ERROR "FAIL: ${step} (exit ${code})"
+    echo "${step}|FAIL|${code}" >> "${STATUS_FILE}"
+    exit "${code}"
+  fi
+}
 
-# === Install Docker Compose v2 plugin (as root) ===
-DOCKER_PLUGIN_DIR=/usr/lib/docker/cli-plugins
-sudo mkdir -p $DOCKER_PLUGIN_DIR
-sudo curl -SL https://github.com/docker/compose/releases/download/v2.23.3/docker-compose-linux-aarch64 \
-  -o $DOCKER_PLUGIN_DIR/docker-compose
-sudo chmod +x $DOCKER_PLUGIN_DIR/docker-compose
+export DEBIAN_FRONTEND=noninteractive
 
-# === Install Certbot via snap (as root) ===
-sudo snap install core && sudo snap refresh core
-sudo snap install --classic certbot
-sudo ln -sf /snap/bin/certbot /usr/bin/certbot
+run_step "Update package index" bash -c "apt-get update -y"
+run_step "Upgrade packages" bash -c "apt-get upgrade -y"
+run_step "Install base packages" bash -c "apt-get install -y git curl nginx ufw unzip snapd"
+run_step "Install Docker" bash -c "curl -fsSL https://get.docker.com -o get-docker.sh && sh get-docker.sh && rm get-docker.sh"
+run_step "Add ubuntu to docker group" usermod -aG docker ubuntu
+run_step "Enable Docker service" bash -c "systemctl enable docker && systemctl start docker"
+DOCKER_PLUGIN_DIR="/usr/lib/docker/cli-plugins"
+run_step "Install Docker Compose plugin" bash -c "mkdir -p ${DOCKER_PLUGIN_DIR} && curl -SL https://github.com/docker/compose/releases/download/v2.23.3/docker-compose-linux-aarch64 -o ${DOCKER_PLUGIN_DIR}/docker-compose && chmod +x ${DOCKER_PLUGIN_DIR}/docker-compose"
+run_step "Install Certbot" bash -c "snap install core && snap refresh core && snap install --classic certbot && ln -sf /snap/bin/certbot /usr/bin/certbot"
 
-# === Clone private repo using GitHub token ===
-cd /home/ubuntu
-git clone https://${github_user}:${github_token}@github.com/${github_org}/${project_name}.git
+sudo su - ubuntu <<EOF_SUB
+set -o pipefail
 
-sudo chown -R ubuntu:ubuntu /home/ubuntu/${project_name}
-git config --global --add safe.directory /home/ubuntu/${project_name}
+LOG_DIR="${LOG_DIR}"
+LOG_FILE="${LOG_FILE}"
+STATUS_FILE="${STATUS_FILE}"
 
-cd /home/ubuntu/${project_name}
+log_message() {
+  local level="\$1"
+  shift
+  local message="\$*"
+  local timestamp
+  timestamp=\$(date --iso-8601=seconds)
+  echo "\${timestamp} [\${level}] \${message}" | tee -a "\${LOG_FILE}"
+}
 
-# === Create .env file ===
-cat <<'EOF' > /home/ubuntu/${project_name}/apps/web/.env.local
+run_step() {
+  local step="\$1"
+  shift
+  log_message INFO "START: \${step}"
+  if "\$@"; then
+    log_message INFO "SUCCESS: \${step}"
+    echo "\${step}|SUCCESS" >> "\${STATUS_FILE}"
+  else
+    local code=\$?
+    log_message ERROR "FAIL: \${step} (exit \${code})"
+    echo "\${step}|FAIL|\${code}" >> "\${STATUS_FILE}"
+    exit "\${code}"
+  fi
+}
+
+run_step "Clone repository" bash -c "cd /home/ubuntu && if [ ! -d \"${project_name}\" ]; then git clone \"https://${github_user}:${github_token}@github.com/${github_org}/${project_name}.git\"; else git -C /home/ubuntu/${project_name} fetch --all && git -C /home/ubuntu/${project_name} reset --hard origin/main; fi"
+run_step "Configure git safe directory" git config --global --add safe.directory "/home/ubuntu/${project_name}"
+run_step "Write web env" bash -c "cat <<'EOW' > /home/ubuntu/${project_name}/apps/web/.env.local
 # API Configuration
 NEXT_PUBLIC_API_URL=http://conviveitesofront.ricardonavarro.mx
-EOF
-
-cat <<'EOF' > /home/ubuntu/${project_name}/apps/api/.env
+EOW"
+run_step "Write API env" bash -c "cat <<'EOA' > /home/ubuntu/${project_name}/apps/api/.env
 # === Environment variables ===
 NODE_ENV=production
+PORT=8080
 BACKEND_URL=http://conviveitesoback.ricardonavarro.mx
 FRONTEND_URL=http://conviveitesofront.ricardonavarro.mx
 # === Database ===
@@ -61,7 +98,7 @@ CLIENT_ID=${client_id}
 CLIENT_SECRET=${client_secret}
 REDIRECT_URI=${redirect_uri}
 # === SMTP server ===
-SMTP_NAME="Convive ITESO"
+SMTP_NAME=\"Convive ITESO\"
 SMTP_ADDRESS=convive-iteso-noreply@iteso.mx
 LOCAL_SMTP_HOST=127.0.0.1
 LOCAL_SMTP_PORT=1025
@@ -75,13 +112,11 @@ AWS_SECRET_ACCESS_KEY=${aws_secret_access_key}
 AWS_SESSION_TOKEN=${aws_session_token}
 AWS_ENDPOINT_URL=${aws_endpoint_url}
 S3_BUCKET_NAME=${s3_bucket_name}
-EOF
+EOA"
+run_step "Start application stack" bash -c "cd /home/ubuntu/${project_name} && make prod-up"
+EOF_SUB
 
-# === Start container ===
-sudo -u ubuntu -H bash -lc "cd /home/ubuntu/${project_name} && make prod-up"
-
-# === Nginx reverse proxy ===
-sudo bash -c 'cat <<EOF > /etc/nginx/sites-available/conviveitesofront
+run_step "Configure nginx frontend" bash -c "cat <<'NGINX' | tee /etc/nginx/sites-available/conviveitesofront > /dev/null
 server {
     listen 80;
     server_name conviveitesofront.ricardonavarro.mx;
@@ -89,15 +124,15 @@ server {
     location / {
         proxy_pass http://localhost:3000;
         proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host \$host;
-        proxy_cache_bypass \$http_upgrade;
+        proxy_set_header Upgrade \\$http_upgrade;
+        proxy_set_header Connection \"upgrade\";
+        proxy_set_header Host \\$host;
+        proxy_cache_bypass \\$http_upgrade;
     }
 }
-EOF'
+NGINX"
 
-sudo bash -c 'cat <<EOF > /etc/nginx/sites-available/conviveitesoback
+run_step "Configure nginx backend" bash -c "cat <<'NGINX' | tee /etc/nginx/sites-available/conviveitesoback > /dev/null
 server {
     listen 80;
     server_name conviveitesoback.ricardonavarro.mx;
@@ -105,23 +140,17 @@ server {
     location / {
         proxy_pass http://localhost:8080;
         proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host \$host;
-        proxy_cache_bypass \$http_upgrade;
+        proxy_set_header Upgrade \\$http_upgrade;
+        proxy_set_header Connection \"upgrade\";
+        proxy_set_header Host \\$host;
+        proxy_cache_bypass \\$http_upgrade;
     }
 }
-EOF'
+NGINX"
 
-sudo ln -sf /etc/nginx/sites-available/conviveitesofront /etc/nginx/sites-enabled/
-sudo ln -sf /etc/nginx/sites-available/conviveitesoback /etc/nginx/sites-enabled/
-sudo nginx -t && sudo systemctl reload nginx
+run_step "Enable nginx sites" bash -c "ln -sf /etc/nginx/sites-available/conviveitesofront /etc/nginx/sites-enabled/conviveitesofront && ln -sf /etc/nginx/sites-available/conviveitesoback /etc/nginx/sites-enabled/conviveitesoback"
+run_step "Reload nginx" bash -c "nginx -t && systemctl reload nginx"
+run_step "Obtain HTTPS certificate (frontend)" bash -c "certbot --nginx --non-interactive --agree-tos --redirect -m ${admin_email} -d conviveitesofront.ricardonavarro.mx"
+run_step "Obtain HTTPS certificate (backend)" bash -c "certbot --nginx --non-interactive --agree-tos --redirect -m ${admin_email} -d conviveitesoback.ricardonavarro.mx"
 
-# === HTTPS with Certbot ===
-sudo certbot --nginx --non-interactive --agree-tos --redirect \
-  -m ${admin_email} -d conviveitesofront.ricardonavarro.mx
-
-sudo certbot --nginx --non-interactive --agree-tos --redirect \
-  -m ${admin_email} -d conviveitesoback.ricardonavarro.mx
-
-echo "✅ EC2 setup complete (safe ownership)."
+log_message INFO "EC2 setup complete."
