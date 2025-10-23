@@ -1,158 +1,140 @@
 #!/bin/bash
-set -o pipefail
+set -euo pipefail
 
-LOG_DIR="/var/log/convive-setup"
-LOG_FILE="$LOG_DIR/setup.log"
-STATUS_FILE="$LOG_DIR/status.log"
+# ==== Vars expected from Terraform templatefile() ====
+front_domain="${front_domain:-conviveitesofront.ricardonavarro.mx}"
+back_domain="${back_domain:-conviveitesoback.ricardonavarro.mx}"
+project_name="${project_name:?project_name required}"
+github_org="${github_org:?github_org required}"
+github_user="${github_user:?github_user required}"
+github_token="${github_token:?github_token required}"
+admin_email="${admin_email:-ops@example.com}"
+enable_tls="${enable_tls:-false}"             # "true" to run certbot now
+# Optionally reuse same credentials for second repo; set to empty to skip.
+second_repo_org="${second_repo_org:-ConviveITESO}"
+second_repo_name="${second_repo_name:-convive-iteso-app}"
+second_repo_user="${second_repo_user:-$github_user}"
+second_repo_token="${second_repo_token:-$github_token}"
 
-mkdir -p "$LOG_DIR"
-touch "$LOG_FILE" "$STATUS_FILE"
-chown ubuntu:ubuntu "$LOG_FILE" "$STATUS_FILE"
-chmod 664 "$LOG_FILE" "$STATUS_FILE"
-
-log_message() {
-  local level="$1"
-  shift
-  local message="$*"
-  local timestamp
-  timestamp=$(date --iso-8601=seconds)
-  echo "$timestamp [$level] $message" | tee -a "$LOG_FILE"
-}
-
-run_step() {
-  local step="$1"
-  shift
-  log_message INFO "START: $step"
-  if "$@" >>"$LOG_FILE" 2>&1; then
-    log_message INFO "SUCCESS: $step"
-    echo "$step|SUCCESS" >> "$STATUS_FILE"
-  else
-    local code=$?
-    log_message ERROR "FAIL: $step (exit $code)"
-    echo "$step|FAIL|$code" >> "$STATUS_FILE"
-    log_message INFO "Remaining steps skipped due to failure"
-    exit "$code"
-  fi
-}
-
+# ==== System packages ====
 export DEBIAN_FRONTEND=noninteractive
+apt-get update -y
+apt-get upgrade -y
+apt-get install -y git curl nginx ufw unzip snapd ca-certificates
 
-run_step "Update package index" bash -c "apt-get update -y"
-run_step "Upgrade packages" bash -c "apt-get upgrade -y"
-run_step "Install base packages" bash -c "apt-get install -y git curl nginx ufw unzip snapd"
-run_step "Install Docker" bash -c "curl -fsSL https://get.docker.com -o get-docker.sh && sh get-docker.sh && rm get-docker.sh"
-run_step "Add ubuntu to docker group" usermod -aG docker ubuntu
-run_step "Enable Docker service" bash -c "systemctl enable docker && systemctl start docker"
-DOCKER_PLUGIN_DIR="/usr/lib/docker/cli-plugins"
-run_step "Install Docker Compose plugin" bash -c "mkdir -p $DOCKER_PLUGIN_DIR && curl -SL https://github.com/docker/compose/releases/download/v2.23.3/docker-compose-linux-aarch64 -o $DOCKER_PLUGIN_DIR/docker-compose && chmod +x $DOCKER_PLUGIN_DIR/docker-compose"
-run_step "Install Certbot" bash -c "snap install core && snap refresh core && snap install --classic certbot && ln -sf /snap/bin/certbot /usr/bin/certbot"
+# ==== Docker ====
+curl -fsSL https://get.docker.com -o /root/get-docker.sh
+sh /root/get-docker.sh
+rm /root/get-docker.sh
+usermod -aG docker ubuntu
+systemctl enable --now docker
 
-export LOG_DIR LOG_FILE STATUS_FILE
+# ==== Docker Compose v2 plugin (arch-safe) ====
+DOCKER_PLUGIN_DIR=/usr/lib/docker/cli-plugins
+mkdir -p "$DOCKER_PLUGIN_DIR"
+ARCH="$(dpkg --print-architecture)"
+case "$ARCH" in
+  amd64)   COMPOSE_URL="https://github.com/docker/compose/releases/download/v2.23.3/docker-compose-linux-x86_64" ;;
+  arm64)   COMPOSE_URL="https://github.com/docker/compose/releases/download/v2.23.3/docker-compose-linux-aarch64" ;;
+  *) echo "Unsupported arch: $ARCH"; exit 1 ;;
+esac
+curl -fsSL "$COMPOSE_URL" -o "$DOCKER_PLUGIN_DIR/docker-compose"
+chmod +x "$DOCKER_PLUGIN_DIR/docker-compose"
 
-sudo su - ubuntu <<EOF_SUB
-set -o pipefail
+# ==== Certbot (optional later) ====
+snap install core && snap refresh core
+snap install --classic certbot
+ln -sf /snap/bin/certbot /usr/bin/certbot
 
-log_message() {
-  local level="$1"
-  shift
-  local message="$*"
-  local timestamp
-  timestamp=$(date --iso-8601=seconds)
-  echo "$timestamp [$level] $message" | tee -a "$LOG_FILE"
-}
+# ==== Clone repos ====
+cd /home/ubuntu
+git clone "https://${github_user}:${github_token}@github.com/${github_org}/${project_name}.git"
+if [ -n "${second_repo_org}" ] && [ -n "${second_repo_name}" ] && [ -n "${second_repo_user}" ] && [ -n "${second_repo_token}" ]; then
+  git clone "https://${second_repo_user}:${second_repo_token}@github.com/${second_repo_org}/${second_repo_name}.git" || true
+fi
 
-run_step() {
-  local step="$1"
-  shift
-  log_message INFO "START: $step"
-  if "$@" >>"$LOG_FILE" 2>&1; then
-    log_message INFO "SUCCESS: $step"
-    echo "$step|SUCCESS" >> "$STATUS_FILE"
-  else
-    local code=$?
-    log_message ERROR "FAIL: $step (exit $code)"
-    echo "$step|FAIL|$code" >> "$STATUS_FILE"
-    exit "$code"
-  fi
-}
+chown -R ubuntu:ubuntu "/home/ubuntu/${project_name}" || true
+[ -d "/home/ubuntu/${second_repo_name}" ] && chown -R ubuntu:ubuntu "/home/ubuntu/${second_repo_name}" || true
+sudo -u ubuntu git config --global --add safe.directory "/home/ubuntu/${project_name}"
+[ -d "/home/ubuntu/${second_repo_name}" ] && sudo -u ubuntu git config --global --add safe.directory "/home/ubuntu/${second_repo_name}" || true
 
-run_step "Clone repository" bash -c "cd /home/ubuntu && if [ ! -d \"${project_name}\" ]; then git clone \"https://${github_user}:${github_token}@github.com/${github_org}/${project_name}.git\"; else git -C /home/ubuntu/${project_name} fetch --all && git -C /home/ubuntu/${project_name} reset --hard origin/main; fi"
-run_step "Configure git safe directory" git config --global --add safe.directory "/home/ubuntu/${project_name}"
-run_step "Write web env" bash -c "cat <<'EOW' > /home/ubuntu/${project_name}/apps/web/.env.local
-# API Configuration
-NEXT_PUBLIC_API_URL=http://conviveitesofront.ricardonavarro.mx
-EOW"
-run_step "Write API env" bash -c "cat <<'EOA' > /home/ubuntu/${project_name}/apps/api/.env
-# === Environment variables ===
+# ==== App env files ====
+# Frontend should call the BACKEND; leave placeholder if backend not ready yet.
+cat >/home/ubuntu/${project_name}/apps/web/.env.prod <<EOF
+NEXT_PUBLIC_API_URL=https://${back_domain}
+EOF
+
+# Keep API .env present for later, but do not bring backend online here.
+cat >/home/ubuntu/${project_name}/apps/api/.env.prod <<'EOF'
 NODE_ENV=production
-PORT=8080
-BACKEND_URL=http://conviveitesoback.ricardonavarro.mx
-FRONTEND_URL=http://conviveitesofront.ricardonavarro.mx
-# === Database ===
+BACKEND_URL=https://${back_domain}
+FRONTEND_URL=https://${front_domain}
 DATABASE_URL=postgresql://${db_username}:${db_password}@${db_host}:5432/${db_name}
-# === Cache ===
 REDIS_HOST=127.0.0.1
 REDIS_PORT=6379
-# === OAuth ===
 CLIENT_ID=${client_id}
 CLIENT_SECRET=${client_secret}
 REDIRECT_URI=${redirect_uri}
-# === SMTP server ===
-SMTP_NAME=\"Convive ITESO\"
+SMTP_NAME="Convive ITESO"
 SMTP_ADDRESS=convive-iteso-noreply@iteso.mx
 LOCAL_SMTP_HOST=127.0.0.1
 LOCAL_SMTP_PORT=1025
 MAILTRAP_API_KEY=your-mailtrap-token
-# === Admin  ===
 ADMIN_TOKEN=your_admin_token_here
-# === AWS S3 Configuration ===
 AWS_REGION=${aws_region}
 AWS_ACCESS_KEY_ID=${aws_access_key_id}
 AWS_SECRET_ACCESS_KEY=${aws_secret_access_key}
 AWS_SESSION_TOKEN=${aws_session_token}
 AWS_ENDPOINT_URL=${aws_endpoint_url}
 S3_BUCKET_NAME=${s3_bucket_name}
-EOA"
-run_step "Start application stack" bash -c "cd /home/ubuntu/${project_name} && make prod-up"
-EOF_SUB
+EOF
+chown -R ubuntu:ubuntu "/home/ubuntu/${project_name}/apps"
 
-run_step "Configure nginx frontend" bash -c "cat <<'NGINX' > /etc/nginx/sites-available/conviveitesofront
+# ==== Bring up only the FRONT (backend intentionally not configured now) ====
+# Adjust make target as needed; this assumes front starts on 3000 and publishes 3000->3000
+sudo -u ubuntu -H bash -lc "cd /home/ubuntu/${project_name} && make prod-up"
+
+# ==== Nginx hardening and front vhost ====
+# Only include *.conf to avoid 'Is a directory' issues
+sed -i 's#sites-enabled/\*#sites-enabled/*.conf#' /etc/nginx/nginx.conf || true
+
+# Disable the default site
+rm -f /etc/nginx/sites-enabled/default
+
+# FRONT vhost (only)
+cat >/etc/nginx/sites-available/conviveitesofront.conf <<EOF
 server {
-    listen 80;
-    server_name conviveitesofront.ricardonavarro.mx;
+  listen 80;
+  server_name ${front_domain};
 
-    location / {
-        proxy_pass http://localhost:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-    }
+  location / {
+    proxy_pass http://127.0.0.1:3000;
+    proxy_set_header Host              \$host;
+    proxy_set_header X-Real-IP         \$remote_addr;
+    proxy_set_header X-Forwarded-For   \$proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto \$scheme;
+  }
 }
-NGINX"
+EOF
 
-run_step "Configure nginx backend" bash -c "cat <<'NGINX' > /etc/nginx/sites-available/conviveitesoback
-server {
-    listen 80;
-    server_name conviveitesoback.ricardonavarro.mx;
+ln -sfn /etc/nginx/sites-available/conviveitesofront.conf /etc/nginx/sites-enabled/conviveitesofront.conf
 
-    location / {
-        proxy_pass http://localhost:8080;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-    }
-}
-NGINX"
+# (Backend vhost omitted on purpose. Add later when ready.)
 
-run_step "Enable nginx sites" bash -c "ln -sf /etc/nginx/sites-available/conviveitesofront /etc/nginx/sites-enabled/conviveitesofront && ln -sf /etc/nginx/sites-available/conviveitesoback /etc/nginx/sites-enabled/conviveitesoback"
-run_step "Wait before nginx validation" bash -c "sleep 5"
-run_step "Validate nginx configuration" nginx -t
-run_step "Restart nginx" systemctl restart nginx
-run_step "Obtain HTTPS certificate (frontend)" bash -c "certbot --nginx --non-interactive --agree-tos --redirect -m ${admin_email} -d conviveitesofront.ricardonavarro.mx"
-run_step "Obtain HTTPS certificate (backend)" bash -c "certbot --nginx --non-interactive --agree-tos --redirect -m ${admin_email} -d conviveitesoback.ricardonavarro.mx"
+nginx -t
+systemctl restart nginx
 
-log_message INFO "EC2 setup complete."
+# ==== Firewall (safe defaults) ====
+ufw allow OpenSSH
+ufw allow 80/tcp
+ufw allow 443/tcp
+ufw --force enable
+
+# ==== Optional: obtain cert for FRONT when DNS is ready ====
+if [ "${enable_tls}" = "true" ]; then
+  # Try once; do not fail the instance if DNS isn't ready yet.
+  certbot --nginx --non-interactive --agree-tos --redirect \
+    -m "${admin_email}" -d "${front_domain}" || true
+fi
+
+echo "✅ Setup complete. Nginx serving ${front_domain} -> 127.0.0.1:3000. Backend intentionally not configured."
