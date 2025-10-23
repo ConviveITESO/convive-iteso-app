@@ -72,6 +72,13 @@ The configuration is organized into namespaces:
 - `queue`: Background job queue settings
   - `redis.host`: Redis hostname
   - `redis.port`: Redis port
+- `s3`: Object storage configuration
+  - `region`: AWS region
+  - `accessKeyId`: IAM access key
+  - `secretAccessKey`: IAM secret key
+  - `sessionToken`: Optional session token (Learner Lab)
+  - `endpoint`: Custom endpoint for LocalStack
+  - `bucketName`: Target bucket name
 
 ## Environment Variables
 
@@ -88,6 +95,12 @@ CLIENT_SECRET=your-client-secret
 REDIRECT_URI=http://localhost:8080/auth/oauth-callback
 REDIS_HOST=127.0.0.1
 REDIS_PORT=6379
+AWS_REGION=us-east-1
+AWS_ACCESS_KEY_ID=your-access-key
+AWS_SECRET_ACCESS_KEY=your-secret-key
+AWS_SESSION_TOKEN=optional-session-token
+AWS_ENDPOINT_URL=http://localhost:4566 # only for LocalStack
+S3_BUCKET_NAME=convive-iteso-dev
 ```
 
 ## Validation

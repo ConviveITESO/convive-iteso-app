@@ -43,6 +43,14 @@ DATABASE_URL=postgresql://user:password@localhost:5432/db
 REDIS_HOST=127.0.0.1
 REDIS_PORT=6379
 
+# === AWS S3 ===
+AWS_REGION=us-east-1
+AWS_ACCESS_KEY_ID=your-access-key
+AWS_SECRET_ACCESS_KEY=your-secret-key
+AWS_SESSION_TOKEN=optional-session-token
+AWS_ENDPOINT_URL=http://localhost:4566
+S3_BUCKET_NAME=convive-iteso-bucket-assets
+
 # === OAuth ===
 CLIENT_ID=your-client-id
 CLIENT_SECRET=your-client-secret
@@ -118,6 +126,12 @@ The configuration is organized into the following namespaces:
 | `auth`     | `redirectUri`  | string | OAuth redirect URI         |
 | `queue`    | `redis.host`   | string | Redis hostname for queues  |
 | `queue`    | `redis.port`   | number | Redis port for queues      |
+| `s3`       | `region`       | string | AWS region for S3          |
+| `s3`       | `accessKeyId`  | string | IAM access key             |
+| `s3`       | `secretAccessKey` | string | IAM secret key          |
+| `s3`       | `sessionToken` | string | Optional session token     |
+| `s3`       | `endpoint`     | string | LocalStack endpoint (dev)  |
+| `s3`       | `bucketName`   | string | Target S3 bucket name      |
 
 ## ✅ Validation
 
