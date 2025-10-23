@@ -4,7 +4,7 @@ import { validateAuth } from "@/lib/auth";
 import NotificationHeader from "./_components/notification-header";
 import NotificationList from "./_components/notification-list";
 
-//remplazar por servicio
+//TODO: Remplazar por servicio
 const MOCK: NotificationResponse[] = [
 	{
 		id: "1",

@@ -60,7 +60,7 @@ export default function ProfileSettingsPage() {
 		setError("");
 
 		try {
-			const response = await fetch(`${getApiUrl()}/users/${profile.id}`, {
+			const response = await fetch(`${getApiUrl()}/user/${profile.id}`, {
 				method: "PATCH",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({ username }),
