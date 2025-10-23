@@ -48,14 +48,14 @@ mkdir -p "/home/ubuntu/${project_name}/apps/web" "/home/ubuntu/${project_name}/a
 
 # Frontend should call the backend domain
 cat >"/home/ubuntu/${project_name}/apps/web/.env.local" <<EOF
-NEXT_PUBLIC_API_URL=http://${back_domain}
+NEXT_PUBLIC_API_URL=http://$${back_domain}
 EOF
 
 # Backend env (prepared even if you don't run it yet)
 cat >"/home/ubuntu/${project_name}/apps/api/.env" <<EOF
 NODE_ENV=production
-BACKEND_URL=http://${back_domain}
-FRONTEND_URL=http://${front_domain}
+BACKEND_URL=http://$${back_domain}
+FRONTEND_URL=http://$${front_domain}
 DATABASE_URL=postgresql://${db_username}:${db_password}@${db_host}:5432/${db_name}
 REDIS_HOST=127.0.0.1
 REDIS_PORT=6379
@@ -104,7 +104,7 @@ server {
 EOF
 
 # Inject the front domain safely
-sed -i "s#__FRONT_DOMAIN__#${front_domain}#g" /etc/nginx/sites-available/conviveitesofront.conf
+sed -i "s#__FRONT_DOMAIN__#$${front_domain}#g" /etc/nginx/sites-available/conviveitesofront.conf
 
 ln -sfn /etc/nginx/sites-available/conviveitesofront.conf /etc/nginx/sites-enabled/conviveitesofront.conf
 
@@ -117,4 +117,4 @@ ufw allow 80/tcp
 ufw allow 443/tcp
 ufw --force enable
 
-echo "✅ Setup complete. Nginx serving ${front_domain} -> 127.0.0.1:3000. Backend intentionally not configured."
+echo "✅ Setup complete. Nginx serving $${front_domain} -> 127.0.0.1:3000. Backend intentionally not configured."
