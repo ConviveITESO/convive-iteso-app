@@ -4,5 +4,13 @@
 	"sourceRoot": "src",
 	"compilerOptions": {
 		"deleteOutDir": true
+	},
+	"projects": {
+		"notifications-worker": {
+			"type": "application",
+			"root": "src",
+			"entryFile": "notifications.worker",
+			"sourceRoot": "src"
+		}
 	}
 }

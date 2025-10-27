@@ -5,6 +5,7 @@ import { CategoryModule } from "../category/category.module";
 import { DatabaseModule } from "../database/database.module";
 import { GroupModule } from "../group/group.module";
 import { LocationModule } from "../location/location.module";
+import { S3Module } from "../s3/s3.module";
 import { UserModule } from "../user/user.module";
 import { EventController } from "./event.controller";
 import { EventService } from "./event.service";
@@ -12,7 +13,15 @@ import { EventService } from "./event.service";
 @Module({
 	controllers: [EventController],
 	providers: [EventService],
-	imports: [DatabaseModule, UserModule, GroupModule, LocationModule, CategoryModule, BadgeModule],
+	imports: [
+		DatabaseModule,
+		UserModule,
+		GroupModule,
+		LocationModule,
+		CategoryModule,
+		BadgeModule,
+		S3Module,
+	],
 	exports: [EventService],
 })
 export class EventModule implements NestModule {

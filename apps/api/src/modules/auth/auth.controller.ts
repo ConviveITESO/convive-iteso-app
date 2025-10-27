@@ -1,4 +1,5 @@
 import { Controller, Get, Post, Query, Req, Res } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { ApiTags } from "@nestjs/swagger";
 import { Request, Response } from "express";
 import { AuthService } from "./auth.service";
@@ -6,7 +7,14 @@ import { AuthService } from "./auth.service";
 @ApiTags("Auth")
 @Controller("auth")
 export class AuthController {
-	constructor(private readonly authService: AuthService) {}
+	private redirectUri: string;
+	constructor(
+		private readonly authService: AuthService,
+		private readonly configService: ConfigService,
+	) {
+		const frontendUrl = this.configService.getOrThrow("FRONTEND_URL");
+		this.redirectUri = `${frontendUrl}/feed`;
+	}
 
 	//GET /login
 	@Get("login")
@@ -28,7 +36,7 @@ export class AuthController {
 			.cookie("refreshToken", result.refreshToken, { httpOnly: true, secure: true });
 
 		// Redirect to Frontend
-		res.redirect("http://localhost:3000/users");
+		res.redirect(this.redirectUri);
 	}
 
 	@Post("refresh")

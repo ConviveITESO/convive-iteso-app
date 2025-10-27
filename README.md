@@ -102,6 +102,11 @@ This project is built as a monorepo using [Turborepo](https://turbo.build/) with
    pnpm run dev
    ```
 
+9. **Check the emails sent**
+   ```bash
+   http://localhost:8025
+   ```
+
 This will start both the API server and web application in development mode with hot reloading.
 
 ## 🚀 Production Deployment

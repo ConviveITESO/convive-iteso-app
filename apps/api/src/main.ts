@@ -22,7 +22,7 @@ async function bootstrap() {
 				: ["http://localhost:3000", "http://localhost:3001"], // Development origins
 		credentials: true,
 		methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-		allowedHeaders: ["Content-Type", "Authorization"],
+		allowedHeaders: ["Content-Type", "Authorization", "Cache-Control", "Pragma"],
 	});
 
 	// Swagger setup

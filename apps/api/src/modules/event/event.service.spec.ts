@@ -6,9 +6,10 @@ import { EventResponseSchema } from "@repo/schemas";
 import { BadgeService } from "../badge/badge.service";
 import { CategoryService } from "../category/category.service";
 import { DATABASE_CONNECTION } from "../database/connection";
-import { Badge, Category, Event, Group, Location, User } from "../database/schemas";
+import { Event, Group, Location, User } from "../database/schemas";
 import { GroupService } from "../group/group.service";
 import { LocationService } from "../location/location.service";
+import { S3Service } from "../s3/s3.service";
 import { UserService } from "../user/user.service";
 import { EventService } from "./event.service";
 
@@ -31,6 +32,10 @@ describe("EventService", () => {
 	const mockCategoryService = { formatCategory: jest.fn(), assertCategoriesExist: jest.fn() };
 	const mockBadgeService = { formatBadge: jest.fn(), assertBadgesExist: jest.fn() };
 	const mockConfigService = { get: jest.fn() };
+	const mockS3Service = {
+		uploadFile: jest.fn(),
+		getFileUrl: jest.fn(),
+	};
 
 	beforeEach(async () => {
 		const module: TestingModule = await Test.createTestingModule({
@@ -43,6 +48,7 @@ describe("EventService", () => {
 				{ provide: CategoryService, useValue: mockCategoryService },
 				{ provide: BadgeService, useValue: mockBadgeService },
 				{ provide: ConfigService, useValue: mockConfigService },
+				{ provide: S3Service, useValue: mockS3Service },
 			],
 		}).compile();
 		service = module.get<EventService>(EventService);
@@ -51,6 +57,134 @@ describe("EventService", () => {
 
 	it("should be defined", () => {
 		expect(service).toBeDefined();
+	});
+
+	describe("getEvents", () => {
+		it("should return all active events when no filters provided", async () => {
+			const event1 = { id: "event1" };
+			const event2 = { id: "event2" };
+			const creator = { id: "userId" };
+			const group = { id: "groupId" };
+			const location = { id: "locationId" };
+			const categories = [{ id: "categoryId" }];
+			const badges = [{ id: "badgeId" }];
+			const mockDbResults = [
+				{ event: event1, creator, group, location, categories, badges },
+				{ event: event2, creator, group, location, categories, badges },
+			];
+			const mockFormattedEvent1 = { name: "Event 1" };
+			const mockFormattedEvent2 = { name: "Event 2" };
+			jest
+				.spyOn(service, "formatEvent")
+				.mockReturnValueOnce(mockFormattedEvent1 as EventResponseSchema)
+				.mockReturnValueOnce(mockFormattedEvent2 as EventResponseSchema);
+			mockDb.select.mockReturnValue({
+				from: jest.fn().mockReturnThis(),
+				where: jest.fn().mockReturnThis(),
+				innerJoin: jest.fn().mockReturnThis(),
+				leftJoin: jest.fn().mockReturnThis(),
+				groupBy: jest.fn().mockResolvedValue(mockDbResults),
+			});
+			const result = await service.getEvents({});
+			expect(result).toEqual([mockFormattedEvent1, mockFormattedEvent2]);
+			expect(service.formatEvent).toHaveBeenCalledTimes(2);
+		});
+
+		it("should return filtered events by name", async () => {
+			const event = { id: "event1", name: "Test Event" };
+			const creator = { id: "userId" };
+			const group = { id: "groupId" };
+			const location = { id: "locationId" };
+			const categories = [];
+			const badges = [];
+			const mockDbResults = [{ event, creator, group, location, categories, badges }];
+			const mockFormattedEvent = { name: "Test Event" };
+			jest.spyOn(service, "formatEvent").mockReturnValue(mockFormattedEvent as EventResponseSchema);
+			mockDb.select.mockReturnValue({
+				from: jest.fn().mockReturnThis(),
+				where: jest.fn().mockReturnThis(),
+				innerJoin: jest.fn().mockReturnThis(),
+				leftJoin: jest.fn().mockReturnThis(),
+				groupBy: jest.fn().mockResolvedValue(mockDbResults),
+			});
+			const result = await service.getEvents({ name: "Test Event" });
+			expect(result).toEqual([mockFormattedEvent]);
+		});
+
+		it("should return filtered events by locationId", async () => {
+			const event = { id: "event1" };
+			const creator = { id: "userId" };
+			const group = { id: "groupId" };
+			const location = { id: "loc123" };
+			const categories = [];
+			const badges = [];
+			const mockDbResults = [{ event, creator, group, location, categories, badges }];
+			const mockFormattedEvent = { name: "Location Event" };
+			jest.spyOn(service, "formatEvent").mockReturnValue(mockFormattedEvent as EventResponseSchema);
+			mockDb.select.mockReturnValue({
+				from: jest.fn().mockReturnThis(),
+				where: jest.fn().mockReturnThis(),
+				innerJoin: jest.fn().mockReturnThis(),
+				leftJoin: jest.fn().mockReturnThis(),
+				groupBy: jest.fn().mockResolvedValue(mockDbResults),
+			});
+			const result = await service.getEvents({ locationId: "loc123" });
+			expect(result).toEqual([mockFormattedEvent]);
+		});
+
+		it("should return filtered events by categoryId", async () => {
+			const event = { id: "event1" };
+			const creator = { id: "userId" };
+			const group = { id: "groupId" };
+			const location = { id: "locationId" };
+			const categories = [{ id: "cat123" }];
+			const badges = [];
+			const mockDbResults = [{ event, creator, group, location, categories, badges }];
+			const mockFormattedEvent = { name: "Category Event" };
+			jest.spyOn(service, "formatEvent").mockReturnValue(mockFormattedEvent as EventResponseSchema);
+			mockDb.select.mockReturnValue({
+				from: jest.fn().mockReturnThis(),
+				where: jest.fn().mockReturnThis(),
+				innerJoin: jest.fn().mockReturnThis(),
+				leftJoin: jest.fn().mockReturnThis(),
+				groupBy: jest.fn().mockResolvedValue(mockDbResults),
+			});
+			const result = await service.getEvents({ categoryId: "cat123" });
+			expect(result).toEqual([mockFormattedEvent]);
+		});
+
+		it("should return filtered events by badgeId", async () => {
+			const event = { id: "event1" };
+			const creator = { id: "userId" };
+			const group = { id: "groupId" };
+			const location = { id: "locationId" };
+			const categories = [];
+			const badges = [{ id: "badge123" }];
+			const mockDbResults = [{ event, creator, group, location, categories, badges }];
+			const mockFormattedEvent = { name: "Badge Event" };
+			jest.spyOn(service, "formatEvent").mockReturnValue(mockFormattedEvent as EventResponseSchema);
+			mockDb.select.mockReturnValue({
+				from: jest.fn().mockReturnThis(),
+				where: jest.fn().mockReturnThis(),
+				innerJoin: jest.fn().mockReturnThis(),
+				leftJoin: jest.fn().mockReturnThis(),
+				groupBy: jest.fn().mockResolvedValue(mockDbResults),
+			});
+			const result = await service.getEvents({ badgeId: "badge123" });
+			expect(result).toEqual([mockFormattedEvent]);
+		});
+
+		it("should return empty array when no events match filters", async () => {
+			mockDb.select.mockReturnValue({
+				from: jest.fn().mockReturnThis(),
+				where: jest.fn().mockReturnThis(),
+				innerJoin: jest.fn().mockReturnThis(),
+				leftJoin: jest.fn().mockReturnThis(),
+				groupBy: jest.fn().mockResolvedValue([]),
+			});
+			const result = await service.getEvents({ name: "Nonexistent Event" });
+			expect(result).toEqual([]);
+		});
 	});
 
 	describe("getEventById", () => {
@@ -125,6 +259,7 @@ describe("EventService", () => {
 			const startDate = new Date();
 			const endDate = new Date();
 			const quota = 10;
+			const imageUrl = "http://example.com/image.jpg";
 			const mockEvent: Event = {
 				id,
 				name,
@@ -132,6 +267,7 @@ describe("EventService", () => {
 				startDate,
 				endDate,
 				quota,
+				imageUrl,
 				opensAt: new Date(),
 				closesAt: new Date(),
 				unregisterClosesAt: new Date(),
@@ -146,8 +282,48 @@ describe("EventService", () => {
 			const mockUser = { id: "userId" } as User;
 			const mockGroup = { id: "groupId" } as Group;
 			const mockLocation = { id: "locationId" } as Location;
-			const mockCategories = [{ id: "categoryId1" }, { id: "categoryId2" }] as Category[];
-			const mockBadges = [{ id: "badgeId1" }, { id: "badgeId2" }] as Badge[];
+			const mockCategories = [
+				{
+					id: "categoryId1",
+					name: "Category 1",
+					createdBy: "userId",
+					status: "active" as const,
+					createdAt: new Date().toISOString(),
+					updatedAt: new Date().toISOString(),
+					deletedAt: null,
+				},
+				{
+					id: "categoryId2",
+					name: "Category 2",
+					createdBy: "userId",
+					status: "active" as const,
+					createdAt: new Date().toISOString(),
+					updatedAt: new Date().toISOString(),
+					deletedAt: null,
+				},
+			];
+			const mockBadges = [
+				{
+					id: "badgeId1",
+					name: "Badge 1",
+					description: "Badge 1 description",
+					createdBy: "userId",
+					status: "active" as const,
+					createdAt: new Date().toISOString(),
+					updatedAt: new Date().toISOString(),
+					deletedAt: null,
+				},
+				{
+					id: "badgeId2",
+					name: "Badge 2",
+					description: "Badge 2 description",
+					createdBy: "userId",
+					status: "active" as const,
+					createdAt: new Date().toISOString(),
+					updatedAt: new Date().toISOString(),
+					deletedAt: null,
+				},
+			];
 			mockUserService.formatUser.mockReturnValue(mockUser);
 			mockGroupService.formatGroup.mockReturnValue(mockGroup);
 			mockLocationService.formatLocation.mockReturnValue(mockLocation);
@@ -172,6 +348,7 @@ describe("EventService", () => {
 				startDate: startDate.toISOString(),
 				endDate: endDate.toISOString(),
 				quota,
+				imageUrl,
 				createdBy: mockUser,
 				group: mockGroup,
 				location: mockLocation,
@@ -183,6 +360,11 @@ describe("EventService", () => {
 
 	describe("createEvent", () => {
 		it("should call required services and return event id", async () => {
+			const file = {
+				originalname: "test.png",
+				buffer: Buffer.from("test"),
+				mimetype: "image/png",
+			} as Express.Multer.File;
 			const id = "eventId";
 			const name = "Test event";
 			const description = "This is a test event";
@@ -214,6 +396,7 @@ describe("EventService", () => {
 					badgeIds,
 				},
 				createdBy,
+				file,
 			);
 			expect(mockLocationService.getLocationByIdOrThrow).toHaveBeenCalledWith(locationId);
 			expect(mockCategoryService.assertCategoriesExist).toHaveBeenCalledWith(categoryIds);

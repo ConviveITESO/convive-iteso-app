@@ -47,7 +47,7 @@ export class UserService {
 	 */
 	async getUserById(userId: UserIdParamSchema) {
 		return await this.db.query.users.findFirst({
-			where: eq(users.id, userId),
+			where: eq(users.id, userId.id),
 		});
 	}
 
@@ -74,7 +74,7 @@ export class UserService {
 		const result = await this.db
 			.update(users)
 			.set({ ...data })
-			.where(eq(users.id, userId))
+			.where(eq(users.id, userId.id))
 			.returning();
 		return result[0];
 	}
@@ -93,7 +93,7 @@ export class UserService {
 				status: "deleted",
 				deletedAt: new Date(),
 			})
-			.where(eq(users.id, userId));
+			.where(eq(users.id, userId.id));
 		return user;
 	}
 

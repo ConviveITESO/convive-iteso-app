@@ -1,4 +1,5 @@
 import {
+	BadRequestException,
 	ForbiddenException,
 	Inject,
 	Injectable,
@@ -8,6 +9,8 @@ import {
 import {
 	CreateSubscriptionSchema,
 	EventStatsResponseSchema,
+	SubscribedEventResponseArraySchema,
+	SubscriptionCheckInResponseSchema,
 	SubscriptionIdResponseSchema,
 	SubscriptionQuerySchema,
 	SubscriptionResponseSchema,
@@ -15,11 +18,129 @@ import {
 } from "@repo/schemas";
 import { and, eq, gte, isNull, max, ne, SQL, sql } from "drizzle-orm";
 import { AppDatabase, DATABASE_CONNECTION, Transaction } from "../database/connection";
-import { events, Subscription, subscriptions } from "../database/schemas";
+import { events, groups, locations, Subscription, subscriptions, users } from "../database/schemas";
+import { NotificationsQueueService } from "../notifications/notifications.service";
 
 @Injectable()
 export class SubscriptionsService {
-	constructor(@Inject(DATABASE_CONNECTION) private readonly db: AppDatabase) {}
+	constructor(
+		@Inject(DATABASE_CONNECTION) private readonly db: AppDatabase,
+		private readonly notificationsQueue: NotificationsQueueService,
+	) {}
+	/**
+	 * Gets the QR code data for a specific event and user
+	 * @param eventId The event ID
+	 * @param userId The user ID
+	 * @returns QR code data including event name, date, and attendee info
+	 */
+	async getQrCode(eventId: string, userId: string): Promise<SubscriptionResponseSchema> {
+		// Check if subscription exists and is valid
+		const subscription = await this.db
+			.select({
+				id: subscriptions.id,
+				userId: subscriptions.userId,
+				eventId: subscriptions.eventId,
+				status: subscriptions.status,
+				position: subscriptions.position,
+				createdAt: subscriptions.createdAt,
+				updatedAt: subscriptions.updatedAt,
+				deletedAt: subscriptions.deletedAt,
+			})
+			.from(subscriptions)
+			.where(
+				and(
+					eq(subscriptions.eventId, eventId),
+					eq(subscriptions.userId, userId),
+					eq(subscriptions.status, "registered"),
+				),
+			)
+			.limit(1)
+			.then((results) => results[0]);
+
+		if (!subscription) {
+			throw new NotFoundException("Subscription not found or not valid");
+		}
+
+		return this.toSubscriptionResponse(subscription);
+	}
+
+	/**
+	 * Validates and records an event check-in
+	 * @param eventId The event ID provided by the staff member
+	 * @param subscriptionId The subscription ID provided via QR/manual entry
+	 * @returns Result of the check-in attempt
+	 */
+	async checkIn(
+		eventId: string,
+		subscriptionId: string,
+	): Promise<SubscriptionCheckInResponseSchema> {
+		return await this.db.transaction(async (tx) => {
+			const [record] = await tx
+				.select({
+					subscription: subscriptions,
+					event: events,
+					user: users,
+				})
+				.from(subscriptions)
+				.innerJoin(events, eq(events.id, subscriptions.eventId))
+				.innerJoin(users, eq(users.id, subscriptions.userId))
+				.where(and(eq(subscriptions.id, subscriptionId), isNull(subscriptions.deletedAt)))
+				.limit(1);
+
+			if (!record) {
+				throw new NotFoundException({
+					status: "invalid_subscription",
+					message: "Registration not found",
+				});
+			}
+
+			if (record.event.id !== eventId) {
+				throw new BadRequestException({
+					status: "invalid_event",
+					message: "Registration does not belong to this event",
+				});
+			}
+
+			if (record.subscription.status === "attended") {
+				return {
+					status: "already_checked_in",
+					message: "Attendee already checked in",
+					attendeeName: record.user.name,
+					subscription: this.toSubscriptionResponse(record.subscription),
+				};
+			}
+
+			if (record.subscription.status !== "registered") {
+				throw new BadRequestException({
+					status: "invalid_subscription",
+					message: "Registration is not confirmed",
+				});
+			}
+
+			const [updated] = await tx
+				.update(subscriptions)
+				.set({
+					status: "attended",
+					updatedAt: new Date(),
+				})
+				.where(eq(subscriptions.id, record.subscription.id))
+				.returning();
+
+			if (!updated) {
+				throw new InternalServerErrorException({
+					status: "invalid_subscription",
+					message: "Unable to record check-in",
+				});
+			}
+
+			return {
+				status: "success",
+				message: "Check-in completed",
+				attendeeName: record.user.name,
+				subscription: this.toSubscriptionResponse(updated),
+			};
+		});
+	}
 
 	/**
 	 * Converts a subscription to a subscription response
@@ -270,6 +391,44 @@ export class SubscriptionsService {
 		return { id: subscription.id };
 	}
 
+	async getUserSubscribedEvents(userId: string): Promise<SubscribedEventResponseArraySchema> {
+		const rows = await this.db
+			.select({
+				subscriptionId: subscriptions.id,
+				id: events.id,
+				name: events.name,
+				startDate: events.startDate,
+				imageUrl: events.imageUrl,
+				locationName: locations.name,
+			})
+			.from(subscriptions)
+			.innerJoin(events, and(eq(events.id, subscriptions.eventId), eq(events.status, "active")))
+			.innerJoin(users, and(eq(users.id, events.createdBy), eq(users.status, "active")))
+			.innerJoin(groups, and(eq(groups.id, events.groupId), eq(groups.status, "active")))
+			.innerJoin(
+				locations,
+				and(eq(locations.id, events.locationId), eq(locations.status, "active")),
+			)
+			.where(
+				and(
+					eq(subscriptions.userId, userId),
+					ne(subscriptions.status, "cancelled"),
+					isNull(subscriptions.deletedAt),
+				),
+			);
+
+		return rows.map((row) => ({
+			subscriptionId: row.subscriptionId,
+			id: row.id,
+			name: row.name,
+			startDate: row.startDate instanceof Date ? row.startDate.toISOString() : row.startDate,
+			imageUrl: row.imageUrl,
+			location: {
+				name: row.locationName,
+			},
+		}));
+	}
+
 	/**
 	 * Creates a new subscription (registers user for event)
 	 * @param userId The user ID
@@ -280,87 +439,152 @@ export class SubscriptionsService {
 		userId: string,
 		data: CreateSubscriptionSchema,
 	): Promise<SubscriptionResponseSchema> {
-		return await this.db.transaction(async (tx): Promise<SubscriptionResponseSchema> => {
-			// Check if user is already registered for this event
-			const [existingSubscription] = await tx
-				.select()
-				.from(subscriptions)
-				.where(and(eq(subscriptions.userId, userId), eq(subscriptions.eventId, data.eventId)))
-				.limit(1);
+		const { notificationPayload, subscription } = await this.db.transaction(
+			async (
+				tx,
+			): Promise<{
+				subscription: SubscriptionResponseSchema;
+				notificationPayload: {
+					creatorEmail: string;
+					creatorName: string;
+					eventName: string;
+					subscriberName: string;
+				} | null;
+			}> => {
+				// Check if user is already registered for this event
+				const [existingSubscription] = await tx
+					.select()
+					.from(subscriptions)
+					.where(and(eq(subscriptions.userId, userId), eq(subscriptions.eventId, data.eventId)))
+					.limit(1);
 
-			// Get event details
-			const [event] = await tx.select().from(events).where(eq(events.id, data.eventId)).limit(1);
+				// Get event details
+				const [event] = await tx.select().from(events).where(eq(events.id, data.eventId)).limit(1);
 
-			if (!event) {
-				throw new NotFoundException("Event not found");
-			}
-
-			if (existingSubscription) {
-				// Check if subscription was deleted
-				if (existingSubscription.deletedAt || existingSubscription.status === "cancelled") {
-					// Determine if user can be registered or should be waitlisted
-					const { status, position } = await this.determineSubscriptionStatus(
-						tx,
-						data.eventId,
-						event.quota,
-					);
-
-					// Restore subscription by clearing deletedAt and updating status
-					const [restored] = await tx
-						.update(subscriptions)
-						.set({
-							status,
-							position,
-							deletedAt: null,
-							updatedAt: new Date(),
-						})
-						.where(eq(subscriptions.id, existingSubscription.id))
-						.returning();
-
-					if (!restored) {
-						throw new InternalServerErrorException("Failed to restore subscription");
-					}
-
-					return this.toSubscriptionResponse(restored);
+				if (!event) {
+					throw new NotFoundException("Event not found");
 				}
 
-				// Idempotent - return existing subscription
-				return this.toSubscriptionResponse(existingSubscription);
-			}
+				const [eventCreator] = await tx
+					.select({
+						id: users.id,
+						name: users.name,
+						email: users.email,
+					})
+					.from(users)
+					.where(eq(users.id, event.createdBy))
+					.limit(1);
 
-			// Check registration window
-			const now = new Date();
-			if (event.opensAt && now < event.opensAt) {
-				throw new ForbiddenException("Registration not yet open");
-			}
-			if (event.closesAt && now > event.closesAt) {
-				throw new ForbiddenException("Registration has closed");
-			}
+				if (!eventCreator) {
+					throw new NotFoundException("Event creator not found");
+				}
 
-			// Determine subscription status and position
-			const { status, position } = await this.determineSubscriptionStatus(
-				tx,
-				data.eventId,
-				event.quota,
-			);
+				const [subscriber] = await tx
+					.select({
+						id: users.id,
+						name: users.name,
+						email: users.email,
+					})
+					.from(users)
+					.where(eq(users.id, userId))
+					.limit(1);
 
-			// Create subscription
-			const [result] = await tx
-				.insert(subscriptions)
-				.values({
-					userId,
-					eventId: data.eventId,
-					status,
-					position,
-				})
-				.returning();
+				if (!subscriber) {
+					throw new NotFoundException("Subscriber not found");
+				}
 
-			if (!result) {
-				throw new InternalServerErrorException("Failed to create subscription");
-			}
+				if (existingSubscription) {
+					// Check if subscription was deleted
+					if (existingSubscription.deletedAt || existingSubscription.status === "cancelled") {
+						// Determine if user can be registered or should be waitlisted
+						const { status, position } = await this.determineSubscriptionStatus(
+							tx,
+							data.eventId,
+							event.quota,
+						);
 
-			return this.toSubscriptionResponse(result);
-		});
+						// Restore subscription by clearing deletedAt and updating status
+						const [restored] = await tx
+							.update(subscriptions)
+							.set({
+								status,
+								position,
+								deletedAt: null,
+								updatedAt: new Date(),
+							})
+							.where(eq(subscriptions.id, existingSubscription.id))
+							.returning();
+
+						if (!restored) {
+							throw new InternalServerErrorException("Failed to restore subscription");
+						}
+
+						return {
+							subscription: this.toSubscriptionResponse(restored),
+							notificationPayload: {
+								creatorEmail: eventCreator.email,
+								creatorName: eventCreator.name,
+								eventName: event.name,
+								subscriberName: subscriber.name,
+							},
+						};
+					}
+
+					// Idempotent - return existing subscription
+					return {
+						subscription: this.toSubscriptionResponse(existingSubscription),
+						notificationPayload: null,
+					};
+				}
+
+				// Check registration window
+				const now = new Date();
+				if (event.opensAt && now < event.opensAt) {
+					throw new ForbiddenException("Registration not yet open");
+				}
+				if (event.closesAt && now > event.closesAt) {
+					throw new ForbiddenException("Registration has closed");
+				}
+
+				// Determine subscription status and position
+				const { status, position } = await this.determineSubscriptionStatus(
+					tx,
+					data.eventId,
+					event.quota,
+				);
+
+				// Create subscription
+				const [result] = await tx
+					.insert(subscriptions)
+					.values({
+						userId,
+						eventId: data.eventId,
+						status,
+						position,
+					})
+					.returning();
+
+				if (!result) {
+					throw new InternalServerErrorException("Failed to create subscription");
+				}
+
+				return {
+					subscription: this.toSubscriptionResponse(result),
+					notificationPayload: {
+						creatorEmail: eventCreator.email,
+						creatorName: eventCreator.name,
+						eventName: event.name,
+						subscriberName: subscriber.name,
+					},
+				};
+			},
+		);
+
+		if (notificationPayload) {
+			await this.notificationsQueue.enqueueSubscriptionCreated(notificationPayload);
+		}
+
+		return subscription;
 	}
 
 	/**

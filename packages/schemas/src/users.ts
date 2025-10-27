@@ -4,14 +4,18 @@ import { z } from "./zod-openapi.js";
 // PARAMS schemas
 // ==========================================================
 
-export const userIdParamSchema = z.uuid().openapi("UserIdParamSchema", {
-	description: "User ID",
-	example: "550e8400-e29b-41d4-a716-446655440000",
+export const userIdParamSchema = z.object({
+	id: z.uuid().openapi("UserIdParamSchema", {
+		description: "User ID",
+		example: "550e8400-e29b-41d4-a716-446655440000",
+	}),
 });
 
-export const userEmailParamSchema = z.email().openapi("UserEmailParamSchema", {
-	description: "User email",
-	example: "john@example.com",
+export const userEmailParamSchema = z.object({
+	email: z.email().openapi("UserEmailParamSchema", {
+		description: "User email",
+		example: "john@example.com",
+	}),
 });
 
 // ==========================================================

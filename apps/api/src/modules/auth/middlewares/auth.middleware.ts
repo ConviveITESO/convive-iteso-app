@@ -31,7 +31,6 @@ export class AuthMiddleware implements NestMiddleware {
 			return next();
 		}
 
-
 		Logger.log("AuthMiddleware called");
 		const idToken = req.cookies?.idToken;
 		if (!idToken) {

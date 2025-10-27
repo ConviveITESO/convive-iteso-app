@@ -19,7 +19,7 @@ export const subscriptionIdParamSchema = z
 
 export const subscriptionQuerySchema = z
 	.object({
-		status: z.enum(["registered", "waitlisted", "cancelled"]).optional().openapi({
+		status: z.enum(["registered", "waitlisted", "cancelled", "attended"]).optional().openapi({
 			description: "Filter by subscription status",
 		}),
 		eventId: z.uuid().optional().openapi({
@@ -44,11 +44,21 @@ export const createSubscriptionSchema = z
 		},
 	});
 
+export const subscriptionCreatedSchema = z.object({
+	creatorEmail: z.string().email(),
+	creatorName: z.string().min(1),
+	eventName: z.string().min(1),
+	subscriberName: z.string().min(1),
+});
+
 export const updateSubscriptionSchema = z
 	.object({
-		status: z.enum(["registered", "waitlisted", "cancelled"]).optional().openapi({
-			description: "Update subscription status",
-		}),
+		status: z
+			.enum(["registered", "waitlisted", "cancelled", "attended", "attended"])
+			.optional()
+			.openapi({
+				description: "Update subscription status",
+			}),
 	})
 	.refine((data) => Object.keys(data).length > 0, {
 		message: "At least one field must be provided for update",
@@ -56,6 +66,22 @@ export const updateSubscriptionSchema = z
 	.openapi("UpdateSubscriptionSchema", {
 		example: {
 			status: "cancelled",
+		},
+	});
+
+export const subscriptionCheckInRequestSchema = z
+	.object({
+		eventId: z.uuid().openapi({
+			description: "Event ID the subscription belongs to",
+		}),
+		subscriptionId: z.uuid().openapi({
+			description: "Subscription ID provided by the attendee",
+		}),
+	})
+	.openapi("SubscriptionCheckInRequestSchema", {
+		example: {
+			eventId: "123e4567-e89b-12d3-a456-426614174000",
+			subscriptionId: "f47ac10b-58cc-4372-a567-0e02b2c3d479",
 		},
 	});
 
@@ -68,7 +94,7 @@ export const subscriptionResponseSchema = z
 		id: z.uuid(),
 		userId: z.uuid(),
 		eventId: z.uuid(),
-		status: z.enum(["registered", "waitlisted", "cancelled"]),
+		status: z.enum(["registered", "waitlisted", "cancelled", "attended"]),
 		position: z.number().nullable(),
 	})
 	.openapi("SubscriptionResponseSchema", {
@@ -98,6 +124,83 @@ export const subscriptionArrayResponseSchema = z
 				eventId: "123e4567-e89b-12d3-a456-426614174000",
 				status: "waitlisted",
 				position: 5,
+			},
+		],
+	});
+
+export const subscriptionCheckInResponseSchema = z
+	.object({
+		status: z
+			.enum(["success", "already_checked_in", "invalid_subscription", "invalid_event"])
+			.openapi({
+				description: "Result of the check-in attempt",
+			}),
+		message: z.string().openapi({
+			description: "Human-readable feedback for the staff member",
+		}),
+		attendeeName: z.string().optional().openapi({
+			description: "Name of the attendee when available",
+		}),
+		subscription: subscriptionResponseSchema.optional().openapi({
+			description: "Subscription data returned on successful check-in",
+		}),
+	})
+	.openapi("SubscriptionCheckInResponseSchema", {
+		example: {
+			status: "success",
+			message: "Check-in completed",
+			attendeeName: "Doe, John",
+			subscription: {
+				id: "123e4567-e89b-12d3-a456-426614174000",
+				userId: "123e4567-e89b-12d3-a456-426614174000",
+				eventId: "123e4567-e89b-12d3-a456-426614174000",
+				status: "attended",
+				position: null,
+			},
+		},
+	});
+
+export const subscribedEventResponseSchema = z
+	.object({
+		subscriptionId: z.uuid(),
+		id: z.uuid(),
+		name: z.string(),
+		startDate: z.iso.datetime(),
+		imageUrl: z.string(),
+		location: z
+			.object({
+				name: z.string(),
+			})
+			.openapi("SubscribedEventLocationSchema", {
+				example: {
+					name: "Main Hall",
+				},
+			}),
+	})
+	.openapi("SubscribedEventResponseSchema", {
+		example: {
+			subscriptionId: "111e8400-e29b-41d4-a716-446655440000",
+			id: "550e8400-e29b-41d4-a716-446655440000",
+			name: "Event 1",
+			startDate: "2025-09-21T19:45:00Z",
+			location: {
+				name: "Main Hall",
+			},
+		},
+	});
+
+export const subscribedEventResponseArraySchema = z
+	.array(subscribedEventResponseSchema)
+	.openapi("SubscribedEventResponseArraySchema", {
+		example: [
+			{
+				subscriptionId: "111e8400-e29b-41d4-a716-446655440000",
+				id: "550e8400-e29b-41d4-a716-446655440000",
+				name: "Event 1",
+				startDate: "2025-09-21T19:45:00Z",
+				location: {
+					name: "Main Hall",
+				},
 			},
 		],
 	});
@@ -139,3 +242,8 @@ export type SubscriptionResponseSchema = z.infer<typeof subscriptionResponseSche
 export type SubscriptionArrayResponseSchema = z.infer<typeof subscriptionArrayResponseSchema>;
 export type EventStatsResponseSchema = z.infer<typeof eventStatsResponseSchema>;
 export type SubscriptionIdResponseSchema = z.infer<typeof subscriptionIdResponseSchema>;
+export type SubscriptionCheckInRequestSchema = z.infer<typeof subscriptionCheckInRequestSchema>;
+export type SubscriptionCheckInResponseSchema = z.infer<typeof subscriptionCheckInResponseSchema>;
+export type SubscriptionCreatedTestPayload = z.infer<typeof subscriptionCreatedSchema>;
+export type SubscribedEventResponseSchema = z.infer<typeof subscribedEventResponseSchema>;
+export type SubscribedEventResponseArraySchema = z.infer<typeof subscribedEventResponseArraySchema>;

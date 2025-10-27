@@ -17,9 +17,13 @@ import {
 	EventIdParamSchema,
 	eventIdParamSchema,
 	eventStatsResponseSchema,
+	SubscriptionCheckInRequestSchema,
 	SubscriptionIdParamSchema,
 	SubscriptionQuerySchema,
+	subscribedEventResponseArraySchema,
 	subscriptionArrayResponseSchema,
+	subscriptionCheckInRequestSchema,
+	subscriptionCheckInResponseSchema,
 	subscriptionIdParamSchema,
 	subscriptionIdResponseSchema,
 	subscriptionQuerySchema,
@@ -44,6 +48,36 @@ import { SubscriptionsService } from "./subscriptions.service";
 @UseGuards(AuthGuard)
 export class SubscriptionsController {
 	constructor(private readonly subscriptionsService: SubscriptionsService) {}
+
+	// POST /subscriptions/getQr
+	@Post("getQr")
+	@ZodBody(createSubscriptionSchema) // We can reuse this schema since it has the same structure
+	@ZodOk(subscriptionResponseSchema) // We can reuse this schema since it has subscription details
+	async getQrCode(
+		@Body(new ZodValidationPipe(createSubscriptionSchema)) body: CreateSubscriptionSchema,
+		@Req() req?: { user: { id: string } },
+	) {
+		const userId = req?.user?.id || "";
+		return await this.subscriptionsService.getQrCode(body.eventId, userId);
+	}
+
+	// POST /subscriptions/check-in
+	@Post("check-in")
+	@ZodBody(subscriptionCheckInRequestSchema)
+	@ZodOk(subscriptionCheckInResponseSchema)
+	async checkIn(
+		@Body(new ZodValidationPipe(subscriptionCheckInRequestSchema))
+		body: SubscriptionCheckInRequestSchema,
+	) {
+		return await this.subscriptionsService.checkIn(body.eventId, body.subscriptionId);
+	}
+
+	@Get("events")
+	@ZodOk(subscribedEventResponseArraySchema)
+	getUserSubscribedEvents(@Req() req: UserRequest) {
+		const userId = req.user.id;
+		return this.subscriptionsService.getUserSubscribedEvents(userId);
+	}
 
 	// GET /subscriptions
 	@Get()

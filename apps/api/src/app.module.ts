@@ -5,11 +5,17 @@ import { CategoryModule } from "./modules/category/category.module";
 import { CommentsModule } from "./modules/comments/comments.module";
 import { ConfigModule } from "./modules/config";
 import { DatabaseModule } from "./modules/database/database.module";
+import { EmailModule } from "./modules/email/email.module";
 import { EventModule } from "./modules/event/event.module";
+import { EventAnalyticsModule } from "./modules/event-analytics/event-analytics.module";
+import { EventReminderModule } from "./modules/event-reminder/event-reminder.module";
 import { GroupModule } from "./modules/group/group.module";
 import { HealthModule } from "./modules/health/health.module";
 import { LocationModule } from "./modules/location/location.module";
+import { NotificationModule } from "./modules/notification/notification.module";
+import { NotificationsModule } from "./modules/notifications/notifications.module";
 import { RatingsModule } from "./modules/ratings/ratings.module";
+import { S3Module } from "./modules/s3/s3.module";
 import { SubscriptionsModule } from "./modules/subscriptions/subscriptions.module";
 import { UserModule } from "./modules/user/user.module";
 
@@ -26,6 +32,12 @@ import { UserModule } from "./modules/user/user.module";
 		LocationModule,
 		SubscriptionsModule,
 		AuthModule,
+		EventReminderModule,
+		NotificationsModule,
+		EmailModule,
+		EventAnalyticsModule,
+		S3Module,
+		NotificationModule,
 		RatingsModule,
 		CommentsModule,
 	],

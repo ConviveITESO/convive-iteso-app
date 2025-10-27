@@ -2,6 +2,7 @@ import { ForbiddenException, NotFoundException } from "@nestjs/common";
 import { Test, TestingModule } from "@nestjs/testing";
 import { SubscriptionResponseSchema } from "@repo/schemas";
 import { DATABASE_CONNECTION } from "../database/connection";
+import { NotificationsQueueService } from "../notifications/notifications.service";
 import { SubscriptionsService } from "./subscriptions.service";
 
 describe("SubscriptionsService", () => {
@@ -48,6 +49,25 @@ describe("SubscriptionsService", () => {
 		updatedAt: new Date("2024-01-01"),
 	};
 
+	const mockEventCreator = {
+		id: "user-456",
+		name: "Event Creator",
+		email: "creator@example.com",
+	};
+
+	const mockSubscriberUser = {
+		id: "user-123",
+		name: "Subscriber User",
+		email: "subscriber@example.com",
+	};
+
+	const mockNotificationsQueue = {
+		enqueueSubscriptionCreated: jest.fn(),
+		getJob: jest.fn(),
+		getJobState: jest.fn(),
+		getQueueCounts: jest.fn(),
+	} as unknown as jest.Mocked<NotificationsQueueService>;
+
 	beforeEach(async () => {
 		// Setup transaction mock implementation
 		mockDb.transaction.mockImplementation((callback) => {
@@ -75,10 +95,56 @@ describe("SubscriptionsService", () => {
 					provide: DATABASE_CONNECTION,
 					useValue: mockDb,
 				},
+				{
+					provide: NotificationsQueueService,
+					useValue: mockNotificationsQueue,
+				},
 			],
 		}).compile();
 
 		service = module.get<SubscriptionsService>(SubscriptionsService);
+		mockNotificationsQueue.enqueueSubscriptionCreated.mockResolvedValue("job-123");
+	});
+
+	describe("getUserSubscribedEvents", () => {
+		beforeEach(() => {
+			jest.clearAllMocks();
+		});
+
+		it("should return formatted events for the authenticated user", async () => {
+			const userId = "user-123";
+			const rawRow = {
+				subscriptionId: "sub-1",
+				id: "event-1",
+				name: "Event 1",
+				startDate: new Date("2025-09-21T19:45:00Z"),
+				locationName: "Main Hall",
+			};
+			(mockDb.where as jest.Mock).mockResolvedValueOnce([rawRow]);
+
+			const result = await service.getUserSubscribedEvents(userId);
+
+			expect(mockDb.select).toHaveBeenCalled();
+			expect(mockDb.innerJoin).toHaveBeenCalled();
+			expect(mockDb.where).toHaveBeenCalled();
+			expect(result).toEqual([
+				{
+					subscriptionId: rawRow.subscriptionId,
+					id: rawRow.id,
+					name: rawRow.name,
+					startDate: rawRow.startDate.toISOString(),
+					location: { name: rawRow.locationName },
+				},
+			]);
+		});
+
+		it("should return empty array when no subscribed events found", async () => {
+			(mockDb.where as jest.Mock).mockResolvedValueOnce([]);
+
+			const result = await service.getUserSubscribedEvents("user-123");
+
+			expect(result).toEqual([]);
+		});
 	});
 
 	describe("getUserSubscriptions", () => {
@@ -319,10 +385,15 @@ describe("SubscriptionsService", () => {
 			} as unknown as jest.Mocked<typeof mockDb>;
 
 			(mockDb.transaction as jest.Mock).mockImplementation((callback) => callback(mockTransaction));
+			mockNotificationsQueue.enqueueSubscriptionCreated.mockResolvedValue("job-123");
 		});
 
 		it("should return existing subscription if user already registered", async () => {
-			(mockTransaction.limit as jest.Mock).mockResolvedValue([mockSubscription]);
+			(mockTransaction.limit as jest.Mock)
+				.mockResolvedValueOnce([mockSubscription]) // existing subscription
+				.mockResolvedValueOnce([mockEvent]) // event
+				.mockResolvedValueOnce([mockEventCreator]) // event creator
+				.mockResolvedValueOnce([mockSubscriberUser]); // subscriber details
 
 			const result = await service.createSubscription("user-123", { eventId: "event-123" });
 
@@ -333,12 +404,15 @@ describe("SubscriptionsService", () => {
 				status: mockSubscription.status,
 				position: mockSubscription.position,
 			});
+			expect(mockNotificationsQueue.enqueueSubscriptionCreated).not.toHaveBeenCalled();
 		});
 
 		it("should create new subscription when user not already registered", async () => {
 			(mockTransaction.limit as jest.Mock)
 				.mockResolvedValueOnce([]) // No existing subscription
-				.mockResolvedValueOnce([mockEvent]); // Event exists
+				.mockResolvedValueOnce([mockEvent]) // Event exists
+				.mockResolvedValueOnce([mockEventCreator]) // event creator
+				.mockResolvedValueOnce([mockSubscriberUser]); // subscriber
 
 			(mockTransaction.$count as jest.Mock).mockResolvedValue(5); // Registration count
 			(mockTransaction.returning as jest.Mock).mockResolvedValue([mockSubscription]);
@@ -352,6 +426,15 @@ describe("SubscriptionsService", () => {
 				status: mockSubscription.status,
 				position: mockSubscription.position,
 			});
+			expect(mockNotificationsQueue.enqueueSubscriptionCreated).toHaveBeenCalledTimes(1);
+			expect(mockNotificationsQueue.enqueueSubscriptionCreated).toHaveBeenCalledWith(
+				expect.objectContaining({
+					creatorEmail: mockEventCreator.email,
+					creatorName: mockEventCreator.name,
+					eventName: mockEvent.name,
+					subscriberName: mockSubscriberUser.name,
+				}),
+			);
 		});
 
 		it("should create waitlisted subscription when event is full", async () => {
@@ -360,6 +443,8 @@ describe("SubscriptionsService", () => {
 			(mockTransaction.limit as jest.Mock)
 				.mockResolvedValueOnce([]) // No existing subscription
 				.mockResolvedValueOnce([mockEvent]) // Event exists
+				.mockResolvedValueOnce([mockEventCreator]) // event creator
+				.mockResolvedValueOnce([mockSubscriberUser]) // subscriber
 				.mockResolvedValueOnce([{ max: 2 }]); // Max position in waitlist
 
 			(mockTransaction.$count as jest.Mock).mockResolvedValue(10); // Registration count equals quota
@@ -369,6 +454,7 @@ describe("SubscriptionsService", () => {
 
 			expect(result.status).toBe("waitlisted");
 			expect(result.position).toBe(3);
+			expect(mockNotificationsQueue.enqueueSubscriptionCreated).toHaveBeenCalledTimes(1);
 		});
 
 		it("should throw NotFoundException when event does not exist", async () => {
@@ -379,6 +465,7 @@ describe("SubscriptionsService", () => {
 			await expect(
 				service.createSubscription("user-123", { eventId: "event-123" }),
 			).rejects.toThrow(NotFoundException);
+			expect(mockNotificationsQueue.enqueueSubscriptionCreated).not.toHaveBeenCalled();
 		});
 
 		it("should throw ForbiddenException when registration not yet open", async () => {
@@ -386,11 +473,14 @@ describe("SubscriptionsService", () => {
 
 			(mockTransaction.limit as jest.Mock)
 				.mockResolvedValueOnce([]) // No existing subscription
-				.mockResolvedValueOnce([futureEvent]); // Event exists but registration not open
+				.mockResolvedValueOnce([futureEvent]) // Event exists but registration not open
+				.mockResolvedValueOnce([mockEventCreator])
+				.mockResolvedValueOnce([mockSubscriberUser]);
 
 			await expect(
 				service.createSubscription("user-123", { eventId: "event-123" }),
 			).rejects.toThrow(ForbiddenException);
+			expect(mockNotificationsQueue.enqueueSubscriptionCreated).not.toHaveBeenCalled();
 		});
 
 		it("should throw ForbiddenException when registration has closed", async () => {
@@ -398,17 +488,22 @@ describe("SubscriptionsService", () => {
 
 			(mockTransaction.limit as jest.Mock)
 				.mockResolvedValueOnce([]) // No existing subscription
-				.mockResolvedValueOnce([pastEvent]); // Event exists but registration closed
+				.mockResolvedValueOnce([pastEvent]) // Event exists but registration closed
+				.mockResolvedValueOnce([mockEventCreator])
+				.mockResolvedValueOnce([mockSubscriberUser]);
 
 			await expect(
 				service.createSubscription("user-123", { eventId: "event-123" }),
 			).rejects.toThrow(ForbiddenException);
+			expect(mockNotificationsQueue.enqueueSubscriptionCreated).not.toHaveBeenCalled();
 		});
 
 		it("should throw Error when insert fails", async () => {
 			(mockTransaction.limit as jest.Mock)
 				.mockResolvedValueOnce([]) // No existing subscription
-				.mockResolvedValueOnce([mockEvent]); // Event exists
+				.mockResolvedValueOnce([mockEvent]) // Event exists
+				.mockResolvedValueOnce([mockEventCreator])
+				.mockResolvedValueOnce([mockSubscriberUser]);
 
 			(mockTransaction.$count as jest.Mock).mockResolvedValue(5);
 			(mockTransaction.returning as jest.Mock).mockResolvedValue([]); // Insert fails
@@ -416,6 +511,7 @@ describe("SubscriptionsService", () => {
 			await expect(
 				service.createSubscription("user-123", { eventId: "event-123" }),
 			).rejects.toThrow("Failed to create subscription");
+			expect(mockNotificationsQueue.enqueueSubscriptionCreated).not.toHaveBeenCalled();
 		});
 	});
 
