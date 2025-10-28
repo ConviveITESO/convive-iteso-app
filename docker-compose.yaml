@@ -41,3 +41,23 @@ services:
     restart: unless-stopped
     ports:
       - "6379:6379"
+
+  localstack-initializer:
+    image: amazon/aws-cli
+    depends_on:
+      - localstack
+    entrypoint: |
+      sh -c " 
+        mkdir -p /root/.aws && 
+        echo '[default]' > /root/.aws/credentials && 
+        echo 'aws_access_key_id = test' >> /root/.aws/credentials && 
+        echo 'aws_secret_access_key = test' >> /root/.aws/credentials &&
+        echo '[default]' > /root/.aws/config &&
+        echo 'region = us-east-1' >> /root/.aws/config &&
+        until aws --endpoint-url=http://localstack:4566 s3 ls; do
+          echo 'Waiting for localstack...'
+          sleep 5
+        done
+        echo 'Creating S3 bucket...'
+        aws --endpoint-url=http://localstack:4566 s3 mb s3://convive-iteso-dev
+      "
