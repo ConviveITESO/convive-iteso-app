@@ -5,7 +5,7 @@ import { jwtVerify } from "jose";
 import request from "supertest";
 import { App } from "supertest/types";
 import { AppModule } from "../src/app.module";
-import { AuthGuard } from "../src/modules/auth/guards/user.status.guard";
+import { UserStatusGuard } from "../src/modules/auth/guards/user.status.guard";
 import { DATABASE_CONNECTION } from "../src/modules/database/connection";
 import { DatabaseHealthService } from "../src/modules/database/database-health.service";
 import { NotificationsQueueService } from "../src/modules/notifications/notifications.service";
@@ -155,7 +155,7 @@ describe("SubscriptionsModule (e2e)", () => {
 			.useValue(mockDb)
 			.overrideProvider(NotificationsQueueService)
 			.useValue(mockNotificationsQueue)
-			.overrideGuard(AuthGuard)
+			.overrideGuard(UserStatusGuard)
 			.useValue(mockAuthGuard)
 			.compile();
 
