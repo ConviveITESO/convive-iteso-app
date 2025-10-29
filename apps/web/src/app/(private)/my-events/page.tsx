@@ -40,7 +40,11 @@ export default function MyEventsPage() {
 			}
 		},
 		onSuccess: async () => {
-			await queryClient.invalidateQueries({ queryKey: ["subscriptions", "events"] });
+			await Promise.all([
+				queryClient.invalidateQueries({ queryKey: ["subscriptions", "events"] }),
+				queryClient.invalidateQueries({ queryKey: ["subscription-check"] }),
+				queryClient.invalidateQueries({ queryKey: ["subscription-details"] }),
+			]);
 			setDialogOpen(false);
 			setSelectedEvent(null);
 		},
