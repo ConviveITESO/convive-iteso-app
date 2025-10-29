@@ -14,12 +14,12 @@ import {
 	ZodValidationPipe,
 } from "@/pipes/zod-validation/zod-validation.pipe";
 import { UserRequest } from "@/types/user.request";
-import { AuthGuard } from "../auth/guards/auth.guard";
+import { UserStatusGuard } from "../auth/guards/user.status.guard";
 import { NotificationService } from "./notification.service";
 
 @ApiTags("Notification")
 @Controller("notifications")
-@UseGuards(AuthGuard)
+@UseGuards(UserStatusGuard)
 export class NotificationController {
 	constructor(private readonly service: NotificationService) {}
 

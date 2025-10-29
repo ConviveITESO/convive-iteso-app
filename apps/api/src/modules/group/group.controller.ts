@@ -1,12 +1,12 @@
 import { Body, Controller, Get, Logger, Param, Post, Req, UseGuards } from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
 import { UserRequest } from "@/types/user.request";
-import { AuthGuard } from "../auth/guards/auth.guard";
+import { UserStatusGuard } from "../auth/guards/user.status.guard";
 import { GroupService } from "./group.service";
 
 @ApiTags("Groups")
 @Controller("groups")
-@UseGuards(AuthGuard)
+@UseGuards(UserStatusGuard)
 export class GroupController {
 	constructor(private readonly groupService: GroupService) {}
 

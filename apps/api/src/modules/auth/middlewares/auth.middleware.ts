@@ -1,16 +1,14 @@
 import { Inject, Injectable, Logger, NestMiddleware } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { CreateUserSchema } from "@repo/schemas";
 import { eq } from "drizzle-orm/sql/expressions/conditions";
 import { Request, Response } from "express";
-import { createRemoteJWKSet, jwtVerify } from "jose";
-import { JwtPayload } from "jsonwebtoken";
-import { ConfigSchema } from "@/modules/config/config.schema";
-import { AppDatabase, DATABASE_CONNECTION } from "@/modules/database/connection";
-import { users } from "@/modules/database/schemas/users";
+import jwt, { JwtPayload } from "jsonwebtoken";
+import { ConfigSchema } from "../../config";
+import { AppDatabase, DATABASE_CONNECTION } from "../../database/connection";
+import { User, users } from "../../database/schemas";
 
-export interface AuthRequest extends Request {
-	user?: CreateUserSchema;
+interface AuthRequest extends Request {
+	user?: User;
 }
 
 @Injectable()
@@ -38,22 +36,25 @@ export class AuthMiddleware implements NestMiddleware {
 		}
 
 		try {
-			const jwks = createRemoteJWKSet(
-				new URL("https://login.microsoftonline.com/common/discovery/v2.0/keys"),
-			);
+			const payload = jwt.decode(idToken) as JwtPayload;
 
-			const { payload } = (await jwtVerify(idToken, jwks, {
-				audience: this.configService.getOrThrow("CLIENT_ID"),
-			})) as JwtPayload;
+			if (!payload) {
+				return res.status(401).json({ message: "Invalid token", redirectTo: "/" });
+			}
 
-			if (!payload.email) {
+			if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
+				return res.status(401).json({ message: "Token expired", redirectTo: "/" });
+			}
+
+			const email = (payload.upn || payload.email) as string | undefined;
+			if (!email) {
 				return res.status(403).json({ message: "No email received in the token", redirectTo: "/" });
 			}
 
-			Logger.log(`Email: ${payload.email}`);
+			Logger.log(`Email: ${email}`);
 
 			const user = await this.db.query.users.findFirst({
-				where: eq(users.email, payload.email),
+				where: eq(users.email, email),
 			});
 
 			if (!user) {

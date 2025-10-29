@@ -38,12 +38,12 @@ import {
 	ZodValidationPipe,
 } from "@/pipes/zod-validation/zod-validation.pipe";
 import { UserRequest } from "@/types/user.request";
-import { AuthGuard } from "../auth/guards/auth.guard";
+import { UserStatusGuard } from "../auth/guards/user.status.guard";
 import { EventService } from "./event.service";
 
 @ApiTags("Event")
 @Controller("events")
-@UseGuards(AuthGuard)
+@UseGuards(UserStatusGuard)
 export class EventController {
 	constructor(private readonly eventsService: EventService) {}
 

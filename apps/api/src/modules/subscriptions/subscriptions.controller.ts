@@ -40,12 +40,12 @@ import {
 	ZodValidationPipe,
 } from "@/pipes/zod-validation/zod-validation.pipe";
 import { UserRequest } from "@/types/user.request";
-import { AuthGuard } from "../auth/guards/auth.guard";
+import { UserStatusGuard } from "../auth/guards/user.status.guard";
 import { SubscriptionsService } from "./subscriptions.service";
 
 @ApiTags("Subscriptions")
 @Controller("subscriptions")
-@UseGuards(AuthGuard)
+@UseGuards(UserStatusGuard)
 export class SubscriptionsController {
 	constructor(private readonly subscriptionsService: SubscriptionsService) {}
 

@@ -2,12 +2,12 @@ import { Controller, Get, UseGuards } from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
 import { LocationResponseSchema, locationResponseSchema } from "@repo/schemas";
 import { ZodOk } from "@/pipes/zod-validation/zod-validation.pipe";
-import { AuthGuard } from "../auth/guards/auth.guard";
+import { UserStatusGuard } from "../auth/guards/user.status.guard";
 import { LocationService } from "./location.service";
 
 @ApiTags("Location")
 @Controller("locations")
-@UseGuards(AuthGuard)
+@UseGuards(UserStatusGuard)
 export class LocationController {
 	constructor(private readonly locationService: LocationService) {}
 

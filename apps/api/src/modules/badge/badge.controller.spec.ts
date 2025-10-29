@@ -1,5 +1,5 @@
 import { Test, TestingModule } from "@nestjs/testing";
-import { AuthGuard } from "../auth/guards/auth.guard";
+import { UserStatusGuard } from "../auth/guards/user.status.guard";
 import { BadgeController } from "./badge.controller";
 import { BadgeService } from "./badge.service";
 
@@ -21,7 +21,7 @@ describe("BadgeController", () => {
 				},
 			],
 		})
-			.overrideGuard(AuthGuard)
+			.overrideGuard(UserStatusGuard)
 			.useValue({ canActivate: jest.fn(() => true) })
 			.compile();
 		controller = module.get<BadgeController>(BadgeController);

@@ -13,9 +13,9 @@ interface AuthRequest extends Request {
 }
 
 @Injectable()
-export class AuthGuard implements CanActivate {
+export class UserStatusGuard implements CanActivate {
 	async canActivate(context: ExecutionContext): Promise<boolean> {
-		Logger.log("AuthGuard canActivate");
+		Logger.log("UserStatusGuard canActivate");
 		const req = context.switchToHttp().getRequest<AuthRequest>();
 
 		if (!req.user) {

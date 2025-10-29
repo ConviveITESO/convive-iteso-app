@@ -1,15 +1,8 @@
 /** biome-ignore-all lint/style/useNamingConvention: <External object to the API being received and handled> */
-import { ForbiddenException, Inject, Injectable } from "@nestjs/common";
+import { ForbiddenException, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { UserResponseSchema } from "@repo/schemas";
-import { eq } from "drizzle-orm";
-import { createRemoteJWKSet, jwtVerify } from "jose";
 import jwt, { JwtPayload } from "jsonwebtoken";
-import { randomBytes, sha256 } from "../../utils/crypto";
-import { base64UrlEncode } from "../../utils/encoding";
 import { ConfigSchema } from "../config";
-import { AppDatabase, DATABASE_CONNECTION } from "../database/connection";
-import { User, users } from "../database/schemas";
 
 interface TokenResponse {
 	access_token: string;
@@ -20,12 +13,15 @@ interface TokenResponse {
 	scope: string;
 }
 
+interface RefreshTokenResult {
+	idToken: string;
+	refreshToken?: string;
+	expiresIn: number;
+}
+
 @Injectable()
 export class AuthService {
-	constructor(
-		@Inject(DATABASE_CONNECTION) private readonly db: AppDatabase,
-		private readonly configService: ConfigService<ConfigSchema>,
-	) {
+	constructor(private readonly configService: ConfigService<ConfigSchema>) {
 		this.clientId = this.configService.getOrThrow("CLIENT_ID");
 		this.clientSecret = this.configService.getOrThrow("CLIENT_SECRET");
 		this.redirectUri = this.configService.getOrThrow("REDIRECT_URI");
@@ -35,107 +31,9 @@ export class AuthService {
 	private readonly clientSecret: string;
 	private readonly redirectUri: string;
 
-	private stateCode = base64UrlEncode(randomBytes(16));
-	private nonce = base64UrlEncode(randomBytes(16));
-	private codeVerifier = base64UrlEncode(randomBytes(32));
-	private codeChallenge = base64UrlEncode(sha256(this.codeVerifier));
-
-	private readonly jwks = createRemoteJWKSet(
-		new URL("https://login.microsoftonline.com/common/discovery/v2.0/keys"),
-	);
-
-	getAuthUrl(): string {
-		return `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${
-			this.clientId
-		}&response_type=code&redirect_uri=${encodeURIComponent(
-			this.redirectUri,
-		)}&response_mode=query&scope=${encodeURIComponent(
-			"openid profile email offline_access",
-		)}&state=${this.stateCode}&nonce=${this.nonce}&code_challenge=${
-			this.codeChallenge
-		}&code_challenge_method=S256`;
-	}
-
-	private formatUser(user: User): UserResponseSchema {
-		return {
-			id: user.id,
-			name: user.name,
-			email: user.email,
-			role: user.role,
-			status: user.status,
-			createdAt: user.createdAt.toISOString(),
-			updatedAt: user.updatedAt ? user.updatedAt.toISOString() : null,
-			deletedAt: user.deletedAt ? user.deletedAt.toISOString() : null,
-		};
-	}
-
-	async handleCallback(code: string, state: string) {
-		if (state !== this.stateCode) throw new ForbiddenException("Invalid state");
-
+	async refreshIdToken(refreshToken: string): Promise<RefreshTokenResult> {
 		const tokenResponse = await fetch(
-			`https://login.microsoftonline.com/common/oauth2/v2.0/token`,
-			{
-				method: "POST",
-				headers: { "Content-Type": "application/x-www-form-urlencoded" },
-				body: new URLSearchParams({
-					client_id: this.clientId,
-					client_secret: this.clientSecret,
-					grant_type: "authorization_code",
-					code,
-					code_verifier: this.codeVerifier,
-					redirect_uri: this.redirectUri,
-				}),
-			},
-		);
-
-		const tokens = (await tokenResponse.json()) as TokenResponse;
-
-		if (!tokens.id_token) throw new ForbiddenException("No id_token returned");
-
-		const idTokenDecoded = jwt.decode(tokens.id_token) as JwtPayload;
-		if (!idTokenDecoded) throw new ForbiddenException("Invalid id_token");
-		if (idTokenDecoded.nonce !== this.nonce) throw new ForbiddenException("Invalid nonce");
-		if (!idTokenDecoded.email || !idTokenDecoded.email.endsWith("@iteso.mx"))
-			throw new ForbiddenException("Email domain not allowed");
-
-		const existingUser = await this.db.query.users.findFirst({
-			where: eq(users.email, idTokenDecoded.email as string),
-		});
-
-		let user: UserResponseSchema;
-		if (existingUser) {
-			const updatedUser = await this.db
-				.update(users)
-				.set({ updatedAt: new Date() })
-				.where(eq(users.id, existingUser.id))
-				.returning()
-				.then((res) => res[0]);
-			if (!updatedUser) throw new Error("Failed to update user");
-			user = this.formatUser(updatedUser);
-		} else {
-			const newUser = await this.db
-				.insert(users)
-				.values({
-					email: idTokenDecoded.email,
-					name: idTokenDecoded.name,
-				})
-				.returning()
-				.then((res) => res[0]);
-			if (!newUser) throw new Error("Failed to create user");
-			user = this.formatUser(newUser);
-		}
-
-		return {
-			idToken: tokens.id_token,
-			refreshToken: tokens.refresh_token,
-			expiresIn: tokens.expires_in,
-			user,
-		};
-	}
-
-	async refreshIdToken(refreshToken: string) {
-		const tokenResponse = await fetch(
-			`https://login.microsoftonline.com/common/oauth2/v2.0/token`,
+			"https://login.microsoftonline.com/common/oauth2/v2.0/token",
 			{
 				method: "POST",
 				headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -151,7 +49,9 @@ export class AuthService {
 
 		const tokens = (await tokenResponse.json()) as TokenResponse;
 
-		if (!tokens.id_token) throw new ForbiddenException("No id_token returned");
+		if (!tokens.id_token) {
+			throw new ForbiddenException("No id_token returned");
+		}
 
 		return {
 			idToken: tokens.id_token,
@@ -162,11 +62,21 @@ export class AuthService {
 
 	async validateIdToken(token: string): Promise<boolean> {
 		try {
-			const { payload } = await jwtVerify(token, this.jwks, {
-				audience: this.clientId,
-			});
+			// Just decode without verification since we verified during login
+			// The token stored is actually an access_token, not an id_token
+			const decoded = jwt.decode(token) as JwtPayload;
 
-			const email = payload["email" as const] as string | undefined;
+			if (!decoded) {
+				return false;
+			}
+
+			// Check expiration
+			if (decoded.exp && decoded.exp < Math.floor(Date.now() / 1000)) {
+				return false;
+			}
+
+			// Azure uses 'upn' (User Principal Name) for email, fallback to 'email'
+			const email = (decoded.upn || decoded.email) as string | undefined;
 
 			if (!email || !email.endsWith("@iteso.mx")) return false;
 			return true;

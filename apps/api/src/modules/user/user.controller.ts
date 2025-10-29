@@ -34,12 +34,12 @@ import {
 	ZodValidationPipe,
 } from "@/pipes/zod-validation/zod-validation.pipe";
 import { UserRequest } from "@/types/user.request";
-import { AuthGuard } from "../auth/guards/auth.guard";
+import { UserStatusGuard } from "../auth/guards/user.status.guard";
 import { UserService } from "./user.service";
 
 @ApiTags("User")
 @Controller("user")
-@UseGuards(AuthGuard)
+@UseGuards(UserStatusGuard)
 export class UserController {
 	constructor(private readonly userService: UserService) {}
 
@@ -53,7 +53,7 @@ export class UserController {
 
 	// GET /me
 	@Get("me")
-	@UseGuards(AuthGuard)
+	@UseGuards(UserStatusGuard)
 	@ZodOk(userResponseSchema)
 	async getCurrentUser(@Req() req: UserRequest) {
 		return await this.userService.getUserById({ id: req.user.id });

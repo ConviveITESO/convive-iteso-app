@@ -1,13 +1,21 @@
-import { Controller, Get, Post, Query, Req, Res } from "@nestjs/common";
+import { Controller, Get, Post, Req, Res, UseGuards } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { AuthGuard } from "@nestjs/passport";
 import { ApiTags } from "@nestjs/swagger";
 import { Request, Response } from "express";
+import { AzureAuthResult } from "@/types/auth.interface";
+import { User } from "../database/schemas";
 import { AuthService } from "./auth.service";
+
+interface AuthRequest extends Request {
+	user?: User;
+}
 
 @ApiTags("Auth")
 @Controller("auth")
 export class AuthController {
 	private redirectUri: string;
+
 	constructor(
 		private readonly authService: AuthService,
 		private readonly configService: ConfigService,
@@ -16,26 +24,30 @@ export class AuthController {
 		this.redirectUri = `${frontendUrl}/feed`;
 	}
 
-	//GET /login
+	// Initiates Azure OAuth2 flow
+	// AuthGuard('azure') automatically redirects to Azure login
 	@Get("login")
-	async login(@Res() res: Response) {
-		const url = this.authService.getAuthUrl();
-		res.redirect(url);
+	@UseGuards(AuthGuard("azure"))
+	async login() {
+		// Guard automatically redirects to Azure login
 	}
 
-	//GET /oauth-callback?code=...&state=...
+	// Azure OAuth2 callback endpoint
+	// AuthGuard('azure') handles the OAuth callback and populates req.user
 	@Get("oauth-callback")
-	async oatuhCallback(
-		@Query("code") code: string,
-		@Query("state") state: string,
-		@Res() res: Response,
-	): Promise<void> {
-		const result = await this.authService.handleCallback(code, state);
+	@UseGuards(AuthGuard("azure"))
+	async oauthCallback(@Req() req: AuthRequest, @Res() res: Response): Promise<void> {
+		const result = req.user as unknown as AzureAuthResult;
+
+		// Set cookies with tokens
 		res
 			.cookie("idToken", result.idToken, { httpOnly: true, secure: true })
-			.cookie("refreshToken", result.refreshToken, { httpOnly: true, secure: true });
+			.cookie("refreshToken", result.refreshToken, {
+				httpOnly: true,
+				secure: true,
+			});
 
-		// Redirect to Frontend
+		// Redirect to frontend
 		res.redirect(this.redirectUri);
 	}
 
@@ -52,7 +64,10 @@ export class AuthController {
 
 		res
 			.cookie("idToken", tokens.idToken, { httpOnly: true, secure: true })
-			.cookie("refreshToken", tokens.refreshToken, { httpOnly: true, secure: true })
+			.cookie("refreshToken", tokens.refreshToken, {
+				httpOnly: true,
+				secure: true,
+			})
 			.json({ message: "Token refreshed" });
 	}
 
@@ -71,6 +86,5 @@ export class AuthController {
 		}
 
 		res.json({ message: "ID token is valid" });
-		return { valid };
 	}
 }

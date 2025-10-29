@@ -14,11 +14,11 @@ import {
 	ZodParam,
 	ZodValidationPipe,
 } from "@/pipes/zod-validation/zod-validation.pipe";
-import { AuthGuard } from "../auth/guards/auth.guard";
+import { UserStatusGuard } from "../auth/guards/user.status.guard";
 import { EventAnalyticsService } from "./event-analytics.service";
 
 @ApiTags("Event Analytics")
-@UseGuards(AuthGuard)
+@UseGuards(UserStatusGuard)
 @Controller("event-analytics")
 export class EventAnalyticsController {
 	constructor(private readonly service: EventAnalyticsService) {}

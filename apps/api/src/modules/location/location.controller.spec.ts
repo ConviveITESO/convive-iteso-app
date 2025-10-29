@@ -1,5 +1,5 @@
 import { Test, TestingModule } from "@nestjs/testing";
-import { AuthGuard } from "../auth/guards/auth.guard";
+import { UserStatusGuard } from "../auth/guards/user.status.guard";
 import { LocationController } from "./location.controller";
 import { LocationService } from "./location.service";
 
@@ -21,7 +21,7 @@ describe("LocationController", () => {
 				},
 			],
 		})
-			.overrideGuard(AuthGuard)
+			.overrideGuard(UserStatusGuard)
 			.useValue({ canActivate: jest.fn(() => true) })
 			.compile();
 		controller = module.get<LocationController>(LocationController);
