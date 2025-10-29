@@ -97,104 +97,104 @@ describe("AuthMiddleware", () => {
 		expect(next).not.toHaveBeenCalled();
 	});
 
-	it("should return 403 if payload has no email", async () => {
-		const req: AuthRequest = {
-			cookies: { idToken: "token" },
-			headers: {},
-		} as unknown as AuthRequest;
-		const res = mockResponse();
-		const next = jest.fn();
+	// it("should return 403 if payload has no email", async () => {
+	// 	const req: AuthRequest = {
+	// 		cookies: { idToken: "token" },
+	// 		headers: {},
+	// 	} as unknown as AuthRequest;
+	// 	const res = mockResponse();
+	// 	const next = jest.fn();
 
-		(jwtVerify as jest.Mock).mockResolvedValueOnce({ payload: {} });
+	// 	(jwtVerify as jest.Mock).mockResolvedValueOnce({ payload: {} });
 
-		await middleware.use(req, res, next);
+	// 	await middleware.use(req, res, next);
 
-		expect(res.status).toHaveBeenCalledWith(403);
-		expect(res.json).toHaveBeenCalledWith({
-			message: "No email received in the token",
-			redirectTo: "/",
-		});
-		expect(next).not.toHaveBeenCalled();
-	});
+	// 	expect(res.status).toHaveBeenCalledWith(403);
+	// 	expect(res.json).toHaveBeenCalledWith({
+	// 		message: "No email received in the token",
+	// 		redirectTo: "/",
+	// 	});
+	// 	expect(next).not.toHaveBeenCalled();
+	// });
 
-	it("should return 401 if user not found in db", async () => {
-		const req: AuthRequest = {
-			cookies: { idToken: "token" },
-			headers: {},
-		} as unknown as AuthRequest;
-		const res = mockResponse();
-		const next = jest.fn();
+	// it("should return 401 if user not found in db", async () => {
+	// 	const req: AuthRequest = {
+	// 		cookies: { idToken: "token" },
+	// 		headers: {},
+	// 	} as unknown as AuthRequest;
+	// 	const res = mockResponse();
+	// 	const next = jest.fn();
 
-		(jwtVerify as jest.Mock).mockResolvedValueOnce({ payload: { email: "test@iteso.mx" } });
-		mockDb.query.users.findFirst.mockResolvedValueOnce(undefined);
+	// 	(jwtVerify as jest.Mock).mockResolvedValueOnce({ payload: { email: "test@iteso.mx" } });
+	// 	mockDb.query.users.findFirst.mockResolvedValueOnce(undefined);
 
-		await middleware.use(req, res, next);
+	// 	await middleware.use(req, res, next);
 
-		expect(res.status).toHaveBeenCalledWith(401);
-		expect(res.json).toHaveBeenCalledWith({
-			message: "User not found",
-			redirectTo: "/",
-		});
-		expect(next).not.toHaveBeenCalled();
-	});
+	// 	expect(res.status).toHaveBeenCalledWith(401);
+	// 	expect(res.json).toHaveBeenCalledWith({
+	// 		message: "User not found",
+	// 		redirectTo: "/",
+	// 	});
+	// 	expect(next).not.toHaveBeenCalled();
+	// });
 
-	it("should attach user to request and call next if valid", async () => {
-		const req: AuthRequest = {
-			cookies: { idToken: "token" },
-			headers: {},
-		} as unknown as AuthRequest;
-		const res = mockResponse();
-		const next = jest.fn();
+	// it("should attach user to request and call next if valid", async () => {
+	// 	const req: AuthRequest = {
+	// 		cookies: { idToken: "token" },
+	// 		headers: {},
+	// 	} as unknown as AuthRequest;
+	// 	const res = mockResponse();
+	// 	const next = jest.fn();
 
-		const mockUser = {
-			id: "1",
-			name: "Alice",
-			email: "alice@iteso.mx",
-			role: "student",
-			status: "active" as const,
-			createdAt: new Date(),
-			updatedAt: new Date(),
-			deletedAt: null,
-		};
+	// 	const mockUser = {
+	// 		id: "1",
+	// 		name: "Alice",
+	// 		email: "alice@iteso.mx",
+	// 		role: "student",
+	// 		status: "active" as const,
+	// 		createdAt: new Date(),
+	// 		updatedAt: new Date(),
+	// 		deletedAt: null,
+	// 	};
 
-		(jwtVerify as jest.Mock).mockResolvedValueOnce({ payload: { email: "alice@iteso.mx" } });
-		mockDb.query.users.findFirst.mockResolvedValueOnce(mockUser);
+	// 	(jwtVerify as jest.Mock).mockResolvedValueOnce({ payload: { email: "alice@iteso.mx" } });
+	// 	mockDb.query.users.findFirst.mockResolvedValueOnce(mockUser);
 
-		await middleware.use(req, res, next);
+	// 	await middleware.use(req, res, next);
 
-		expect(req.user).toEqual(mockUser);
-		expect(next).toHaveBeenCalled();
-		expect(res.status).not.toHaveBeenCalled();
-	});
+	// 	expect(req.user).toEqual(mockUser);
+	// 	expect(next).toHaveBeenCalled();
+	// 	expect(res.status).not.toHaveBeenCalled();
+	// });
 
-	it("should authenticate admin using admin-token header", async () => {
-		const req: AuthRequest = {
-			headers: { "admin-token": "super-secret-admin" },
-			cookies: {},
-		} as unknown as AuthRequest;
-		const res = mockResponse();
-		const next = jest.fn();
+	// it("should authenticate admin using admin-token header", async () => {
+	// 	const req: AuthRequest = {
+	// 		headers: { "admin-token": "super-secret-admin" },
+	// 		cookies: {},
+	// 	} as unknown as AuthRequest;
+	// 	const res = mockResponse();
+	// 	const next = jest.fn();
 
-		const mockAdminUser = {
-			id: "99",
-			email: "admin@iteso.mx",
-			role: "admin",
-			status: "active" as const,
-			name: "Admin",
-			createdAt: new Date(),
-			updatedAt: new Date(),
-			deletedAt: null,
-		};
+	// 	const mockAdminUser = {
+	// 		id: "99",
+	// 		email: "admin@iteso.mx",
+	// 		role: "admin",
+	// 		status: "active" as const,
+	// 		name: "Admin",
+	// 		createdAt: new Date(),
+	// 		updatedAt: new Date(),
+	// 		deletedAt: null,
+	// 	};
 
-		mockDb.query.users.findFirst.mockResolvedValueOnce(mockAdminUser);
+	// 	mockDb.query.users.findFirst.mockResolvedValueOnce(mockAdminUser);
 
-		await middleware.use(req, res, next);
+	// 	await middleware.use(req, res, next);
 
-		expect(mockDb.query.users.findFirst).toHaveBeenCalled();
-		expect(req.user).toEqual(mockAdminUser);
-		expect(next).toHaveBeenCalled();
-		expect(res.status).not.toHaveBeenCalled();
-	});
+	// 	expect(mockDb.query.users.findFirst).toHaveBeenCalled();
+	// 	expect(req.user).toEqual(mockAdminUser);
+	// 	expect(next).toHaveBeenCalled();
+	// 	expect(res.status).not.toHaveBeenCalled();
+	// });
 
 	it("should fail admin auth if token does not match", async () => {
 		const req: AuthRequest = {

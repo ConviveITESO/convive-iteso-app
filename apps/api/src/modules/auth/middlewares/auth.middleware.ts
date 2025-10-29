@@ -7,7 +7,7 @@ import { ConfigSchema } from "../../config";
 import { AppDatabase, DATABASE_CONNECTION } from "../../database/connection";
 import { User, users } from "../../database/schemas";
 
-interface AuthRequest extends Request {
+export interface AuthRequest extends Request {
 	user?: User;
 }
 

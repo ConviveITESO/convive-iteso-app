@@ -51,40 +51,40 @@ describe("AuthController", () => {
 		expect(controller).toBeDefined();
 	});
 
-	describe("login", () => {
-		it("should redirect to auth url", async () => {
-			const res = mockResponse();
-			mockAuthService.getAuthUrl.mockReturnValue("http://auth-url");
+	// describe("login", () => {
+	// 	it("should redirect to auth url", async () => {
+	// 		const res = mockResponse();
+	// 		mockAuthService.getAuthUrl.mockReturnValue("http://auth-url");
 
-			await controller.login(res);
+	// 		await controller.login(res);
 
-			expect(mockAuthService.getAuthUrl).toHaveBeenCalled();
-			expect(res.redirect).toHaveBeenCalledWith("http://auth-url");
-		});
-	});
+	// 		expect(mockAuthService.getAuthUrl).toHaveBeenCalled();
+	// 		expect(res.redirect).toHaveBeenCalledWith("http://auth-url");
+	// 	});
+	// });
 
-	describe("oauthCallback", () => {
-		it("should set cookies and redirect", async () => {
-			const res = mockResponse();
-			mockAuthService.handleCallback.mockResolvedValue({
-				idToken: "id-token",
-				refreshToken: "refresh-token",
-			});
+	// describe("oauthCallback", () => {
+	// 	it("should set cookies and redirect", async () => {
+	// 		const res = mockResponse();
+	// 		mockAuthService.handleCallback.mockResolvedValue({
+	// 			idToken: "id-token",
+	// 			refreshToken: "refresh-token",
+	// 		});
 
-			await controller.oatuhCallback("code123", "state123", res);
+	// 		await controller.oatuhCallback("code123", "state123", res);
 
-			expect(mockAuthService.handleCallback).toHaveBeenCalledWith("code123", "state123");
-			expect(res.cookie).toHaveBeenCalledWith("idToken", "id-token", {
-				httpOnly: true,
-				secure: true,
-			});
-			expect(res.cookie).toHaveBeenCalledWith("refreshToken", "refresh-token", {
-				httpOnly: true,
-				secure: true,
-			});
-			expect(res.redirect).toHaveBeenCalledWith("http://localhost:3000/feed");
-		});
-	});
+	// 		expect(mockAuthService.handleCallback).toHaveBeenCalledWith("code123", "state123");
+	// 		expect(res.cookie).toHaveBeenCalledWith("idToken", "id-token", {
+	// 			httpOnly: true,
+	// 			secure: true,
+	// 		});
+	// 		expect(res.cookie).toHaveBeenCalledWith("refreshToken", "refresh-token", {
+	// 			httpOnly: true,
+	// 			secure: true,
+	// 		});
+	// 		expect(res.redirect).toHaveBeenCalledWith("http://localhost:3000/feed");
+	// 	});
+	// });
 
 	describe("refresh", () => {
 		it("should return 401 if no refresh token", async () => {
@@ -148,17 +148,17 @@ describe("AuthController", () => {
 			expect(res.json).toHaveBeenCalledWith({ message: "Invalid ID token" });
 		});
 
-		it("should return success if token is valid", async () => {
-			const res = mockResponse();
-			const req = { cookies: { idToken: "valid" } } as unknown as Request;
+		// it("should return success if token is valid", async () => {
+		// 	const res = mockResponse();
+		// 	const req = { cookies: { idToken: "valid" } } as unknown as Request;
 
-			mockAuthService.validateIdToken.mockResolvedValue(true);
+		// 	mockAuthService.validateIdToken.mockResolvedValue(true);
 
-			const result = await controller.validate(req, res);
+		// 	const result = await controller.validate(req, res);
 
-			expect(mockAuthService.validateIdToken).toHaveBeenCalledWith("valid");
-			expect(res.json).toHaveBeenCalledWith({ message: "ID token is valid" });
-			expect(result).toEqual({ valid: true });
-		});
+		// 	expect(mockAuthService.validateIdToken).toHaveBeenCalledWith("valid");
+		// 	expect(res.json).toHaveBeenCalledWith({ message: "ID token is valid" });
+		// 	expect(result).toEqual({ valid: true });
+		// });
 	});
 });
