@@ -60,3 +60,62 @@ variable "github_token" {
   type        = string
   sensitive   = true
 }
+
+variable "s3_bucket_name" {
+  description = "Name of the S3 bucket used for file storage"
+  type        = string
+  default     = ""
+}
+
+variable "s3_enable_versioning" {
+  description = "Enable versioning on the S3 bucket"
+  type        = bool
+  default     = true
+}
+
+variable "client_id" {
+  description = "OAuth client ID for production"
+  type        = string
+}
+
+variable "client_secret" {
+  description = "OAuth client secret for production"
+  type        = string
+  sensitive   = true
+}
+
+variable "redirect_uri" {
+  description = "OAuth redirect URI"
+  type        = string
+}
+
+variable "aws_region" {
+  description = "AWS region for S3 access"
+  type        = string
+  default     = "us-east-1"
+}
+
+variable "aws_access_key_id" {
+  description = "AWS access key ID"
+  type        = string
+  sensitive   = true
+}
+
+variable "aws_secret_access_key" {
+  description = "AWS secret access key"
+  type        = string
+  sensitive   = true
+}
+
+variable "aws_session_token" {
+  description = "AWS session token (optional)"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "aws_endpoint_url" {
+  description = "Custom AWS endpoint URL (useful for LocalStack)"
+  type        = string
+  default     = ""
+}
