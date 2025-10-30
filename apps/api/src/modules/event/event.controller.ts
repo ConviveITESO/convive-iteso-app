@@ -2,7 +2,6 @@ import {
 	BadRequestException,
 	Body,
 	Controller,
-	Delete,
 	Get,
 	Param,
 	Post,
@@ -24,7 +23,9 @@ import {
 	EventResponseSchema,
 	eventIdParamSchema,
 	eventResponseSchema,
+	GetEventsCreatedByUserQuerySchema,
 	GetEventsQuerySchema,
+	getEventsCreatedByUserQuerySchema,
 	getEventsQuerySchema,
 	UpdateEventSchema,
 	updateEventSchema,
@@ -59,9 +60,14 @@ export class EventController {
 
 	// GET /events/created
 	@Get("created")
+	@ZodQuery(getEventsCreatedByUserQuerySchema, "queryEventsCreatedByUser")
 	@ZodOk(creatorEventResponseArraySchema)
-	async getEventsCreatedByUser(@Req() req: UserRequest): Promise<CreatorEventResponseArraySchema> {
-		return this.eventsService.getEventsCreatedByUser(req.user.id);
+	async getEventsCreatedByUser(
+		@Query(new ZodValidationPipe(getEventsCreatedByUserQuerySchema))
+		query: GetEventsCreatedByUserQuerySchema,
+		@Req() req: UserRequest,
+	): Promise<CreatorEventResponseArraySchema> {
+		return this.eventsService.getEventsCreatedByUser(req.user.id, query);
 	}
 
 	// GET /events/:id
@@ -118,16 +124,16 @@ export class EventController {
 		return this.eventsService.getEventByIdOrThrow(id);
 	}
 
-	// DELETE /events/:id
-	@Delete(":id")
+	// PUT /events/:id/change-status
+	@Put(":id/change-status")
 	@ZodParam(eventIdParamSchema, "id")
 	@ZodOk(eventResponseSchema)
-	async deleteEvent(
+	async changeEventStatus(
 		@Param(new ZodValidationPipe(eventIdParamSchema)) idParam: EventIdParamSchema,
 		@Req() req: UserRequest,
 	): Promise<{ message: string }> {
 		const user = req.user;
-		await this.eventsService.deleteEvent(idParam.id, user);
-		return { message: "Event deleted successfully" };
+		await this.eventsService.changeEventStatus(idParam.id, user);
+		return { message: "Event status changed successfully" };
 	}
 }

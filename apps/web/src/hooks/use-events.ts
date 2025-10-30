@@ -10,11 +10,21 @@ import { getApiUrl } from "@/lib/api";
  * @param enabled - Whether the query should run (default: true)
  * @returns Query result with events data, loading state, and error state
  */
-export function useEvents(enabled = true) {
+export function useEvents(
+	name: string,
+	categoryId: string | null,
+	pastEvents: boolean,
+	enabled = true,
+) {
+	const url = new URL(`${getApiUrl()}/events`);
+	url.searchParams.append("name", name);
+	if (categoryId) url.searchParams.append("categoryId", categoryId);
+	url.searchParams.append("pastEvents", String(pastEvents));
+
 	return useQuery({
-		queryKey: ["events"],
+		queryKey: ["events", name, categoryId, pastEvents],
 		queryFn: async () => {
-			const res = await fetch(`${getApiUrl()}/events`, {
+			const res = await fetch(url.toString(), {
 				method: "GET",
 				credentials: "include",
 			});

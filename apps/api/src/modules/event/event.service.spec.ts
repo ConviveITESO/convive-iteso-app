@@ -354,6 +354,7 @@ describe("EventService", () => {
 				location: mockLocation,
 				categories: mockCategories,
 				badges: mockBadges,
+				status: "active",
 			});
 		});
 	});

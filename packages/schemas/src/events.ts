@@ -11,9 +11,14 @@ import { z } from "./zod-openapi.js";
 
 export const getEventsQuerySchema = z.object({
 	name: z.string().optional(),
-	locationId: z.string().optional(),
-	categoryId: z.string().optional(),
-	badgeId: z.string().optional(),
+	locationId: z.uuid().optional(),
+	categoryId: z.uuid().optional(),
+	badgeId: z.uuid().optional(),
+	pastEvents: z.string().optional(),
+});
+
+export const getEventsCreatedByUserQuerySchema = z.object({
+	status: z.enum(["active", "deleted"]),
 });
 
 // ==========================================================
@@ -102,6 +107,7 @@ export const eventResponseSchemaExample = {
 	startDate: "2025-09-21T19:45:00Z",
 	endDate: "2025-09-21T19:45:00Z",
 	quota: 50,
+	status: "active",
 	createdBy: userResponseSchemaExample,
 	location: locationResponseSchemaExample,
 	group: groupResponseSchemaExample,
@@ -117,6 +123,7 @@ export const eventResponseSchema = z
 		startDate: z.iso.datetime(),
 		endDate: z.iso.datetime(),
 		quota: z.number(),
+		status: z.enum(["active", "deleted"]),
 		createdBy: userResponseSchema,
 		location: locationResponseSchema,
 		group: groupResponseSchema,
@@ -220,6 +227,7 @@ export const creatorEventResponseArraySchema = z
 // ==========================================================
 
 export type GetEventsQuerySchema = z.infer<typeof getEventsQuerySchema>;
+export type GetEventsCreatedByUserQuerySchema = z.infer<typeof getEventsCreatedByUserQuerySchema>;
 export type EventIdParamSchema = z.infer<typeof eventIdParamSchema>;
 export type CreateEventSchema = z.infer<typeof createEventSchema>;
 export type UpdateEventSchema = z.infer<typeof updateEventSchema>;
