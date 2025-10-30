@@ -1,5 +1,6 @@
 export * from "./badges";
 export * from "./categories";
+export * from "./comments";
 export * from "./events";
 export * from "./events-badges";
 export * from "./events-categories";
@@ -7,6 +8,7 @@ export * from "./group-messages";
 export * from "./groups";
 export * from "./locations";
 export * from "./notifications";
+export * from "./ratings";
 export * from "./relations";
 export * from "./reminders";
 export * from "./subscriptions";
