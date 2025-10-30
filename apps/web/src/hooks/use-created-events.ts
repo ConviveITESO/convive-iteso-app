@@ -4,11 +4,11 @@ import type { CreatorEventResponseArraySchema } from "@repo/schemas";
 import { useQuery } from "@tanstack/react-query";
 import { getApiUrl } from "@/lib/api";
 
-export function useCreatedEvents(enabled = true) {
+export function useCreatedEvents(status: string, enabled = true) {
 	return useQuery({
-		queryKey: ["events", "created"],
+		queryKey: ["events", "created", status],
 		queryFn: async () => {
-			const res = await fetch(`${getApiUrl()}/events/created`, {
+			const res = await fetch(`${getApiUrl()}/events/created?status=${status}`, {
 				method: "GET",
 				credentials: "include",
 			});

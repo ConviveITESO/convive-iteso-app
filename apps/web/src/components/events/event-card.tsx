@@ -1,9 +1,20 @@
 import type {
 	CreatorEventResponseArraySchema,
 	EventResponseArraySchema,
+	EventResponseSchema,
 	SubscribedEventResponseArraySchema,
 } from "@repo/schemas";
-import { Edit, Eye, MapPin, MessageSquare, QrCode, Share2, Trash2, UserMinus } from "lucide-react";
+import {
+	Edit,
+	Eye,
+	MapPin,
+	MessageSquare,
+	QrCode,
+	RotateCcw,
+	Share2,
+	Trash2,
+	UserMinus,
+} from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -79,56 +90,78 @@ export function EventCard({
 				{mode === "admin" && (
 					<div className="flex shrink-0 flex-col gap-1">
 						<div className="flex gap-1">
-							<Button
-								variant="ghost"
-								size="icon"
-								className="size-8"
-								onClick={(e) => handleActionClick(e, onEdit)}
-							>
-								<Edit className="size-4" />
-							</Button>
-							<Button
-								variant="ghost"
-								size="icon"
-								className="size-8"
-								onClick={(e) => handleActionClick(e, onDelete)}
-							>
-								<Trash2 className="size-4" />
-							</Button>
-							<Button
-								variant="ghost"
-								size="icon"
-								className="size-8"
-								onClick={(e) => handleActionClick(e, onShare)}
-							>
-								<Share2 className="size-4" />
-							</Button>
+							{(event as EventResponseSchema).status === "active" && (
+								<Button
+									variant="ghost"
+									size="icon"
+									className="size-8"
+									onClick={(e) => handleActionClick(e, onEdit)}
+								>
+									<Edit className="size-4" />
+								</Button>
+							)}
+							{(event as EventResponseSchema).status === "active" && (
+								<Button
+									variant="ghost"
+									size="icon"
+									className="size-8"
+									onClick={(e) => handleActionClick(e, onDelete)}
+								>
+									<Trash2 className="size-4" />
+								</Button>
+							)}
+							{(event as EventResponseSchema).status === "active" && (
+								<Button
+									variant="ghost"
+									size="icon"
+									className="size-8"
+									onClick={(e) => handleActionClick(e, onShare)}
+								>
+									<Share2 className="size-4" />
+								</Button>
+							)}
+							{(event as EventResponseSchema).status === "deleted" && (
+								<Button
+									variant="ghost"
+									size="icon"
+									className="size-8"
+									onClick={(e) => handleActionClick(e, onDelete)}
+								>
+									<RotateCcw className="size-4" />
+								</Button>
+							)}
 						</div>
 						<div className="flex gap-1 justify-center">
-							<Button
-								variant="ghost"
-								size="icon"
-								className="size-8"
-								onClick={(e) => handleActionClick(e, onChat)}
-							>
-								<MessageSquare className="size-4" />
-							</Button>
-							<Button
-								variant="ghost"
-								size="icon"
-								className="size-8"
-								onClick={(e) => handleActionClick(e, onScanQr)}
-							>
-								<QrCode className="size-4" />
-							</Button>
-							<Button
-								variant="ghost"
-								size="icon"
-								className="size-8"
-								onClick={(e) => handleActionClick(e, onViewStats)}
-							>
-								<Eye className="size-4" />
-							</Button>
+							{(event as EventResponseSchema).status === "active" && (
+								<Button
+									variant="ghost"
+									size="icon"
+									className="size-8"
+									onClick={(e) => handleActionClick(e, onChat)}
+								>
+									<MessageSquare className="size-4" />
+								</Button>
+							)}
+							{(event as EventResponseSchema).status === "active" && (
+								<Button
+									variant="ghost"
+									size="icon"
+									className="size-8"
+									onClick={(e) => handleActionClick(e, onScanQr)}
+								>
+									<QrCode className="size-4" />
+								</Button>
+							)}
+							{(event as EventResponseSchema).status === "active" && (
+								<Button
+									variant="ghost"
+									size="icon"
+									className="size-8"
+									onClick={(e) => handleActionClick(e, onViewStats)}
+								>
+									<Eye className="size-4" />
+								</Button>
+							)}
 						</div>
 					</div>
 				)}
