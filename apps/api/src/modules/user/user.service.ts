@@ -104,6 +104,7 @@ export class UserService {
 			email: user.email,
 			role: user.role,
 			status: user.status,
+			profile: user.profile,
 			createdAt: user.createdAt.toISOString(),
 			updatedAt: user.updatedAt ? user.updatedAt.toISOString() : null,
 			deletedAt: user.deletedAt ? user.deletedAt.toISOString() : null,
