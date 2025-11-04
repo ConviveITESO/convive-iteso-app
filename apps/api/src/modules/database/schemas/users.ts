@@ -8,6 +8,7 @@ export const users = pgTable("users", {
 	email: varchar("email", { length: 256 }).notNull().unique(),
 	name: varchar("name", { length: 256 }).notNull(),
 	role: varchar("role", { length: 50 }).notNull().default("student"),
+	profile: varchar("image_url", { length: 1024 }),
 	status: userStatus().default("active").notNull(),
 	...timestampColumns,
 });

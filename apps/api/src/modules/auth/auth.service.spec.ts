@@ -6,6 +6,7 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { UserResponseSchema } from "@repo/schemas";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { DATABASE_CONNECTION } from "../database/connection";
+import { S3Service } from "../s3/s3.service";
 import { AuthService } from "./auth.service";
 
 declare const global: { fetch: typeof fetch };
@@ -44,12 +45,18 @@ describe("AuthService", () => {
 		}),
 	};
 
+	const mockS3Service = {
+		uploadFile: jest.fn(),
+		getFileUrl: jest.fn().mockResolvedValue("https://s3.mock/profile.png"),
+	};
+
 	beforeEach(async () => {
 		const module: TestingModule = await Test.createTestingModule({
 			providers: [
 				AuthService,
 				{ provide: DATABASE_CONNECTION, useValue: mockDb },
 				{ provide: ConfigService, useValue: mockConfigService },
+				{ provide: S3Service, useValue: mockS3Service },
 			],
 		}).compile();
 
@@ -87,7 +94,6 @@ describe("AuthService", () => {
 		let nonce: string;
 
 		beforeEach(() => {
-			// cast through unknown to access private fields safely
 			const privateFields = service as unknown as { stateCode: string; nonce: string };
 			stateCode = privateFields.stateCode;
 			nonce = privateFields.nonce;
@@ -100,6 +106,9 @@ describe("AuthService", () => {
 
 			global.fetch = jest.fn().mockResolvedValue({
 				json: jest.fn().mockResolvedValue(validTokens),
+				ok: true,
+				headers: { get: () => "image/jpeg" },
+				arrayBuffer: jest.fn().mockResolvedValue(Buffer.from("mock")),
 			}) as unknown as typeof fetch;
 
 			jest.spyOn(jwt, "decode").mockReturnValue(validJwt);
@@ -160,6 +169,7 @@ describe("AuthService", () => {
 				createdAt: new Date("2020-01-01T00:00:00Z"),
 				updatedAt: new Date("2020-01-02T00:00:00Z"),
 				deletedAt: null,
+				profile: null,
 			};
 
 			mockDb.query.users.findFirst.mockResolvedValueOnce(existingEntity);
@@ -173,6 +183,7 @@ describe("AuthService", () => {
 				email: existingEntity.email,
 				role: existingEntity.role,
 				status: existingEntity.status,
+				profile: existingEntity.profile,
 				createdAt: existingEntity.createdAt.toISOString(),
 				updatedAt: existingEntity.updatedAt.toISOString(),
 				deletedAt: null,
@@ -198,6 +209,7 @@ describe("AuthService", () => {
 				createdAt: new Date("2021-02-01T00:00:00Z"),
 				updatedAt: new Date("2021-02-02T00:00:00Z"),
 				deletedAt: null,
+				profile: "https://s3.mock/profile.png",
 			};
 
 			mockDb.returning.mockResolvedValueOnce([newEntity]);
@@ -210,6 +222,7 @@ describe("AuthService", () => {
 				email: newEntity.email,
 				role: newEntity.role,
 				status: newEntity.status,
+				profile: newEntity.profile,
 				createdAt: newEntity.createdAt.toISOString(),
 				updatedAt: newEntity.updatedAt.toISOString(),
 				deletedAt: null,
@@ -221,6 +234,8 @@ describe("AuthService", () => {
 				expiresIn: validTokens.expires_in,
 				user: expectedUser,
 			});
+			expect(mockS3Service.uploadFile).toHaveBeenCalled();
+			expect(mockS3Service.getFileUrl).toHaveBeenCalled();
 		});
 	});
 
