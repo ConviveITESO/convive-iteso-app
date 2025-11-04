@@ -1,15 +1,22 @@
-import { ForbiddenException, Inject, Injectable, NotFoundException } from "@nestjs/common";
+import {
+	BadRequestException,
+	ForbiddenException,
+	Inject,
+	Injectable,
+	NotFoundException,
+} from "@nestjs/common";
 import {
 	BadgeResponseSchema,
 	CategoryResponseSchema,
 	CreateEventSchema,
 	CreatorEventResponseArraySchema,
 	EventResponseSchema,
+	GetEventsCreatedByUserQuerySchema,
 	GetEventsQuerySchema,
 	UpdateEventSchema,
 	UserResponseSchema,
 } from "@repo/schemas";
-import { and, eq, gte, isNull, sql } from "drizzle-orm";
+import { and, eq, gt, isNull, like, lt, sql } from "drizzle-orm";
 import { BadgeService } from "../badge/badge.service";
 import { CategoryService } from "../category/category.service";
 import { AppDatabase, DATABASE_CONNECTION } from "../database/connection";
@@ -46,9 +53,15 @@ export class EventService {
 	) {}
 
 	async getEvents(filters: GetEventsQuerySchema): Promise<EventResponseSchema[]> {
-		const where = [eq(events.status, "active"), gte(events.startDate, new Date())];
+		const where = [eq(events.status, "active")];
+		const now = new Date();
+		if (filters.pastEvents === "true") {
+			where.push(lt(events.endDate, now));
+		} else {
+			where.push(gt(events.endDate, now));
+		}
 		if (filters.name) {
-			where.push(eq(events.name, filters.name));
+			where.push(like(events.name, `%${filters.name}%`));
 		}
 		if (filters.locationId) {
 			where.push(eq(events.locationId, filters.locationId));
@@ -119,7 +132,10 @@ export class EventService {
 		);
 	}
 
-	async getEventsCreatedByUser(userId: string): Promise<CreatorEventResponseArraySchema> {
+	async getEventsCreatedByUser(
+		userId: string,
+		query: GetEventsCreatedByUserQuerySchema,
+	): Promise<CreatorEventResponseArraySchema> {
 		const rows = await this.db
 			.select({
 				id: events.id,
@@ -148,7 +164,7 @@ export class EventService {
 				subscriptions,
 				and(eq(subscriptions.eventId, events.id), isNull(subscriptions.deletedAt)),
 			)
-			.where(eq(events.createdBy, userId))
+			.where(and(eq(events.createdBy, userId), eq(events.status, query.status)))
 			.groupBy(
 				events.id,
 				events.name,
@@ -267,18 +283,25 @@ export class EventService {
 			const event = await this.getEventByIdOrThrow(id);
 			if (event.createdBy.id !== userId)
 				throw new ForbiddenException("You do not have permission to edit this event");
+			if (event.status === "deleted")
+				throw new BadRequestException("The event is cancelled, it cannot be updated");
 			await this.assertLocationCategoriesBadgesExist(data);
 			await this._updateEvent(data, id);
 			await this.updateCategoryBadgeRelations(data, id);
 		});
 	}
 
-	async deleteEvent(id: string, user: UserResponseSchema): Promise<void> {
+	async changeEventStatus(id: string, user: UserResponseSchema): Promise<void> {
 		const event = await this.getEventByIdOrThrow(id);
 		if (event.createdBy.id !== user.id && user.role !== "admin") {
 			throw new ForbiddenException("You do not have permission to delete this event");
 		}
-		await this.db.update(events).set({ status: "deleted" }).where(eq(events.id, id));
+		const startDate = new Date(event.startDate);
+		const now = new Date();
+		if (event.status === "active" && startDate <= now)
+			throw new BadRequestException("The event already started, it can't be cancelled");
+		const newStatus = event.status === "active" ? "deleted" : "active";
+		await this.db.update(events).set({ status: newStatus }).where(eq(events.id, id));
 	}
 
 	formatEvent(
@@ -299,6 +322,7 @@ export class EventService {
 			startDate: event.startDate.toISOString(),
 			endDate: event.endDate.toISOString(),
 			quota: event.quota,
+			status: event.status,
 			location,
 			createdBy,
 			group,

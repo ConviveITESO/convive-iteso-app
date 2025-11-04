@@ -15,10 +15,16 @@ export default function FeedPage() {
 	const router = useRouter();
 	const [searchQuery, setSearchQuery] = useState("");
 	const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+	const [pastEvents, setPastEvents] = useState<string | null>("false");
 
 	useHeaderTitle(DEFAULT_HEADER_TITLE);
 
-	const { data: events = [], isLoading: eventsLoading } = useEvents(isAuthenticated);
+	const { data: events = [], isLoading: eventsLoading } = useEvents(
+		searchQuery,
+		selectedCategory,
+		pastEvents === "true",
+		isAuthenticated,
+	);
 	const { data: categories = [], isLoading: categoriesLoading } = useCategories(isAuthenticated);
 
 	if (!isAuthenticated || eventsLoading || categoriesLoading) {
@@ -28,15 +34,6 @@ export default function FeedPage() {
 			</div>
 		);
 	}
-
-	const filteredEvents = events.filter((event) => {
-		const matchesSearch =
-			event.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-			event.description.toLowerCase().includes(searchQuery.toLowerCase());
-		const matchesCategory =
-			!selectedCategory || event.categories.some((cat) => cat.id === selectedCategory);
-		return matchesSearch && matchesCategory;
-	});
 
 	const handleEventClick = (eventId: string) => {
 		router.push(`/events/${eventId}`);
@@ -48,12 +45,25 @@ export default function FeedPage() {
 
 			<div className="mx-auto max-w-7xl px-4 py-8">
 				<CategoriesFilter
+					title="Event type"
+					categories={[
+						{ id: "false", name: "current & upcoming" },
+						{ id: "true", name: "past" },
+					]}
+					selectedCategory={pastEvents}
+					onCategoryChange={setPastEvents}
+					showAllOption={false}
+				/>
+
+				<CategoriesFilter
+					title="Categories"
 					categories={categories}
 					selectedCategory={selectedCategory}
 					onCategoryChange={setSelectedCategory}
+					showAllOption={true}
 				/>
 
-				<EventsGrid events={filteredEvents} onEventClick={handleEventClick} />
+				<EventsGrid events={events} onEventClick={handleEventClick} />
 			</div>
 		</div>
 	);
