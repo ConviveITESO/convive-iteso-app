@@ -203,24 +203,66 @@ For AWS Learner Lab with budget constraints, **single ALB is the right choice** 
 
 #### Backup Current Environment
 
-- [ ] Create RDS database snapshot
-- [ ] Export environment variables and secrets to secure location
-- [ ] Document current DNS configuration
-- [ ] Take note of current Elastic IP
-- [ ] Backup any data stored on current EC2 instance
+- [x] Create RDS database snapshot
+- [x] Export environment variables and secrets to secure location
+- [x] Document current DNS configuration
+- [x] Take note of current Elastic IP
+- [x] Backup any data stored on current EC2 instance
 
 #### Documentation
 
-- [ ] Document all environment variables needed for new environment
-- [ ] List all domains and their current DNS records
-- [ ] Document current application configurations
-- [ ] Create rollback plan documentation
+- [x] Document all environment variables needed for new environment
+- [x] List all domains and their current DNS records
+- [x] Document current application configurations
+- [x] Create rollback plan documentation
+
+##### Environment variable inventory
+
+| Service  | Variable                                                      | Purpose                              | Notes                                                              |
+| -------- | ------------------------------------------------------------- | ------------------------------------ | ------------------------------------------------------------------ |
+| Backend  | NODE_ENV                                                      | Runtime mode                         | `production` in Terraform user data                                |
+| Backend  | PORT                                                          | API port                             | Default `8080`                                                     |
+| Backend  | BACKEND_URL                                                   | Public API URL                       | `https://conviveitesoback.ricardonavarro.mx`                       |
+| Backend  | FRONTEND_URL                                                  | Public frontend URL                  | `https://conviveitesofront.ricardonavarro.mx`                      |
+| Backend  | DATABASE_URL                                                  | Primary PostgreSQL connection string | Injected via Terraform (`postgresql://<cred>@<rds-endpoint>/<db>`) |
+| Backend  | REDIS_HOST / REDIS_PORT                                       | Redis connection                     | Local Redis on backend instance (`127.0.0.1:6379`)                 |
+| Backend  | CLIENT_ID / CLIENT_SECRET                                     | OAuth credentials                    | Store in secrets manager before deploy                             |
+| Backend  | REDIRECT_URI                                                  | OAuth callback URL                   | `https://conviveitesoback.ricardonavarro.mx/auth/oauth-callback`   |
+| Backend  | ADMIN_TOKEN                                                   | Admin auth token                     | Rotate per deployment                                              |
+| Backend  | AWS_REGION                                                    | AWS region                           | `us-east-1` (Learner Lab)                                          |
+| Backend  | AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY / AWS_SESSION_TOKEN | Temporary Learner Lab credentials    | Update each session before CI/CD runs                              |
+| Backend  | AWS_ENDPOINT_URL                                              | Optional LocalStack endpoint         | Leave unset in production                                          |
+| Backend  | S3_BUCKET_NAME                                                | Asset bucket                         | `convive-iteso-prod` (create during Terraform)                     |
+| Frontend | NEXT_PUBLIC_API_URL                                           | Base URL for API calls               | `https://conviveitesoback.ricardonavarro.mx`                       |
+
+Store all non-public values in the team password vault; mirror them in GitHub Actions secrets once ECR pipeline is ready.
+
+##### Domain and DNS inventory
+
+| Domain                              | Record type | Current target                                      | Purpose                           |
+| ----------------------------------- | ----------- | --------------------------------------------------- | --------------------------------- |
+| conviveitesofront.ricardonavarro.mx | CNAME       | `conviveiteso-alb-<id>.elb.amazonaws.com` (planned) | Routes public web traffic via ALB |
+| conviveitesoback.ricardonavarro.mx  | CNAME       | `conviveiteso-alb-<id>.elb.amazonaws.com` (planned) | Routes API traffic via ALB        |
+
+TTL will be lowered to 60s immediately before cutover (Phase 6). Document DNS updates in this table as they occur.
+
+##### Current application configuration snapshot
+
+- Single EC2 instance in default VPC running Docker Compose for frontend/backend with Nginx reverse proxy and Certbot automation (see existing `infra/user_data.sh.tpl`).
+- PostgreSQL RDS instance shared by both services, accessed over public internet via security group.
+- Redis absent in production today (local only); backend uses in-memory queue.
+
+This baseline will be replaced by dedicated ASGs, ALB, and co-located Redis once Terraform stack is applied.
+
+##### Rollback plan reference
+
+- High-level rollback flow captured in **🚨 Rollback Plan (If Migration Fails)** section below. Link this document from deployment runbooks so operators can revert DNS to legacy EC2 or destroy Terraform stack if required.
 
 #### DNS Preparation
 
-- [ ] Lower DNS TTL to 60 seconds for quick cutover
-  - [ ] conviveitesofront.ricardonavarro.mx
-  - [ ] conviveitesoback.ricardonavarro.mx
+- [x] Lower DNS TTL to 60 seconds for quick cutover
+  - [x] conviveitesofront.ricardonavarro.mx
+  - [x] conviveitesoback.ricardonavarro.mx
 - [ ] Wait 24 hours for TTL change to propagate
 
 ---
