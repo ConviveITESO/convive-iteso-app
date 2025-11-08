@@ -271,15 +271,15 @@ This baseline will be replaced by dedicated ASGs, ALB, and co-located Redis once
 
 #### Core Infrastructure Files (NEW)
 
-- [ ] **infra/vpc.tf** - Custom VPC Configuration
+- [x] **infra/vpc.tf** - Custom VPC Configuration
 
-  - [ ] VPC with 10.0.0.0/16 CIDR
-  - [ ] 2 Public subnets (10.0.1.0/24, 10.0.2.0/24) in different AZs
-  - [ ] 2 Database subnets (10.0.11.0/24, 10.0.12.0/24) in different AZs
-  - [ ] Internet Gateway
-  - [ ] Public route table with IGW route
-  - [ ] Subnet associations
-  - [ ] Tags for all resources
+  - [x] VPC with 10.0.0.0/16 CIDR
+  - [x] 2 Public subnets (10.0.1.0/24, 10.0.2.0/24) in different AZs
+  - [x] 2 Database subnets (10.0.11.0/24, 10.0.12.0/24) in different AZs
+  - [x] Internet Gateway
+  - [x] Public route table with IGW route
+  - [x] Subnet associations
+  - [x] Tags for all resources
 
 - [ ] **infra/security-groups.tf** - Security Groups (replaces security.tf)
 
