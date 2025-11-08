@@ -159,7 +159,73 @@ sudo apt-get install jq
 5. Continue with Terraform/AWS CLI work
 ```
 
-## 🔧 Other Scripts
+## 🔧 Infrastructure Management Scripts
+
+### `cleanup-infrastructure.sh`
+
+Automatically destroys ALL AWS resources created by Terraform. Use this to clean up and preserve your AWS Learner Lab budget.
+
+**Purpose:** Safely destroy all infrastructure resources in the correct dependency order.
+
+#### Quick Start
+
+```bash
+# With confirmation prompt
+./scripts/cleanup-infrastructure.sh
+
+# Skip confirmation (auto-approve)
+./scripts/cleanup-infrastructure.sh --force
+```
+
+#### What It Destroys
+
+The script destroys 13 resources in total:
+- **ECR Resources (4):**
+  - 2 ECR repositories (convive-frontend, convive-backend)
+  - 2 ECR lifecycle policies
+- **VPC Resources (9):**
+  - 1 VPC (10.0.0.0/16)
+  - 4 Subnets (2 public, 2 database)
+  - 1 Internet Gateway
+  - 1 Route Table
+  - 2 Route Table Associations
+
+#### Destruction Order
+
+The script destroys resources in the correct dependency order:
+
+**Step 1/2: VPC Resources**
+- Route table associations → Route table → Subnets → Internet Gateway → VPC
+
+**Step 2/2: ECR Resources**
+- Lifecycle policies → ECR repositories
+
+#### Verification
+
+After cleanup, the script verifies:
+- Terraform state is clean (no resources tracked)
+- You can manually verify with:
+  ```bash
+  # Check VPCs
+  aws ec2 describe-vpcs --profile conviveiteso
+
+  # Check ECR repositories
+  aws ecr describe-repositories --profile conviveiteso
+
+  # Check Terraform state
+  cd infra && terraform show
+  ```
+
+#### Important Notes
+
+- ⚠️ **This is destructive!** All resources will be permanently deleted
+- The `terraform.tfstate` file is preserved locally
+- Resources can be recreated by running `terraform apply` again
+- Great for testing and preserving AWS Learner Lab budget
+
+---
+
+## 🔧 Deployment Scripts
 
 ### `deploy-asg-refresh.sh` (Coming Soon)
 Triggers ASG instance refresh for deployments.

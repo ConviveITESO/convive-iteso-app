@@ -403,13 +403,14 @@ resource "aws_lb_listener_rule" "backend" {
   - [ ] Data source for Ubuntu 22.04 LTS x86_64
   - [ ] Filters for most recent AMI
 
-- [ ] **infra/ecr.tf** - Elastic Container Registry (NEW for ECR Deployment)
+- [x] **infra/ecr.tf** - Elastic Container Registry (NEW for ECR Deployment)
 
-  - [ ] Frontend ECR repository (convive-frontend)
-  - [ ] Backend ECR repository (convive-backend)
-  - [ ] Lifecycle policies (keep last 10 images, remove untagged after 7 days)
-  - [ ] Image scanning on push (optional, for security)
-  - [ ] Tags for all repositories
+  - [x] Frontend ECR repository (convive-frontend)
+  - [x] Backend ECR repository (convive-backend)
+  - [x] Lifecycle policies (keep last 10 images, remove untagged after 7 days)
+  - [x] Image scanning on push (enabled)
+  - [x] Tags for all repositories
+  - [x] **Status**: Successfully deployed and tested (4 resources created)
 
 **ECR Repository Names:**
 
@@ -1009,6 +1010,26 @@ GitHub Actions Triggered
 
 **Wait 24-48 hours after successful migration before cleanup!**
 
+#### Infrastructure Cleanup Script
+
+- [x] **scripts/cleanup-infrastructure.sh** - Automated cleanup script (COMPLETED)
+  - [x] Destroys all Terraform-managed resources
+  - [x] Two-step destruction (VPC first, then ECR)
+  - [x] Confirmation prompt (can skip with --force flag)
+  - [x] Verifies cleanup completion
+  - [x] Full logging with colored output
+  - [x] Error handling and rollback prevention
+  - [x] **Status**: Script created, tested, and working correctly
+
+**Usage:**
+```bash
+# With confirmation prompt
+./scripts/cleanup-infrastructure.sh
+
+# Skip confirmation (auto-approve)
+./scripts/cleanup-infrastructure.sh --force
+```
+
 #### Verify New Infrastructure Stable
 
 - [ ] Confirm no critical issues for 24-48 hours
@@ -1089,28 +1110,65 @@ GitHub Actions Triggered
 
 ## 📝 Notes & Learnings
 
+### Implementation Progress
+
+**Phase 1: Pre-Migration Preparation** ✅
+- Completed environment variable inventory
+- Completed domain and DNS inventory
+- Documented current application configuration
+- Documented rollback plan
+
+**Phase 2: Terraform Infrastructure Code** 🚧 (In Progress)
+- ✅ **ECR Repositories**: Successfully created and tested (4 resources)
+  - Frontend repository: `215350372069.dkr.ecr.us-east-1.amazonaws.com/convive-frontend`
+  - Backend repository: `215350372069.dkr.ecr.us-east-1.amazonaws.com/convive-backend`
+  - Lifecycle policies configured for both repositories
+  - Image scanning enabled
+- ✅ **VPC Infrastructure**: Successfully created and tested (9 resources)
+  - VPC: `vpc-08931ef3c8e2bb471` (10.0.0.0/16)
+  - 2 Public subnets in us-east-1a and us-east-1b
+  - 2 Database subnets in us-east-1a and us-east-1b
+  - Internet Gateway, Route Table, and Associations
+- ✅ **Cleanup Script**: Created `scripts/cleanup-infrastructure.sh`
+  - Tested and verified working correctly
+  - Destroys all resources in proper dependency order
+  - Includes verification step
+
+**Phase 9: Infrastructure Cleanup** ✅ (Tools Ready)
+- Created automated cleanup script for testing and budget management
+
 ### Issues Encountered
 
-```
-Document any issues here during implementation:
+**Issue 1: Terraform Variable Requirements**
+- **Problem**: Running `terraform apply` with `-target` flags still required all variables to be defined
+- **Solution**: Created `infra/terraform.tfvars` with placeholder values for unused variables
+- **Status**: Resolved
 
-- Issue 1:
-  - Problem:
-  - Solution:
+**Issue 2: Cleanup Script Testing**
+- **Problem**: Needed a reliable way to destroy all resources for testing
+- **Solution**: Created targeted destruction script that handles dependencies correctly
+- **Status**: Resolved and working
 
-- Issue 2:
-  - Problem:
-  - Solution:
-```
+### Successful Validations
+
+✅ **ECR Creation & Destruction Workflow**
+- Successfully created 4 ECR resources
+- Successfully destroyed all resources
+- Successfully recreated resources (verified workflow repeatability)
+
+✅ **VPC Creation & Destruction Workflow**
+- Successfully created 9 VPC resources
+- Successfully destroyed all resources
+- Successfully recreated resources (verified workflow repeatability)
 
 ### Optimization Opportunities
 
-```
-Document potential future improvements:
-
--
--
-```
+**Future Improvements:**
+- Consider adding automated tests for Terraform configurations
+- Add cost estimation to cleanup script
+- Create a script to quickly spin up/down infrastructure for testing
+- Add monitoring for AWS Learner Lab budget usage
+- Automate AWS credential refresh for Learner Lab sessions
 
 ### Budget Tracking
 
@@ -1176,11 +1234,12 @@ Document potential future improvements:
 
 ---
 
-**Last Updated:** 2025-11-03
-**Version:** 1.2
-**Status:** Ready for Implementation
+**Last Updated:** 2025-11-07
+**Version:** 1.3
+**Status:** In Progress - Phase 2 (ECR & VPC Complete)
 **Updates:**
 
 - v1.0: Initial migration plan
 - v1.1: Updated for Single ALB with Host-Based Routing
 - v1.2: Added ECR-based CI/CD deployment with ASG instance refresh
+- v1.3: ECR and VPC infrastructure deployed and tested; cleanup script created
