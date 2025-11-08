@@ -45,6 +45,9 @@ echo ""
 echo "Resources to be destroyed:"
 echo "  ✗ 2 ECR repositories (convive-frontend, convive-backend)"
 echo "  ✗ 2 ECR lifecycle policies"
+echo "  ✗ 2 Auto Scaling Groups (Frontend, Backend)"
+echo "  ✗ 2 Launch Templates (Frontend, Backend)"
+echo "  ✗ 2 Auto Scaling Policies (CPU-based)"
 echo "  ✗ 1 Application Load Balancer"
 echo "  ✗ 2 Target Groups (Frontend, Backend)"
 echo "  ✗ 2 ALB Listeners (HTTP, HTTPS)"
@@ -56,7 +59,7 @@ echo "  ✗ 4 Subnets (2 public, 2 database)"
 echo "  ✗ 1 Internet Gateway"
 echo "  ✗ 1 Route Table + 2 Associations"
 echo ""
-echo -e "${YELLOW}Total: 25 resources${NC}"
+echo -e "${YELLOW}Total: 31 resources${NC}"
 echo ""
 
 # =============================================================================
@@ -97,11 +100,17 @@ echo ""
 # =============================================================================
 
 echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${YELLOW}Step 1/2: Destroying ALB, VPC, Security Groups, and VPC Endpoint Resources${NC}"
+echo -e "${YELLOW}Step 1/2: Destroying ASG, ALB, VPC, Security Groups, and VPC Endpoint Resources${NC}"
 echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 
 terraform destroy \
+  -target=aws_autoscaling_policy.backend_cpu \
+  -target=aws_autoscaling_policy.frontend_cpu \
+  -target=aws_autoscaling_group.backend \
+  -target=aws_autoscaling_group.frontend \
+  -target=aws_launch_template.backend \
+  -target=aws_launch_template.frontend \
   -target=aws_lb_listener_rule.backend \
   -target=aws_lb_listener_rule.frontend \
   -target=aws_lb_listener.https \

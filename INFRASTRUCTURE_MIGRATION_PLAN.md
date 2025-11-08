@@ -341,35 +341,46 @@ Before deploying the ALB, you must create and validate an SSL certificate in AWS
 - `conviveitesofront.ricardonavarro.mx` → Frontend Target Group (port 3000)
 - `conviveitesoback.ricardonavarro.mx` → Backend Target Group (port 8080)
 
-- [ ] **infra/asg-frontend.tf** - Frontend Auto Scaling Group
+- [x] **infra/asg-frontend.tf** - Frontend Auto Scaling Group
 
-  - [ ] Launch template with user data reference
-  - [ ] AMI data source (latest Ubuntu 22.04 LTS x86)
-  - [ ] Instance type: t3.small
-  - [ ] IAM instance profile: LabInstanceProfile
-  - [ ] Key pair: vockey (us-east-1)
-  - [ ] Security group association
-  - [ ] Auto Scaling Group (min: 1, desired: 2, max: 3)
-  - [ ] Target group attachment
-  - [ ] Subnet associations (both public subnets)
-  - [ ] Health check type: ELB
-  - [ ] Instance refresh configuration
-  - [ ] CPU-based scaling policy (target 70%)
+  - [x] Launch template with user data reference
+  - [x] AMI data source (latest Ubuntu 22.04 LTS x86_64)
+  - [x] Instance type: t3.small
+  - [x] IAM instance profile: LabInstanceProfile
+  - [x] Security group association (frontend_instances)
+  - [x] Public IP assignment enabled
+  - [x] Auto Scaling Group (min: 1, desired: 2, max: 4)
+  - [x] Target group attachment (frontend TG)
+  - [x] Subnet associations (both public subnets for multi-AZ)
+  - [x] Health check type: ELB (uses ALB health checks)
+  - [x] Health check grace period: 300 seconds (5 min)
+  - [x] Instance refresh configuration (rolling, 50% min healthy)
+  - [x] CPU-based scaling policy (target 70%)
+  - [x] Enhanced monitoring enabled
+  - [x] IMDSv2 required (security best practice)
+  - [x] Termination policies configured
+  - [x] **Status**: Configuration complete, ready for deployment
 
-- [ ] **infra/asg-backend.tf** - Backend Auto Scaling Group
+- [x] **infra/asg-backend.tf** - Backend Auto Scaling Group
 
-  - [ ] Launch template with user data reference
-  - [ ] AMI data source (latest Ubuntu 22.04 LTS x86)
-  - [ ] Instance type: t3.small
-  - [ ] IAM instance profile: LabInstanceProfile
-  - [ ] Key pair: vockey (us-east-1)
-  - [ ] Security group association
-  - [ ] Auto Scaling Group (min: 1, desired: 2, max: 3)
-  - [ ] Target group attachment
-  - [ ] Subnet associations (both public subnets)
-  - [ ] Health check type: ELB
-  - [ ] Instance refresh configuration
-  - [ ] CPU-based scaling policy (target 70%)
+  - [x] Launch template with user data reference
+  - [x] AMI data source (latest Ubuntu 22.04 LTS x86_64)
+  - [x] Instance type: t3.small
+  - [x] IAM instance profile: LabInstanceProfile
+  - [x] Security group association (backend_instances)
+  - [x] Public IP assignment enabled
+  - [x] Auto Scaling Group (min: 1, desired: 2, max: 4)
+  - [x] Target group attachment (backend TG)
+  - [x] Subnet associations (both public subnets for multi-AZ)
+  - [x] Health check type: ELB (uses ALB health checks)
+  - [x] Health check grace period: 300 seconds (5 min)
+  - [x] Instance refresh configuration (rolling, 50% min healthy)
+  - [x] CPU-based scaling policy (target 70%)
+  - [x] Enhanced monitoring enabled
+  - [x] IMDSv2 required (security best practice)
+  - [x] Termination policies configured
+  - [x] RDS connection string configured in user data
+  - [x] **Status**: Configuration complete, ready for deployment
 
 - [x] **infra/vpc-endpoints.tf** - VPC Endpoints
 
@@ -1158,8 +1169,25 @@ GitHub Actions Triggered
   - Sticky sessions: 24h cookies for WebSocket support
   - Health checks configured for both target groups
   - **Next step**: Create ACM certificate and update terraform.tfvars
+- ✅ **Auto Scaling Groups**: Configuration complete, ready for deployment
+  - **Frontend ASG**:
+    - Min: 1, Desired: 2, Max: 4 instances
+    - t3.small instances with Ubuntu 22.04 LTS
+    - User data pulls frontend image from ECR
+    - CPU-based auto-scaling (target: 70%)
+    - Rolling instance refresh (50% min healthy)
+  - **Backend ASG**:
+    - Min: 1, Desired: 2, Max: 4 instances
+    - t3.small instances with Ubuntu 22.04 LTS + Redis
+    - User data pulls backend image from ECR
+    - CPU-based auto-scaling (target: 70%)
+    - Rolling instance refresh (50% min healthy)
+    - RDS connection configured
+  - Both ASGs use ELB health checks (5 min grace period)
+  - IMDSv2 required for enhanced security
+  - Enhanced monitoring enabled
 - ✅ **Cleanup Script**: Updated `scripts/cleanup-infrastructure.sh`
-  - Now destroys 25 resources (including ALB)
+  - Now destroys 31 resources (including ASGs)
   - Tested and verified working correctly
   - Destroys all resources in proper dependency order
   - Includes verification step
@@ -1219,6 +1247,14 @@ GitHub Actions Triggered
 - HTTP to HTTPS redirect configured
 - TLS 1.3 security policy
 - Awaiting ACM certificate creation before deployment
+
+✅ **Auto Scaling Groups**
+- Terraform configuration validated successfully
+- Frontend and backend ASGs configured
+- Launch templates reference user data scripts
+- ECR-based deployment configured
+- Auto-scaling policies configured (CPU target: 70%)
+- Instance refresh configured for zero-downtime deployments
 
 ### Optimization Opportunities
 

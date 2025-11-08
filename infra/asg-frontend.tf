@@ -1,0 +1,197 @@
+# =============================================================================
+# Frontend Auto Scaling Group
+# =============================================================================
+# Manages frontend EC2 instances running Next.js in Docker containers
+# Pulls pre-built images from ECR for fast deployment
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Launch Template
+# -----------------------------------------------------------------------------
+resource "aws_launch_template" "frontend" {
+  name_prefix   = "${var.project_name}-frontend-"
+  image_id      = data.aws_ami.ubuntu_22_04.id
+  instance_type = "t3.small"
+
+  # IAM instance profile for ECR access
+  iam_instance_profile {
+    name = data.aws_iam_instance_profile.lab_instance_profile.name
+  }
+
+  # Network configuration
+  network_interfaces {
+    associate_public_ip_address = true
+    security_groups             = [aws_security_group.frontend_instances.id]
+    delete_on_termination       = true
+  }
+
+  # User data script (pulls Docker image from ECR and starts container)
+  user_data = base64encode(templatefile("${path.module}/user-data-frontend.sh.tpl", {
+    ecr_registry   = split("/", aws_ecr_repository.frontend.repository_url)[0]
+    frontend_image = aws_ecr_repository.frontend.repository_url
+    api_url        = "https://${var.backend_domain}"
+  }))
+
+  # Monitoring
+  monitoring {
+    enabled = true
+  }
+
+  # Tag specifications for instances launched from this template
+  tag_specifications {
+    resource_type = "instance"
+    tags = {
+      Name        = "${var.project_name}-frontend"
+      Application = "ConviveITESO"
+      Component   = "frontend"
+      ManagedBy   = "terraform"
+      AutoScaling = "true"
+    }
+  }
+
+  tag_specifications {
+    resource_type = "volume"
+    tags = {
+      Name        = "${var.project_name}-frontend-volume"
+      Application = "ConviveITESO"
+      Component   = "frontend"
+      ManagedBy   = "terraform"
+    }
+  }
+
+  # Metadata options (IMDSv2 required for better security)
+  metadata_options {
+    http_endpoint               = "enabled"
+    http_tokens                 = "required" # Require IMDSv2
+    http_put_response_hop_limit = 1
+  }
+
+  # Latest version
+  update_default_version = true
+
+  tags = {
+    Name        = "${var.project_name}-frontend-lt"
+    Application = "ConviveITESO"
+    Component   = "frontend"
+    ManagedBy   = "terraform"
+  }
+}
+
+# -----------------------------------------------------------------------------
+# Auto Scaling Group
+# -----------------------------------------------------------------------------
+resource "aws_autoscaling_group" "frontend" {
+  name                = "${var.project_name}-frontend-asg"
+  vpc_zone_identifier = [aws_subnet.public_az1.id, aws_subnet.public_az2.id]
+
+  # Capacity configuration (aligned with AWS Learner Lab constraints)
+  min_size         = 1
+  max_size         = 4
+  desired_capacity = 2
+
+  # Health check configuration
+  health_check_type         = "ELB" # Use ALB health checks
+  health_check_grace_period = 300   # 5 minutes for instance to become healthy
+
+  # Launch template
+  launch_template {
+    id      = aws_launch_template.frontend.id
+    version = "$Latest"
+  }
+
+  # Target group attachment (for ALB)
+  target_group_arns = [aws_lb_target_group.frontend.arn]
+
+  # Termination policies
+  termination_policies = ["OldestLaunchTemplate", "OldestInstance"]
+
+  # Enable metrics collection
+  enabled_metrics = [
+    "GroupMinSize",
+    "GroupMaxSize",
+    "GroupDesiredCapacity",
+    "GroupInServiceInstances",
+    "GroupTotalInstances"
+  ]
+
+  # Instance refresh configuration (for zero-downtime deployments)
+  instance_refresh {
+    strategy = "Rolling"
+    preferences {
+      min_healthy_percentage = 50 # Keep at least 50% healthy during refresh
+      instance_warmup        = 300 # Wait 5 min before considering instance healthy
+    }
+  }
+
+  # Tags
+  tag {
+    key                 = "Name"
+    value               = "${var.project_name}-frontend-instance"
+    propagate_at_launch = true
+  }
+
+  tag {
+    key                 = "Application"
+    value               = "ConviveITESO"
+    propagate_at_launch = true
+  }
+
+  tag {
+    key                 = "Component"
+    value               = "frontend"
+    propagate_at_launch = true
+  }
+
+  tag {
+    key                 = "ManagedBy"
+    value               = "terraform"
+    propagate_at_launch = true
+  }
+
+  # Prevent issues during destroy
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+# -----------------------------------------------------------------------------
+# Auto Scaling Policies
+# -----------------------------------------------------------------------------
+
+# Target tracking scaling policy (CPU-based)
+resource "aws_autoscaling_policy" "frontend_cpu" {
+  name                   = "${var.project_name}-frontend-cpu-scaling"
+  autoscaling_group_name = aws_autoscaling_group.frontend.name
+  policy_type            = "TargetTrackingScaling"
+
+  target_tracking_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ASGAverageCPUUtilization"
+    }
+    target_value = 70.0 # Scale when average CPU > 70%
+  }
+}
+
+# =============================================================================
+# Outputs
+# =============================================================================
+
+output "frontend_asg_name" {
+  description = "Name of the frontend Auto Scaling Group"
+  value       = aws_autoscaling_group.frontend.name
+}
+
+output "frontend_asg_arn" {
+  description = "ARN of the frontend Auto Scaling Group"
+  value       = aws_autoscaling_group.frontend.arn
+}
+
+output "frontend_launch_template_id" {
+  description = "ID of the frontend launch template"
+  value       = aws_launch_template.frontend.id
+}
+
+output "frontend_launch_template_latest_version" {
+  description = "Latest version of the frontend launch template"
+  value       = aws_launch_template.frontend.latest_version
+}
