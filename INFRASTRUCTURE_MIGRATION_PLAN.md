@@ -281,12 +281,20 @@ This baseline will be replaced by dedicated ASGs, ALB, and co-located Redis once
   - [x] Subnet associations
   - [x] Tags for all resources
 
-- [ ] **infra/security-groups.tf** - Security Groups (replaces security.tf)
+- [x] **infra/security-groups.tf** - Security Groups (replaces security.tf)
 
-  - [ ] Single ALB Security Group (80, 443 from 0.0.0.0/0)
-  - [ ] Frontend Instance Security Group (3000 from ALB SG)
-  - [ ] Backend Instance Security Group (8080 from ALB SG, 6379 from Backend SG)
-  - [ ] RDS Security Group (5432 from Backend Instance SG)
+  - [x] Single ALB Security Group (80, 443 from 0.0.0.0/0)
+  - [x] Frontend Instance Security Group (3000 from ALB SG)
+  - [x] Backend Instance Security Group (8080 from ALB SG, 6379 from Backend SG for Redis)
+  - [x] RDS Security Group (5432 from Backend Instance SG)
+  - [x] All egress rules configured (allow all outbound)
+  - [x] Proper tagging for all security groups
+  - [x] **Status**: Successfully created and tested (4 security groups)
+  - [x] **Security Group IDs**:
+    - ALB: `sg-02f8e0ac426d568b8`
+    - Frontend Instances: `sg-0f2cfc374ad97184d`
+    - Backend Instances: `sg-0e1aeca19cd0a34d3`
+    - RDS Database: `sg-0f5ebd4e79e099ce7`
 
 - [ ] **infra/alb.tf** - Single Application Load Balancer with Host-Based Routing
 
@@ -1141,6 +1149,12 @@ GitHub Actions Triggered
   - Latest AMI: `ami-0c398cb65a93047f2` (20251015)
   - Owner: Canonical (099720109477)
   - Architecture: x86_64, Virtualization: HVM, Root: EBS
+- ✅ **Security Groups**: Successfully created and tested (4 security groups)
+  - ALB Security Group: Allows HTTP/HTTPS from internet
+  - Frontend Instances SG: Allows port 3000 from ALB only
+  - Backend Instances SG: Allows port 8080 from ALB, port 6379 from self (Redis)
+  - RDS Security Group: Allows port 5432 from backend instances only
+  - All security groups properly tagged and configured
 - ✅ **Cleanup Script**: Created `scripts/cleanup-infrastructure.sh`
   - Tested and verified working correctly
   - Destroys all resources in proper dependency order
