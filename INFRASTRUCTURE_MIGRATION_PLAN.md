@@ -296,80 +296,50 @@ This baseline will be replaced by dedicated ASGs, ALB, and co-located Redis once
     - Backend Instances: `sg-0e1aeca19cd0a34d3`
     - RDS Database: `sg-0f5ebd4e79e099ce7`
 
-- [ ] **infra/alb.tf** - Single Application Load Balancer with Host-Based Routing
+- [x] **infra/alb.tf** - Single Application Load Balancer with Host-Based Routing
 
-  - [ ] ALB resource (internet-facing, spans both AZs)
-  - [ ] Frontend target group (port 3000, health check / or /health)
-  - [ ] Backend target group (port 8080, health check /health)
-  - [ ] HTTP listener (port 80, redirect to HTTPS)
-  - [ ] HTTPS listener (port 443, default action to frontend)
-  - [ ] Host-based listener rule for frontend (conviveitesofront.ricardonavarro.mx)
-  - [ ] Host-based listener rule for backend (conviveitesoback.ricardonavarro.mx)
-  - [ ] ALB subnet associations (both public subnets)
-  - [ ] Tags for all resources
+  - [x] ALB resource (internet-facing, spans both AZs)
+  - [x] Frontend target group (port 3000, health check on `/`)
+  - [x] Backend target group (port 8080, health check on `/health`)
+  - [x] HTTP listener (port 80, redirect to HTTPS with HTTP 301)
+  - [x] HTTPS listener (port 443, TLS 1.3, default action to frontend)
+  - [x] Host-based listener rule for frontend (conviveitesofront.ricardonavarro.mx)
+  - [x] Host-based listener rule for backend (conviveitesoback.ricardonavarro.mx)
+  - [x] ALB subnet associations (both public subnets)
+  - [x] Sticky sessions (24h cookie duration for WebSocket support)
+  - [x] Deregistration delay: 30 seconds
+  - [x] Cross-zone load balancing enabled
+  - [x] Tags for all resources
+  - [x] **Status**: Configuration complete, **ACM certificate required before deployment**
 
-**Architecture Note:** Both domains will point to the same ALB DNS. The ALB inspects the HTTP `Host` header and routes:
+**⚠️ PREREQUISITE - ACM Certificate Required:**
 
-- `conviveitesofront.ricardonavarro.mx` → Frontend Target Group
-- `conviveitesoback.ricardonavarro.mx` → Backend Target Group
+Before deploying the ALB, you must create and validate an SSL certificate in AWS Certificate Manager (ACM):
 
-**Terraform Example for Host-Based Routing:**
+**Step 1: Create Certificate in ACM**
+- Go to AWS Console → Certificate Manager
+- Click "Request certificate" → "Request a public certificate"
+- Add domain names:
+  - `conviveitesofront.ricardonavarro.mx`
+  - `conviveitesoback.ricardonavarro.mx`
+- Validation method: DNS validation (recommended)
 
-```hcl
-# Single ALB
-resource "aws_lb" "main" {
-  name               = "conviveiteso-alb"
-  load_balancer_type = "application"
-  subnets            = [aws_subnet.public_az1.id, aws_subnet.public_az2.id]
-  security_groups    = [aws_security_group.alb.id]
-}
+**Step 2: Validate Certificate**
+- Follow ACM instructions to add DNS records to your domain
+- Wait for validation (can take 5-30 minutes)
+- Certificate status must be "Issued"
 
-# HTTPS Listener with default action
-resource "aws_lb_listener" "https" {
-  load_balancer_arn = aws_lb.main.arn
-  port              = "443"
-  protocol          = "HTTPS"
+**Step 3: Update terraform.tfvars**
+- Copy the certificate ARN from ACM
+- Replace `acm_certificate_arn` value in `infra/terraform.tfvars`
+- Example: `arn:aws:acm:us-east-1:215350372069:certificate/abc12345-...`
 
-  default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.frontend.arn
-  }
-}
+**Step 4: Deploy ALB**
+- `terraform apply` (ALB and related resources)
 
-# Host-based routing rule for frontend
-resource "aws_lb_listener_rule" "frontend" {
-  listener_arn = aws_lb_listener.https.arn
-  priority     = 100
-
-  action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.frontend.arn
-  }
-
-  condition {
-    host_header {
-      values = ["conviveitesofront.ricardonavarro.mx"]
-    }
-  }
-}
-
-# Host-based routing rule for backend
-resource "aws_lb_listener_rule" "backend" {
-  listener_arn = aws_lb_listener.https.arn
-  priority     = 200
-
-  action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.backend.arn
-  }
-
-  condition {
-    host_header {
-      values = ["conviveitesoback.ricardonavarro.mx"]
-    }
-  }
-}
-```
+**Architecture:** Both domains point to the same ALB DNS. The ALB inspects the HTTP `Host` header and routes:
+- `conviveitesofront.ricardonavarro.mx` → Frontend Target Group (port 3000)
+- `conviveitesoback.ricardonavarro.mx` → Backend Target Group (port 8080)
 
 - [ ] **infra/asg-frontend.tf** - Frontend Auto Scaling Group
 
@@ -1180,7 +1150,16 @@ GitHub Actions Triggered
     - Authenticates with ECR and pulls backend image
     - Starts NestJS container on port 8080
     - Configured log rotation for all services
-- ✅ **Cleanup Script**: Created `scripts/cleanup-infrastructure.sh`
+- ✅ **Application Load Balancer**: Configuration complete, **ACM cert required**
+  - Single ALB with host-based routing (saves $16/month vs 2 ALBs)
+  - 2 Target groups: Frontend (port 3000) and Backend (port 8080)
+  - HTTP listener: Redirects to HTTPS (HTTP 301)
+  - HTTPS listener: TLS 1.3, host-based routing
+  - Sticky sessions: 24h cookies for WebSocket support
+  - Health checks configured for both target groups
+  - **Next step**: Create ACM certificate and update terraform.tfvars
+- ✅ **Cleanup Script**: Updated `scripts/cleanup-infrastructure.sh`
+  - Now destroys 25 resources (including ALB)
   - Tested and verified working correctly
   - Destroys all resources in proper dependency order
   - Includes verification step
@@ -1233,6 +1212,13 @@ GitHub Actions Triggered
 - Created backend initialization template with Redis
 - Both scripts use ECR-based deployment (pull pre-built images)
 - Fast boot times: ~2 minutes vs 10+ minutes with git clone + build
+
+✅ **Application Load Balancer**
+- Terraform configuration validated successfully
+- Single ALB with host-based routing configured
+- HTTP to HTTPS redirect configured
+- TLS 1.3 security policy
+- Awaiting ACM certificate creation before deployment
 
 ### Optimization Opportunities
 

@@ -179,10 +179,15 @@ Automatically destroys ALL AWS resources created by Terraform. Use this to clean
 
 #### What It Destroys
 
-The script destroys 18 resources in total:
+The script destroys 25 resources in total:
 - **ECR Resources (4):**
   - 2 ECR repositories (convive-frontend, convive-backend)
   - 2 ECR lifecycle policies
+- **Application Load Balancer (7):**
+  - 1 Application Load Balancer
+  - 2 Target Groups (Frontend, Backend)
+  - 2 ALB Listeners (HTTP, HTTPS)
+  - 2 ALB Listener Rules (Frontend host-based, Backend host-based)
 - **Security Groups (4):**
   - ALB Security Group
   - Frontend Instances Security Group
@@ -200,8 +205,8 @@ The script destroys 18 resources in total:
 
 The script destroys resources in the correct dependency order:
 
-**Step 1/2: VPC, Security Groups, and VPC Endpoint Resources**
-- Security Groups (RDS, Backend, Frontend, ALB) → S3 VPC Endpoint → Route table associations → Route table → Subnets → Internet Gateway → VPC
+**Step 1/2: ALB, VPC, Security Groups, and VPC Endpoint Resources**
+- ALB Listener Rules → ALB Listeners → Target Groups → ALB → Security Groups (RDS, Backend, Frontend, ALB) → S3 VPC Endpoint → Route table associations → Route table → Subnets → Internet Gateway → VPC
 
 **Step 2/2: ECR Resources**
 - Lifecycle policies → ECR repositories

@@ -92,3 +92,22 @@ variable "aws_region" {
   type        = string
   default     = "us-east-1"
 }
+
+# === Domain Configuration ===
+
+variable "frontend_domain" {
+  description = "Domain name for frontend (e.g., conviveitesofront.ricardonavarro.mx)"
+  type        = string
+}
+
+variable "backend_domain" {
+  description = "Domain name for backend API (e.g., conviveitesoback.ricardonavarro.mx)"
+  type        = string
+}
+
+# === SSL/TLS Configuration ===
+
+variable "acm_certificate_arn" {
+  description = "ARN of ACM certificate for HTTPS (must be created and validated first)"
+  type        = string
+}

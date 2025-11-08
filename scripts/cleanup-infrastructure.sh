@@ -45,6 +45,10 @@ echo ""
 echo "Resources to be destroyed:"
 echo "  ✗ 2 ECR repositories (convive-frontend, convive-backend)"
 echo "  ✗ 2 ECR lifecycle policies"
+echo "  ✗ 1 Application Load Balancer"
+echo "  ✗ 2 Target Groups (Frontend, Backend)"
+echo "  ✗ 2 ALB Listeners (HTTP, HTTPS)"
+echo "  ✗ 2 ALB Listener Rules (Frontend, Backend)"
 echo "  ✗ 4 Security Groups (ALB, Frontend, Backend, RDS)"
 echo "  ✗ 1 S3 VPC Endpoint (Gateway)"
 echo "  ✗ 1 VPC (10.0.0.0/16)"
@@ -52,7 +56,7 @@ echo "  ✗ 4 Subnets (2 public, 2 database)"
 echo "  ✗ 1 Internet Gateway"
 echo "  ✗ 1 Route Table + 2 Associations"
 echo ""
-echo -e "${YELLOW}Total: 18 resources${NC}"
+echo -e "${YELLOW}Total: 25 resources${NC}"
 echo ""
 
 # =============================================================================
@@ -93,11 +97,18 @@ echo ""
 # =============================================================================
 
 echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${YELLOW}Step 1/2: Destroying VPC, Security Groups, and VPC Endpoint Resources${NC}"
+echo -e "${YELLOW}Step 1/2: Destroying ALB, VPC, Security Groups, and VPC Endpoint Resources${NC}"
 echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 
 terraform destroy \
+  -target=aws_lb_listener_rule.backend \
+  -target=aws_lb_listener_rule.frontend \
+  -target=aws_lb_listener.https \
+  -target=aws_lb_listener.http \
+  -target=aws_lb_target_group.backend \
+  -target=aws_lb_target_group.frontend \
+  -target=aws_lb.main \
   -target=aws_security_group.rds \
   -target=aws_security_group.backend_instances \
   -target=aws_security_group.frontend_instances \
