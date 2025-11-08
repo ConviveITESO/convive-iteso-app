@@ -7,15 +7,15 @@ resource "aws_instance" "web_server" {
   vpc_security_group_ids      = [aws_security_group.api.id]
 
   user_data = templatefile("${path.module}/user_data.sh.tpl", {
-    github_user   = var.github_user
-    github_org    = var.github_org
-    github_token  = var.github_token
-    project_name  = var.project_name
-    db_host       = aws_db_instance.postgres.endpoint
-    db_username   = var.db_username
-    db_password   = var.db_password
-    db_name       = var.db_name
-    admin_email   = var.admin_email
+    github_user  = var.github_user
+    github_org   = var.github_org
+    github_token = var.github_token
+    project_name = var.project_name
+    db_host      = aws_db_instance.postgres.endpoint
+    db_username  = var.db_username
+    db_password  = var.db_password
+    db_name      = var.db_name
+    admin_email  = var.admin_email
   })
 
   tags = {
