@@ -86,3 +86,9 @@ variable "availability_zones" {
   type        = list(string)
   default     = ["us-east-1a", "us-east-1b"]
 }
+
+variable "aws_region" {
+  description = "AWS region for resources (Learner Lab: us-east-1 or us-west-2)"
+  type        = string
+  default     = "us-east-1"
+}

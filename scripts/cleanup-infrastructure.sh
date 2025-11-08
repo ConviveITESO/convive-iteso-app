@@ -46,12 +46,13 @@ echo "Resources to be destroyed:"
 echo "  ✗ 2 ECR repositories (convive-frontend, convive-backend)"
 echo "  ✗ 2 ECR lifecycle policies"
 echo "  ✗ 4 Security Groups (ALB, Frontend, Backend, RDS)"
+echo "  ✗ 1 S3 VPC Endpoint (Gateway)"
 echo "  ✗ 1 VPC (10.0.0.0/16)"
 echo "  ✗ 4 Subnets (2 public, 2 database)"
 echo "  ✗ 1 Internet Gateway"
 echo "  ✗ 1 Route Table + 2 Associations"
 echo ""
-echo -e "${YELLOW}Total: 17 resources${NC}"
+echo -e "${YELLOW}Total: 18 resources${NC}"
 echo ""
 
 # =============================================================================
@@ -92,7 +93,7 @@ echo ""
 # =============================================================================
 
 echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${YELLOW}Step 1/2: Destroying VPC and Security Group Resources${NC}"
+echo -e "${YELLOW}Step 1/2: Destroying VPC, Security Groups, and VPC Endpoint Resources${NC}"
 echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 
@@ -101,6 +102,7 @@ terraform destroy \
   -target=aws_security_group.backend_instances \
   -target=aws_security_group.frontend_instances \
   -target=aws_security_group.alb \
+  -target=aws_vpc_endpoint.s3 \
   -target=aws_route_table_association.public_az2 \
   -target=aws_route_table_association.public_az1 \
   -target=aws_route_table.public \
