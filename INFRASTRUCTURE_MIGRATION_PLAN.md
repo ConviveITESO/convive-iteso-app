@@ -398,10 +398,17 @@ resource "aws_lb_listener_rule" "backend" {
   - [ ] S3 Gateway Endpoint
   - [ ] Route table associations
 
-- [ ] **infra/ami.tf** - AMI Data Sources
+- [x] **infra/ami.tf** - AMI Data Sources
 
-  - [ ] Data source for Ubuntu 22.04 LTS x86_64
-  - [ ] Filters for most recent AMI
+  - [x] Data source for Ubuntu 22.04 LTS x86_64
+  - [x] Filters for most recent AMI
+  - [x] Owner filter for Canonical (Ubuntu official account)
+  - [x] Architecture filter (x86_64)
+  - [x] Virtualization type filter (hvm)
+  - [x] Root device type filter (ebs)
+  - [x] State filter (available)
+  - [x] **Status**: Successfully created and tested
+  - [x] **Current AMI**: ami-0c398cb65a93047f2 (ubuntu-jammy-22.04-amd64-server-20251015)
 
 - [x] **infra/ecr.tf** - Elastic Container Registry (NEW for ECR Deployment)
 
@@ -1129,6 +1136,11 @@ GitHub Actions Triggered
   - 2 Public subnets in us-east-1a and us-east-1b
   - 2 Database subnets in us-east-1a and us-east-1b
   - Internet Gateway, Route Table, and Associations
+- ✅ **AMI Data Sources**: Successfully created and tested
+  - Data source for Ubuntu 22.04 LTS (Jammy)
+  - Latest AMI: `ami-0c398cb65a93047f2` (20251015)
+  - Owner: Canonical (099720109477)
+  - Architecture: x86_64, Virtualization: HVM, Root: EBS
 - ✅ **Cleanup Script**: Created `scripts/cleanup-infrastructure.sh`
   - Tested and verified working correctly
   - Destroys all resources in proper dependency order
