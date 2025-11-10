@@ -88,6 +88,7 @@ export const groupMessageSchema = z
 		id: z.uuid(),
 		userId: z.string(),
 		username: z.string(),
+		profile: z.string().nullable(),
 		content: z.string(),
 		createdAt: z.date(),
 	})
