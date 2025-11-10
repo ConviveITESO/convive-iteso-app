@@ -31,8 +31,29 @@ resource "aws_launch_template" "backend" {
     ecr_registry  = split("/", aws_ecr_repository.backend.repository_url)[0]
     backend_image = aws_ecr_repository.backend.repository_url
     database_url  = "postgresql://${var.db_username}:${var.db_password}@${aws_db_instance.postgres.endpoint}/${var.db_name}"
-    backend_url   = "https://${var.backend_domain}"
-    frontend_url  = "https://${var.frontend_domain}"
+    backend_url   = "http://${var.backend_domain}"   # Using HTTP for testing (change to HTTPS after certificate validation)
+    frontend_url  = "http://${var.frontend_domain}"  # Using HTTP for testing (change to HTTPS after certificate validation)
+
+    # OAuth Configuration
+    client_id     = var.oauth_client_id
+    client_secret = var.oauth_client_secret
+    redirect_uri  = "http://${var.backend_domain}/auth/oauth-callback"
+
+    # Admin Configuration
+    admin_token = var.admin_token
+
+    # SMTP Configuration
+    smtp_name        = var.smtp_name
+    smtp_address     = var.smtp_address
+    local_smtp_host  = var.local_smtp_host
+    local_smtp_port  = var.local_smtp_port
+    mailtrap_api_key = var.mailtrap_api_key
+
+    # AWS Configuration
+    aws_region            = var.aws_region
+    aws_access_key_id     = var.aws_access_key_id
+    aws_secret_access_key = var.aws_secret_access_key
+    s3_bucket_name        = var.s3_bucket_name
   }))
 
   # Monitoring

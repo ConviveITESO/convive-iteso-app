@@ -12,6 +12,7 @@
 resource "aws_ecr_repository" "frontend" {
   name                 = "convive-frontend"
   image_tag_mutability = "MUTABLE" # Allows :latest tag to be updated
+  force_delete         = true      # Allow deletion even if repository contains images
 
   # Enable image scanning for security vulnerabilities
   image_scanning_configuration {
@@ -38,6 +39,7 @@ resource "aws_ecr_repository" "frontend" {
 resource "aws_ecr_repository" "backend" {
   name                 = "convive-backend"
   image_tag_mutability = "MUTABLE" # Allows :latest tag to be updated
+  force_delete         = true      # Allow deletion even if repository contains images
 
   # Enable image scanning for security vulnerabilities
   image_scanning_configuration {

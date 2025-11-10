@@ -90,6 +90,53 @@ backend_domain = "your-backend-domain.example.com"
 acm_certificate_arn = "arn:aws:acm:us-east-1:ACCOUNT_ID:certificate/CERTIFICATE_ID"
 
 # =============================================================================
+# OAuth Configuration
+# =============================================================================
+
+# OAuth client ID for Google/Microsoft authentication
+# SENSITIVE - keep this secure!
+oauth_client_id = "your-oauth-client-id"
+
+# OAuth client secret for Google/Microsoft authentication
+# SENSITIVE - keep this secure!
+oauth_client_secret = "your-oauth-client-secret"
+
+# =============================================================================
+# Admin Configuration
+# =============================================================================
+
+# Admin API token for backend administrative operations
+# SENSITIVE - keep this secure!
+admin_token = "your-admin-token-here"
+
+# =============================================================================
+# SMTP Configuration
+# =============================================================================
+
+# SMTP sender email address
+smtp_address = "noreply@yourdomain.com"
+
+# Local SMTP server configuration (for development/testing)
+# These are required by config validation but not used in production
+# local_smtp_host = "localhost"
+# local_smtp_port = 1025
+
+# Mailtrap API key for email service (or other SMTP provider)
+# SENSITIVE - keep this secure!
+mailtrap_api_key = "your-mailtrap-api-key"
+
+# =============================================================================
+# AWS Credentials Configuration (Optional - defaults provided)
+# =============================================================================
+# IMPORTANT: EC2 instances use IAM roles (LabRole) for actual AWS access
+# These variables have default placeholder values and are only needed for
+# config validation. You typically DO NOT need to set these.
+#
+# Only uncomment if you need to override the defaults:
+# aws_access_key_id = "not-used-iam-role"
+# aws_secret_access_key = "not-used-iam-role"
+
+# =============================================================================
 # VPC Configuration (Optional - defaults provided)
 # =============================================================================
 # Uncomment and modify if you need custom networking
@@ -124,6 +171,16 @@ acm_certificate_arn = "arn:aws:acm:us-east-1:ACCOUNT_ID:certificate/CERTIFICATE_
 # Auto Scaling Group Configuration:
 # - Frontend ASG: min=1, max=4, desired=2 (asg-frontend.tf:88-90)
 # - Backend ASG: min=1, max=4, desired=2 (asg-backend.tf:91-93)
+
+# =============================================================================
+# S3 Configuration (Optional - defaults provided)
+# =============================================================================
+# S3 bucket name for file uploads (profile pictures, event images, etc.)
+# Default: "convive-iteso-prod"
+# Managed in s3.tf with encryption, lifecycle policies, and CORS
+
+# Uncomment to override:
+# s3_bucket_name = "your-custom-bucket-name"
 
 # =============================================================================
 # ECR Configuration (Optional - hardcoded in ecr.tf)

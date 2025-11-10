@@ -111,3 +111,82 @@ variable "acm_certificate_arn" {
   description = "ARN of ACM certificate for HTTPS (must be created and validated first)"
   type        = string
 }
+
+# === OAuth Configuration ===
+
+variable "oauth_client_id" {
+  description = "OAuth client ID for authentication"
+  type        = string
+  sensitive   = true
+}
+
+variable "oauth_client_secret" {
+  description = "OAuth client secret for authentication"
+  type        = string
+  sensitive   = true
+}
+
+# === Admin Configuration ===
+
+variable "admin_token" {
+  description = "Admin API token for backend"
+  type        = string
+  sensitive   = true
+}
+
+# === SMTP Configuration ===
+
+variable "smtp_name" {
+  description = "SMTP sender name"
+  type        = string
+  default     = "ConviveITESO"
+}
+
+variable "smtp_address" {
+  description = "SMTP sender email address"
+  type        = string
+}
+
+variable "local_smtp_host" {
+  description = "Local SMTP server host"
+  type        = string
+  default     = "localhost"
+}
+
+variable "local_smtp_port" {
+  description = "Local SMTP server port"
+  type        = number
+  default     = 1025
+}
+
+variable "mailtrap_api_key" {
+  description = "Mailtrap API key for email service"
+  type        = string
+  sensitive   = true
+}
+
+# === AWS Credentials Configuration ===
+# Note: EC2 instances use IAM roles (LabRole) for actual AWS access
+# These are placeholder values required for config validation only
+
+variable "aws_access_key_id" {
+  description = "AWS access key ID (placeholder for config validation, IAM role used in production)"
+  type        = string
+  default     = "not-used-iam-role"
+  sensitive   = true
+}
+
+variable "aws_secret_access_key" {
+  description = "AWS secret access key (placeholder for config validation, IAM role used in production)"
+  type        = string
+  default     = "not-used-iam-role"
+  sensitive   = true
+}
+
+# === S3 Configuration ===
+
+variable "s3_bucket_name" {
+  description = "S3 bucket name for file uploads"
+  type        = string
+  default     = "convive-iteso-prod"
+}
