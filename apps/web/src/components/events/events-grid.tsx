@@ -4,6 +4,7 @@ import type {
 	SubscribedEventResponseArraySchema,
 } from "@repo/schemas";
 import { EventCard } from "./event-card";
+import { NoEventsFound } from "./no-events-found";
 
 type GridEvent =
 	| EventResponseArraySchema[number]
@@ -47,13 +48,14 @@ export function EventsGrid({
 	if (events.length === 0) {
 		return (
 			<div className="col-span-full py-12 text-center">
-				<p className="text-muted-foreground">No events found</p>
+				<NoEventsFound />
 			</div>
 		);
 	}
 
 	return (
 		<div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+			<h2 className="text-xl font-semibold">Upcoming events</h2>
 			{events.map((event) => (
 				<EventCard
 					key={event.id}

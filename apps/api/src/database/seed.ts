@@ -55,8 +55,8 @@ function getRandomItems(array: string[]): string[] {
 }
 
 async function resetDatabase(db: AppDatabase, seedUserEmails: string[]): Promise<void> {
-	await db.delete(schemas.eventsCategories);
-	await db.delete(schemas.eventsBadges);
+	//await db.delete(schemas.eventsCategories);
+	//await db.delete(schemas.eventsBadges);
 	await db.delete(schemas.usersGroups);
 	await db.delete(schemas.subscriptions);
 	await db.delete(schemas.reminders);

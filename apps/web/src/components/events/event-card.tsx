@@ -5,12 +5,12 @@ import type {
 	SubscribedEventResponseArraySchema,
 } from "@repo/schemas";
 import {
+	ArrowRight,
 	Edit,
 	Eye,
 	MapPin,
 	MessageSquare,
 	QrCode,
-	RotateCcw,
 	Share2,
 	Trash2,
 	UserMinus,
@@ -60,125 +60,115 @@ export function EventCard({
 
 	return (
 		<Card
-			className="cursor-pointer overflow-hidden p-2 transition-shadow hover:shadow-lg"
 			onClick={onClick}
+			className="relative cursor-pointer overflow-hidden rounded-3xl shadow-md hover:shadow-lg transition group h-64"
 		>
-			<div className="flex items-start gap-4">
-				{/* Image placeholder */}
-				<div className="relative flex h-[92px] w-[92px] shrink-0 items-center justify-center rounded-xl bg-muted shadow-sm">
-					<Image className="rounded-xl object-cover" src={event.imageUrl} alt={event.name} fill />
+			{/* Imagen de fondo (ocupa todo el card) */}
+			<div className="absolute inset-0">
+				<Image
+					src={event.imageUrl}
+					alt={event.name}
+					fill
+					className="object-cover transition-transform duration-500 group-hover:scale-105"
+				/>
+				{/* Overlay degradado */}
+				<div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
+			</div>
+
+			{/* Etiqueta superior izquierda */}
+			<div className="absolute top-3 left-3 flex items-center gap-2 bg-black/60 backdrop-blur-md text-white px-2.5 py-1.5 rounded-full shadow-sm">
+				<div className="flex items-center justify-center bg-white rounded-full size-6">
+					<MapPin className="h-3.5 w-3.5 text-black" />
 				</div>
+				<span className="text-sm font-medium leading-none truncate">
+					{locationName || "Tokyo, Japan"}
+				</span>
+			</div>
 
-				{/* Event details */}
-				<div className="flex min-w-0 flex-1 flex-col justify-center gap-1">
-					{/* Date and time */}
-					<p className="text-[13px] text-muted-foreground">{formatDate(event.startDate)}</p>
-
-					{/* Event title */}
-					<h3 className="line-clamp-2 text-[15px] font-medium leading-tight text-foreground">
-						{event.name}
-					</h3>
-
-					{/* Location */}
-					<div className="flex items-center gap-1.5">
-						<MapPin className="size-3.5 text-muted-foreground" />
-						<span className="text-[13px] text-muted-foreground">{locationName}</span>
-					</div>
+			{/* Contenido inferior */}
+			<div className="absolute bottom-4 left-4 right-4 flex items-center justify-between text-white">
+				<div className="flex flex-col">
+					<h3 className="text-lg font-semibold leading-tight line-clamp-1">{event.name}</h3>
+					<p className="text-sm opacity-85">{formatDate(event.startDate)}</p>
 				</div>
+				<div className="flex items-center justify-center bg-white/90 hover:bg-white rounded-full size-9 transition">
+					<ArrowRight className="text-black size-5" />
+				</div>
+			</div>
 
-				{/* Action buttons based on mode */}
-				{mode === "admin" && (
-					<div className="flex shrink-0 flex-col gap-1">
-						<div className="flex gap-1">
-							{(event as EventResponseSchema).status === "active" && (
+			{/* Acciones del modo admin o subscripción */}
+			{(mode === "admin" || canUnsubscribe) && (
+				<div className="absolute top-3 right-3 flex items-center gap-2">
+					{mode === "admin" && (event as EventResponseSchema).status === "active" && (
+						<>
+							{onViewStats && (
 								<Button
 									variant="ghost"
 									size="icon"
-									className="size-8"
-									onClick={(e) => handleActionClick(e, onEdit)}
-								>
-									<Edit className="size-4" />
-								</Button>
-							)}
-							{(event as EventResponseSchema).status === "active" && (
-								<Button
-									variant="ghost"
-									size="icon"
-									className="size-8"
-									onClick={(e) => handleActionClick(e, onDelete)}
-								>
-									<Trash2 className="size-4" />
-								</Button>
-							)}
-							{(event as EventResponseSchema).status === "active" && (
-								<Button
-									variant="ghost"
-									size="icon"
-									className="size-8"
-									onClick={(e) => handleActionClick(e, onShare)}
-								>
-									<Share2 className="size-4" />
-								</Button>
-							)}
-							{(event as EventResponseSchema).status === "deleted" && (
-								<Button
-									variant="ghost"
-									size="icon"
-									className="size-8"
-									onClick={(e) => handleActionClick(e, onDelete)}
-								>
-									<RotateCcw className="size-4" />
-								</Button>
-							)}
-						</div>
-						<div className="flex gap-1 justify-center">
-							{(event as EventResponseSchema).status === "active" && (
-								<Button
-									variant="ghost"
-									size="icon"
-									className="size-8"
-									onClick={(e) => handleActionClick(e, onChat)}
-								>
-									<MessageSquare className="size-4" />
-								</Button>
-							)}
-							{(event as EventResponseSchema).status === "active" && (
-								<Button
-									variant="ghost"
-									size="icon"
-									className="size-8"
-									onClick={(e) => handleActionClick(e, onScanQr)}
-								>
-									<QrCode className="size-4" />
-								</Button>
-							)}
-							{(event as EventResponseSchema).status === "active" && (
-								<Button
-									variant="ghost"
-									size="icon"
-									className="size-8"
+									className="size-8 bg-background/70 backdrop-blur-sm rounded-full shadow-sm"
 									onClick={(e) => handleActionClick(e, onViewStats)}
 								>
 									<Eye className="size-4" />
 								</Button>
 							)}
-						</div>
-					</div>
-				)}
-
-				{canUnsubscribe && (
-					<div className="flex shrink-0 items-center">
+							{onScanQr && (
+								<Button
+									variant="ghost"
+									size="icon"
+									className="size-8 bg-background/70 backdrop-blur-sm rounded-full shadow-sm"
+									onClick={(e) => handleActionClick(e, onScanQr)}
+								>
+									<QrCode className="size-4" />
+								</Button>
+							)}
+							{onChat && (
+								<Button
+									variant="ghost"
+									size="icon"
+									className="size-8 bg-background/70 backdrop-blur-sm rounded-full shadow-sm"
+									onClick={(e) => handleActionClick(e, onChat)}
+								>
+									<MessageSquare className="size-4" />
+								</Button>
+							)}
+							<Button
+								variant="ghost"
+								size="icon"
+								className="size-8 bg-background/70 backdrop-blur-sm rounded-full shadow-sm"
+								onClick={(e) => handleActionClick(e, onEdit)}
+							>
+								<Edit className="size-4" />
+							</Button>
+							<Button
+								variant="ghost"
+								size="icon"
+								className="size-8 bg-background/70 backdrop-blur-sm rounded-full shadow-sm"
+								onClick={(e) => handleActionClick(e, onShare)}
+							>
+								<Share2 className="size-4" />
+							</Button>
+							<Button
+								variant="ghost"
+								size="icon"
+								className="size-8 bg-background/70 backdrop-blur-sm rounded-full shadow-sm"
+								onClick={(e) => handleActionClick(e, onDelete)}
+							>
+								<Trash2 className="size-4" />
+							</Button>
+						</>
+					)}
+					{canUnsubscribe && (
 						<Button
 							variant="ghost"
 							size="icon"
-							className="size-8"
+							className="size-8 bg-background/70 backdrop-blur-sm rounded-full shadow-sm"
 							onClick={(e) => handleActionClick(e, onUnsubscribe)}
 						>
 							<UserMinus className="size-4" />
 						</Button>
-					</div>
-				)}
-			</div>
+					)}
+				</div>
+			)}
 		</Card>
 	);
 }

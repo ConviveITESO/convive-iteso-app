@@ -42,8 +42,7 @@ export default function ProfileSettingsPage() {
 				const data: UserProfile = await response.json();
 				setProfile(data);
 				setUsername(data.name);
-			} catch (err) {
-				console.error("Error loading profile", err);
+			} catch (_error) {
 				setError("Failed to load profile");
 			} finally {
 				setIsLoading(false);
@@ -75,8 +74,7 @@ export default function ProfileSettingsPage() {
 			const updatedProfile: UserProfile = await response.json();
 			setProfile(updatedProfile);
 			setIsEditing(false);
-		} catch (err) {
-			console.error("Error updating profile", err);
+		} catch (_error) {
 			setError("Failed to update username");
 		} finally {
 			setIsSaving(false);
