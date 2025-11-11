@@ -1,4 +1,5 @@
-import { Calendar, Clock } from "lucide-react";
+import type { UserResponseSchema } from "@repo/schemas";
+import { Calendar, Clock, User } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { formatDateLong, formatDateTimeShort, formatTimeRange, isSameDay } from "@/lib/date-utils";
 
@@ -6,9 +7,10 @@ interface EventDetailsProps {
 	description: string;
 	startDate: Date;
 	endDate: Date;
+	createdBy: UserResponseSchema;
 }
 
-export function EventDetails({ description, startDate, endDate }: EventDetailsProps) {
+export function EventDetails({ description, startDate, endDate, createdBy }: EventDetailsProps) {
 	const isMultiDay = !isSameDay(startDate, endDate);
 
 	return (
@@ -19,6 +21,14 @@ export function EventDetails({ description, startDate, endDate }: EventDetailsPr
 			<Separator className="my-6" />
 
 			<div className="space-y-4 mb-6">
+				<div className="flex items-start gap-3">
+					<User className="size-5 text-foreground mt-0.5 shrink-0" />
+					<div>
+						<p className="text-base font-medium text-foreground">Organizer</p>
+						<p className="text-base text-foreground/70">{`${createdBy.name} (${createdBy.email})`}</p>
+					</div>
+				</div>
+
 				<div className="flex items-start gap-3">
 					<Calendar className="size-5 text-foreground mt-0.5 shrink-0" />
 					<div>

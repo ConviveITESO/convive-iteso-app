@@ -16,7 +16,7 @@ import {
 	UpdateEventSchema,
 	UserResponseSchema,
 } from "@repo/schemas";
-import { and, eq, gt, isNull, like, lt, sql } from "drizzle-orm";
+import { and, eq, gt, ilike, isNull, lt, or, sql } from "drizzle-orm";
 import { BadgeService } from "../badge/badge.service";
 import { CategoryService } from "../category/category.service";
 import { AppDatabase, DATABASE_CONNECTION } from "../database/connection";
@@ -61,7 +61,11 @@ export class EventService {
 			where.push(gt(events.endDate, now));
 		}
 		if (filters.name) {
-			where.push(like(events.name, `%${filters.name}%`));
+			const search = `%${filters.name}%`;
+			where.push(
+				// biome-ignore lint/style/noNonNullAssertion: <>
+				or(ilike(events.name, search), ilike(events.description, search), ilike(users.name, search), ilike(users.email, search))!,
+			);
 		}
 		if (filters.locationId) {
 			where.push(eq(events.locationId, filters.locationId));

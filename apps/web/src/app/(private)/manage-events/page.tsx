@@ -24,9 +24,8 @@ export default function ManageEventsPage() {
 		status || "active",
 		isAuthenticated,
 	);
-	const loading = eventsLoading;
 
-	if (!isAuthenticated || loading) {
+	if (!isAuthenticated) {
 		return <div>Loading...</div>;
 	}
 
@@ -96,8 +95,15 @@ export default function ManageEventsPage() {
 					showAllOption={false}
 				/>
 
+				{status === "active" && (
+					<div className="mb-6">
+						<h2 className="text-muted-foreground mt-1">Results: {events.length}</h2>
+					</div>
+				)}
+
 				<EventsGrid
 					events={events}
+					eventsLoading={eventsLoading}
 					onEventClick={handleEventClick}
 					mode="admin"
 					onEdit={handleEdit}
