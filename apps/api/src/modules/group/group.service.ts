@@ -56,11 +56,13 @@ export class GroupService {
 		content: string;
 		createdAt: Date;
 		username: string;
+		profile: string | null;
 	}): GroupMessageSchema {
 		return {
 			id: message.id,
 			userId: message.userId,
 			username: message.username || "Unknown User",
+			profile: message.profile,
 			content: message.content,
 			createdAt: message.createdAt,
 		};
@@ -85,6 +87,7 @@ export class GroupService {
 				content: groupMessages.content,
 				createdAt: groupMessages.createdAt,
 				username: users.name,
+				profile: users.profile,
 			})
 			.from(groupMessages)
 			.innerJoin(users, eq(groupMessages.userId, users.id))
@@ -114,9 +117,12 @@ export class GroupService {
 			throw new Error("Failed to send message");
 		}
 
-		// Fetch the user name
+		// Fetch the user name and profile
 		const [user] = await this.db
-			.select({ name: users.name })
+			.select({
+				name: users.name,
+				profile: users.profile,
+			})
 			.from(users)
 			.where(eq(users.id, userId));
 
@@ -130,6 +136,7 @@ export class GroupService {
 			content: row.content,
 			createdAt: row.createdAt,
 			username: user.name,
+			profile: user.profile,
 		});
 	}
 }
