@@ -1,9 +1,12 @@
 "use client";
 
+import { CalendarX2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { EventsGrid } from "@/components/events/events-grid";
 import { EventsRow } from "@/components/events/events-row";
+import { FeedSkeleton } from "@/components/events/feed-skeleton";
 import { useFilters } from "@/components/providers/filter-context";
+import { Card } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
 import { useCategories } from "@/hooks/use-categories";
 import { useDebouncedValue } from "@/hooks/use-debounce-value";
@@ -20,7 +23,7 @@ export default function FeedPage() {
 
 	useHeaderTitle(DEFAULT_HEADER_TITLE);
 
-	// 📦 Obtener todos los eventos
+	// 📦 Obtener todos los eventos (futuros)
 	const { data: allEvents = [], isLoading: eventsLoading } = useEvents(
 		"",
 		null,
@@ -28,13 +31,22 @@ export default function FeedPage() {
 		isAuthenticated,
 	);
 
+	// 📦 Obtener eventos pasados
+	const { data: pastEvents = [], isLoading: pastLoading } = useEvents(
+		"",
+		null,
+		true,
+		isAuthenticated,
+	);
+
 	// 📦 Obtener categorías
 	const { data: categories = [], isLoading: categoriesLoading } = useCategories(isAuthenticated);
 
-	if (!isAuthenticated || eventsLoading || categoriesLoading) {
+	// ⏳ Skeleton mientras carga
+	if (!isAuthenticated || eventsLoading || categoriesLoading || pastLoading) {
 		return (
 			<div className="flex min-h-screen items-center justify-center">
-				<p className="text-muted-foreground">Loading...</p>
+				<FeedSkeleton />
 			</div>
 		);
 	}
@@ -78,10 +90,10 @@ export default function FeedPage() {
 				onSearchChange={(val) => updateFilter("searchQuery", val)}
 			/>
 
-			<div className="mx-auto max-w-7xl px-4">
-				{/* 🏷️ Filtro rápido de categorías (una sola) */}
+			<div className="mx-auto max-w-7xl px-4 space-y-10">
+				{/* 🏷️ Filtro rápido de categorías */}
 				<CategoriesFilter
-					title="Categories"
+					title=""
 					categories={categories}
 					selectedCategory={filters.singleCategory}
 					onCategoryChange={(cat) => {
@@ -92,14 +104,33 @@ export default function FeedPage() {
 				/>
 
 				{/* 🗓️ Eventos de hoy */}
-				<EventsRow
-					title="What's happening today"
-					events={todayEvents}
-					onEventClick={handleEventClick}
-				/>
+				<section>
+					{todayEvents.length > 0 ? (
+						<EventsRow
+							title="What's happening today"
+							events={todayEvents}
+							onEventClick={handleEventClick}
+						/>
+					) : (
+						<Card className="flex flex-col items-center justify-center h-[180px] border-dashed border bg-muted/30 text-center text-muted-foreground">
+							<CalendarX2 className="h-8 w-8 mb-2 opacity-70" />
+							<p className="text-sm font-medium">No events scheduled for today</p>
+							<p className="text-xs opacity-70">Check upcoming events below</p>
+						</Card>
+					)}
+				</section>
 
 				{/* 🔜 Próximos eventos */}
-				<EventsGrid events={filteredEvents} onEventClick={handleEventClick} />
+				<section>
+					<div className="max-h-[600px] overflow-y-auto pr-2">
+						<EventsGrid events={filteredEvents} onEventClick={handleEventClick} />
+					</div>
+				</section>
+
+				{/* 🕓 Eventos pasados */}
+				{pastEvents.length > 0 && (
+					<EventsRow title="Past events" events={pastEvents} onEventClick={handleEventClick} />
+				)}
 			</div>
 		</div>
 	);

@@ -17,7 +17,7 @@ export function SearchHeader({ searchQuery, onSearchChange }: SearchHeaderProps)
 	return (
 		<>
 			<div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-				<div className="mx-auto max-w-7xl px-4 py-4">
+				<div className="mx-auto max-w-7xl px-4 py-3">
 					<div className="mx-auto max-w-2xl flex items-center gap-3">
 						{/* 🔍 Barra de búsqueda */}
 						<div className="relative flex-1">
