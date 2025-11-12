@@ -1,6 +1,6 @@
 #!/bin/bash
 # =============================================================================
-# Frontend EC2 Instance User Data Script
+# Frontend EC2 Instance User Data Script (Amazon Linux 2023)
 # =============================================================================
 # This script runs on instance launch to:
 # - Install Docker and AWS CLI
@@ -21,45 +21,37 @@ echo "Timestamp: $(date)"
 # System Updates
 # =============================================================================
 echo "[1/7] Updating system packages..."
-apt-get update -y
-DEBIAN_FRONTEND=noninteractive apt-get upgrade -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold"
+dnf update -y
 
 # =============================================================================
 # Install Docker
 # =============================================================================
 echo "[2/7] Installing Docker..."
-apt-get install -y ca-certificates curl gnupg lsb-release
-
-# Add Docker's official GPG key
-mkdir -p /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-
-# Set up Docker repository
-echo \
-  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
-  $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
-
-# Install Docker Engine
-apt-get update -y
-apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+dnf install -y docker
 
 # Start and enable Docker
 systemctl start docker
 systemctl enable docker
 
+# Add ec2-user to docker group (optional, for manual debugging)
+usermod -a -G docker ec2-user
+
 echo "Docker installed successfully: $(docker --version)"
 
 # =============================================================================
-# Install AWS CLI v2
+# Install AWS CLI v2 (if not already installed)
 # =============================================================================
-echo "[3/7] Installing AWS CLI v2..."
-curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "/tmp/awscliv2.zip"
-apt-get install -y unzip
-unzip -q /tmp/awscliv2.zip -d /tmp
-/tmp/aws/install
-rm -rf /tmp/aws /tmp/awscliv2.zip
+echo "[3/7] Checking AWS CLI..."
+if ! command -v aws &> /dev/null; then
+  echo "Installing AWS CLI v2..."
+  curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "/tmp/awscliv2.zip"
+  dnf install -y unzip
+  unzip -q /tmp/awscliv2.zip -d /tmp
+  /tmp/aws/install
+  rm -rf /tmp/aws /tmp/awscliv2.zip
+fi
 
-echo "AWS CLI installed successfully: $(aws --version)"
+echo "AWS CLI version: $(aws --version)"
 
 # =============================================================================
 # Configure AWS Region (use instance metadata)
@@ -107,14 +99,30 @@ docker run -d \
 
 # Wait for container to be healthy
 echo "Waiting for frontend container to be healthy..."
-sleep 10
+CONTAINER_READY=false
+for i in {1..20}; do
+  sleep 2
+  if docker ps | grep -q convive-frontend; then
+    # Container is running, check if it's actually healthy by testing the port
+    if timeout 2 bash -c "echo > /dev/tcp/localhost/3000" 2>/dev/null; then
+      echo "✓ Frontend container is running and listening on port 3000"
+      CONTAINER_READY=true
+      break
+    else
+      echo "Container running but not yet listening on port 3000... (attempt $i/20)"
+    fi
+  else
+    echo "Container not running, checking logs..."
+    docker logs convive-frontend 2>&1 | tail -10
+  fi
+done
 
 # Check container status
-if docker ps | grep -q convive-frontend; then
+if [ "$CONTAINER_READY" = true ]; then
   echo "✓ Frontend container started successfully"
   docker ps --filter name=convive-frontend
 else
-  echo "✗ Frontend container failed to start"
+  echo "✗ Frontend container failed to start or become healthy"
   docker logs convive-frontend
   exit 1
 fi

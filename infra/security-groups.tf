@@ -61,6 +61,15 @@ resource "aws_security_group" "frontend_instances" {
   description = "Security group for frontend EC2 instances"
   vpc_id      = aws_vpc.main.id
 
+  # SSH access (restrict CIDR in production)
+  ingress {
+    description = "SSH access"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   # Inbound from ALB on port 3000 (Next.js)
   ingress {
     description     = "HTTP from ALB"
@@ -98,6 +107,15 @@ resource "aws_security_group" "backend_instances" {
   name        = "${var.project_name}-backend-instances-sg"
   description = "Security group for backend EC2 instances (with Redis)"
   vpc_id      = aws_vpc.main.id
+
+  # SSH access (restrict CIDR in production)
+  ingress {
+    description = "SSH access"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 
   # Inbound from ALB on port 8080 (NestJS API)
   ingress {

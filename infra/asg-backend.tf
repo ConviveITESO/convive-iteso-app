@@ -11,8 +11,9 @@
 # -----------------------------------------------------------------------------
 resource "aws_launch_template" "backend" {
   name_prefix   = "${var.project_name}-backend-"
-  image_id      = data.aws_ami.ubuntu_22_04.id
+  image_id      = data.aws_ami.amazon_linux_2023.id
   instance_type = "t3.small"
+  key_name      = var.key_name
 
   # IAM instance profile for ECR access
   iam_instance_profile {
@@ -30,9 +31,16 @@ resource "aws_launch_template" "backend" {
   user_data = base64encode(templatefile("${path.module}/user-data-backend.sh.tpl", {
     ecr_registry  = split("/", aws_ecr_repository.backend.repository_url)[0]
     backend_image = aws_ecr_repository.backend.repository_url
-    database_url  = "postgresql://${var.db_username}:${var.db_password}@${aws_db_instance.postgres.endpoint}/${var.db_name}"
+    database_url  = "postgresql://${var.app_db_username}:${var.app_db_password}@${aws_db_instance.postgres.address}:${aws_db_instance.postgres.port}/${var.db_name}?sslmode=verify-full&sslrootcert=%2Fetc%2Fssl%2Fcerts%2Frds-ca-bundle.pem"
     backend_url   = "http://${var.backend_domain}"   # Using HTTP for testing (change to HTTPS after certificate validation)
     frontend_url  = "http://${var.frontend_domain}"  # Using HTTP for testing (change to HTTPS after certificate validation)
+    db_master_username = var.db_username
+    db_master_password = var.db_password
+    app_db_username    = var.app_db_username
+    app_db_password    = var.app_db_password
+    db_address         = aws_db_instance.postgres.address
+    db_port            = aws_db_instance.postgres.port
+    db_name            = var.db_name
 
     # OAuth Configuration
     client_id     = var.oauth_client_id

@@ -72,6 +72,9 @@ resource "aws_s3_bucket_lifecycle_configuration" "uploads" {
     id     = "transition-to-ia"
     status = "Enabled"
 
+    # Apply to all objects
+    filter {}
+
     # Move objects to Infrequent Access after 30 days
     transition {
       days          = 30
@@ -93,6 +96,9 @@ resource "aws_s3_bucket_lifecycle_configuration" "uploads" {
   rule {
     id     = "delete-incomplete-multipart-uploads"
     status = "Enabled"
+
+    # Apply to all objects
+    filter {}
 
     # Clean up incomplete multipart uploads after 7 days
     abort_incomplete_multipart_upload {

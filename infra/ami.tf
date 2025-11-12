@@ -1,19 +1,19 @@
 # =============================================================================
 # AMI Data Sources
 # =============================================================================
-# Data sources to find the latest Ubuntu 22.04 LTS AMI for EC2 instances
+# Data sources to find the latest Amazon Linux 2023 AMI for EC2 instances
 # Used by Auto Scaling Group launch templates
 # =============================================================================
 
-# Ubuntu 22.04 LTS (Jammy Jellyfish) - x86_64 architecture
+# Amazon Linux 2023 - x86_64 architecture
 # This is the recommended AMI for production workloads
-data "aws_ami" "ubuntu_22_04" {
+data "aws_ami" "amazon_linux_2023" {
   most_recent = true
-  owners      = ["099720109477"] # Canonical (Ubuntu's official AWS account)
+  owners      = ["137112412989"] # Amazon
 
   filter {
     name   = "name"
-    values = ["ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*"]
+    values = ["al2023-ami-2023.*-x86_64"]
   }
 
   filter {
@@ -43,19 +43,19 @@ data "aws_ami" "ubuntu_22_04" {
 # =============================================================================
 
 # Output the AMI ID for reference
-output "ubuntu_22_04_ami_id" {
-  description = "ID of the latest Ubuntu 22.04 LTS AMI"
-  value       = data.aws_ami.ubuntu_22_04.id
+output "amazon_linux_2023_ami_id" {
+  description = "ID of the latest Amazon Linux 2023 AMI"
+  value       = data.aws_ami.amazon_linux_2023.id
 }
 
 # Output the AMI name for verification
-output "ubuntu_22_04_ami_name" {
-  description = "Name of the latest Ubuntu 22.04 LTS AMI"
-  value       = data.aws_ami.ubuntu_22_04.name
+output "amazon_linux_2023_ami_name" {
+  description = "Name of the latest Amazon Linux 2023 AMI"
+  value       = data.aws_ami.amazon_linux_2023.name
 }
 
 # Output the creation date
-output "ubuntu_22_04_ami_creation_date" {
-  description = "Creation date of the Ubuntu 22.04 LTS AMI"
-  value       = data.aws_ami.ubuntu_22_04.creation_date
+output "amazon_linux_2023_ami_creation_date" {
+  description = "Creation date of the Amazon Linux 2023 AMI"
+  value       = data.aws_ami.amazon_linux_2023.creation_date
 }

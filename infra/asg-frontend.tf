@@ -10,8 +10,9 @@
 # -----------------------------------------------------------------------------
 resource "aws_launch_template" "frontend" {
   name_prefix   = "${var.project_name}-frontend-"
-  image_id      = data.aws_ami.ubuntu_22_04.id
+  image_id      = data.aws_ami.amazon_linux_2023.id
   instance_type = "t3.small"
+  key_name      = var.key_name
 
   # IAM instance profile for ECR access
   iam_instance_profile {

@@ -13,6 +13,17 @@ variable "db_password" {
   type        = string
   sensitive   = true
 }
+
+variable "app_db_username" {
+  description = "Database application user for the backend service"
+  type        = string
+}
+
+variable "app_db_password" {
+  description = "Password for the database application user"
+  type        = string
+  sensitive   = true
+}
 variable "db_name" {
   description = "The database name"
   type        = string

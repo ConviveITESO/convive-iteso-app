@@ -28,6 +28,10 @@ db_password = "CHANGE_THIS_SECURE_PASSWORD_123!"
 # Requirements: 1-63 alphanumeric characters, must begin with a letter
 db_name = "convivedb"
 
+# Application-specific database credentials (used by backend app)
+app_db_username = "conviveadmin"
+app_db_password = "CHANGE_THIS_APP_PASSWORD_456!"
+
 # =============================================================================
 # EC2 Configuration
 # =============================================================================

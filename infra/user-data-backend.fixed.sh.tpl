@@ -21,13 +21,13 @@ echo "Timestamp: $(date)"
 # =============================================================================
 # System Updates
 # =============================================================================
-echo "[1/10] Updating system packages..."
+echo "[1/9] Updating system packages..."
 dnf update -y
 
 # =============================================================================
 # Install Docker
 # =============================================================================
-echo "[2/10] Installing Docker..."
+echo "[2/9] Installing Docker..."
 dnf install -y docker
 
 # Start and enable Docker
@@ -49,11 +49,11 @@ fi
 # =============================================================================
 # Install Redis Server
 # =============================================================================
-echo "[3/10] Installing Redis server..."
+echo "[3/9] Installing Redis server..."
 dnf install -y redis6
 
 # Configure Redis
-echo "[4/10] Configuring Redis..."
+echo "[4/9] Configuring Redis..."
 
 # Backup original config
 cp /etc/redis6/redis6.conf /etc/redis6/redis6.conf.backup
@@ -100,7 +100,7 @@ sleep 5
 # =============================================================================
 # Install AWS CLI v2 (if not already installed)
 # =============================================================================
-echo "[5/10] Checking AWS CLI..."
+echo "[5/9] Checking AWS CLI..."
 if ! command -v aws &> /dev/null; then
   echo "Installing AWS CLI v2..."
   curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "/tmp/awscliv2.zip"
@@ -115,7 +115,7 @@ echo "AWS CLI version: $(aws --version)"
 # =============================================================================
 # Configure AWS Region (use instance metadata)
 # =============================================================================
-echo "[6/10] Configuring AWS region..."
+echo "[6/9] Configuring AWS region..."
 TOKEN=$(curl -fsS -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
 REGION=$(curl -fsS -H "X-aws-ec2-metadata-token: $TOKEN" -s http://169.254.169.254/latest/meta-data/placement/region)
 export AWS_REGION="$REGION"
@@ -123,16 +123,8 @@ export AWS_DEFAULT_REGION="$REGION"
 echo "AWS Region: $REGION"
 echo "AWS Default Region: $AWS_DEFAULT_REGION"
 
-# Download RDS CA bundle for SSL verification
-RDS_CA_PATH="/etc/ssl/certs/rds-ca-bundle.pem"
-echo "Downloading RDS CA bundle to $RDS_CA_PATH..."
-curl -fsSL "https://truststore.pki.rds.amazonaws.com/$AWS_REGION/$AWS_REGION-bundle.pem" -o "$RDS_CA_PATH"
-chmod 644 "$RDS_CA_PATH"
-export PGSSLROOTCERT="$RDS_CA_PATH"
-export PGSSLMODE="verify-full"
-
 # Resolve backend_image (if not templated) and ecr_registry
-if [ -z "$${backend_image:-}" ] || [ "$${backend_image}" = "null" ]; then
+if [ -z "${backend_image:-}" ] || [ "${backend_image}" = "null" ]; then
   echo "Resolving backend_image from ECR..."
   backend_image=$(aws ecr describe-repositories --region "$AWS_REGION" \
     --repository-names convive-backend \
@@ -142,39 +134,9 @@ fi
 ecr_registry="$(echo "$backend_image" | cut -d'/' -f1)"
 
 # =============================================================================
-# Install PostgreSQL client & ensure application user exists
-# =============================================================================
-echo "[7/10] Installing PostgreSQL client and applying database grants..."
-dnf install -y postgresql15
-
-PG_ADMIN_URI="postgresql://${db_master_username}:${db_master_password}@${db_address}:${db_port}/postgres?sslmode=verify-full&sslrootcert=%2Fetc%2Fssl%2Fcerts%2Frds-ca-bundle.pem"
-
-cat <<SQL >/tmp/app-user.sql
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '${app_db_username}') THEN
-    EXECUTE format('CREATE ROLE %I LOGIN PASSWORD %L', '${app_db_username}', '${app_db_password}');
-  ELSE
-    EXECUTE format('ALTER ROLE %I WITH PASSWORD %L', '${app_db_username}', '${app_db_password}');
-  END IF;
-END
-$$;
-GRANT ALL PRIVILEGES ON DATABASE ${db_name} TO ${app_db_username};
-ALTER DATABASE ${db_name} OWNER TO ${app_db_username};
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO ${app_db_username};
-GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO ${app_db_username};
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL PRIVILEGES ON TABLES TO ${app_db_username};
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL PRIVILEGES ON SEQUENCES TO ${app_db_username};
-SQL
-
-psql "$PG_ADMIN_URI" -f /tmp/app-user.sql
-
-echo "✓ Database user ${app_db_username} ensured"
-
-# =============================================================================
 # Authenticate Docker with ECR
 # =============================================================================
-echo "[8/10] Authenticating Docker with ECR ($ecr_registry)..."
+echo "[7/9] Authenticating Docker with ECR ($ecr_registry)..."
 aws ecr get-login-password --region "$AWS_REGION" \
   | docker login --username AWS --password-stdin "$ecr_registry"
 
@@ -183,7 +145,7 @@ echo "Docker authenticated with ECR successfully"
 # =============================================================================
 # Pull Backend Docker Image from ECR
 # =============================================================================
-echo "[9/10] Pulling backend Docker image from ECR: ${backend_image}:latest"
+echo "[8/9] Pulling backend Docker image from ECR: ${backend_image}:latest"
 docker pull "${backend_image}:latest"
 
 echo "Backend image pulled successfully"
@@ -191,7 +153,7 @@ echo "Backend image pulled successfully"
 # =============================================================================
 # Start Backend Container
 # =============================================================================
-echo "[10/10] Starting backend container..."
+echo "[9/9] Starting backend container..."
 
 # Stop and remove any existing container
 docker stop convive-backend 2>/dev/null || true
@@ -202,12 +164,9 @@ docker run -d \
   --name convive-backend \
   --restart unless-stopped \
   --network host \
-  -v /etc/ssl/certs/rds-ca-bundle.pem:/etc/ssl/certs/rds-ca-bundle.pem:ro \
   -p 8080:8080 \
   -e NODE_ENV=production \
   -e PORT=8080 \
-  -e PGSSLMODE=verify-full \
-  -e PGSSLROOTCERT=/etc/ssl/certs/rds-ca-bundle.pem \
   -e DATABASE_URL="${database_url}" \
   -e REDIS_HOST=127.0.0.1 \
   -e REDIS_PORT=6379 \
