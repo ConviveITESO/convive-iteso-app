@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { AuthModule } from "./modules/auth/auth.module";
 import { BadgeModule } from "./modules/badge/badge.module";
 import { CategoryModule } from "./modules/category/category.module";
+import { CommentsModule } from "./modules/comments/comments.module";
 import { ConfigModule } from "./modules/config";
 import { DatabaseModule } from "./modules/database/database.module";
 import { EmailModule } from "./modules/email/email.module";
@@ -13,6 +14,7 @@ import { HealthModule } from "./modules/health/health.module";
 import { LocationModule } from "./modules/location/location.module";
 import { NotificationModule } from "./modules/notification/notification.module";
 import { NotificationsModule } from "./modules/notifications/notifications.module";
+import { RatingsModule } from "./modules/ratings/ratings.module";
 import { S3Module } from "./modules/s3/s3.module";
 import { SubscriptionsModule } from "./modules/subscriptions/subscriptions.module";
 import { UserModule } from "./modules/user/user.module";
@@ -36,6 +38,8 @@ import { UserModule } from "./modules/user/user.module";
 		EventAnalyticsModule,
 		S3Module,
 		NotificationModule,
+		RatingsModule,
+		CommentsModule,
 	],
 	controllers: [],
 	providers: [],

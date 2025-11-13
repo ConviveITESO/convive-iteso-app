@@ -5,6 +5,9 @@ import { Pool } from "pg";
 import { AppDatabase } from "@/modules/database/connection";
 import * as schemas from "../modules/database/schemas";
 
+type NewComment = typeof schemas.comments.$inferInsert;
+type NewRating = typeof schemas.ratings.$inferInsert;
+
 type SeedEventsResult = {
 	eventIds: string[];
 	fullEventId?: string;
@@ -18,6 +21,17 @@ type SpecialEventConfig = {
 	spaciousEventId?: string;
 	fullEventExcludedUserIds?: string[];
 };
+
+const COMMENT_TEXT_SAMPLES = [
+	"Loved the energy around this activity.",
+	"Great content, thanks for organizing!",
+	"Would appreciate a longer Q&A next time.",
+	"It was great connecting with other classmates.",
+	"The speaker made everything very clear.",
+	"Venue felt a little cramped but still fun overall.",
+	"Perfect timing before finals season.",
+	"Looking forward to the next session already!",
+];
 
 function generateSeedUserEmails(count: number): string[] {
 	return Array.from({ length: count }, (_, index) => `user${index}@iteso.mx`);
@@ -54,11 +68,27 @@ function getRandomItems(array: string[]): string[] {
 	return shuffled.slice(0, n);
 }
 
+function getShuffledArray<T>(array: T[]): T[] {
+	const copy = [...array];
+	for (let i = copy.length - 1; i > 0; i--) {
+		const j = getRandomNumber(0, i);
+		const temp = copy[i];
+		const swapValue = copy[j];
+		if (temp !== undefined && swapValue !== undefined) {
+			copy[i] = swapValue;
+			copy[j] = temp;
+		}
+	}
+	return copy;
+}
+
 async function resetDatabase(db: AppDatabase, seedUserEmails: string[]): Promise<void> {
 	//await db.delete(schemas.eventsCategories);
 	//await db.delete(schemas.eventsBadges);
 	await db.delete(schemas.usersGroups);
 	await db.delete(schemas.subscriptions);
+	await db.delete(schemas.comments);
+	await db.delete(schemas.ratings);
 	await db.delete(schemas.reminders);
 	await db.delete(schemas.events);
 	await db.delete(schemas.groups);
@@ -360,6 +390,72 @@ async function seedSubscriptions(
 	}
 }
 
+async function seedComments(db: AppDatabase, userIds: string[], eventIds: string[]): Promise<void> {
+	if (userIds.length === 0 || eventIds.length === 0) {
+		return;
+	}
+	const commentsToInsert: NewComment[] = [];
+	for (const eventId of eventIds) {
+		const commentCount = getRandomNumber(0, Math.min(6, userIds.length));
+		if (commentCount === 0) {
+			continue;
+		}
+		const shuffledUsers = getShuffledArray(userIds);
+		for (let index = 0; index < commentCount; index++) {
+			const userId = shuffledUsers[index];
+			if (!userId) {
+				continue;
+			}
+			commentsToInsert.push({
+				userId,
+				eventId,
+				commentText: selectRandomFromArray(COMMENT_TEXT_SAMPLES),
+			});
+		}
+	}
+	if (commentsToInsert.length > 0) {
+		await db.insert(schemas.comments).values(commentsToInsert);
+	}
+}
+
+async function seedRatings(db: AppDatabase, userIds: string[], eventIds: string[]): Promise<void> {
+	if (userIds.length === 0 || eventIds.length === 0) {
+		return;
+	}
+	const events = await db.query.events.findMany({
+		where: inArray(schemas.events.id, eventIds),
+		columns: {
+			id: true,
+			endDate: true,
+		},
+	});
+	const now = Date.now();
+	const finishedEvents = events.filter((event) => event.endDate && event.endDate.getTime() <= now);
+	if (finishedEvents.length === 0) {
+		return;
+	}
+	const ratingsToInsert: NewRating[] = [];
+	for (const event of finishedEvents) {
+		const maxRatingsPerEvent = Math.min(6, userIds.length);
+		const ratingCount = getRandomNumber(1, maxRatingsPerEvent);
+		const shuffledUsers = getShuffledArray(userIds);
+		for (let index = 0; index < ratingCount; index++) {
+			const userId = shuffledUsers[index];
+			if (!userId) {
+				continue;
+			}
+			ratingsToInsert.push({
+				userId,
+				eventId: event.id,
+				score: getRandomNumber(3, 5),
+			});
+		}
+	}
+	if (ratingsToInsert.length > 0) {
+		await db.insert(schemas.ratings).values(ratingsToInsert);
+	}
+}
+
 async function main() {
 	// biome-ignore lint/style/noProcessEnv: false positive
 	const pool = new Pool({ connectionString: process.env.DATABASE_URL });
@@ -381,6 +477,7 @@ async function main() {
 	const badgeIds = await seedBadges(db, 10, userIds);
 	const categoryIds = await seedCategories(db, userIds);
 	const locationIds = await seedLocations(db, userIds);
+
 	const { eventIds, fullEventId, almostFullEventId, spaciousEventId } = await seedEvents(
 		db,
 		20,
@@ -395,6 +492,8 @@ async function main() {
 		spaciousEventId,
 		fullEventExcludedUserIds: preservedActiveUserIds,
 	});
+	await seedComments(db, userIds, eventIds);
+	await seedRatings(db, userIds, eventIds);
 	await pool.end();
 }
 

@@ -10,8 +10,11 @@ import {
 	Put,
 	Query,
 	Req,
+	UploadedFile,
 	UseGuards,
+	UseInterceptors,
 } from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
 import { ApiTags } from "@nestjs/swagger";
 import {
 	CreateUserSchema,
@@ -100,6 +103,18 @@ export class UserController {
 		logger.debug(`PATCH /user/${id} - Raw body received: ${JSON.stringify(data)}`);
 		logger.debug(`Data type: ${typeof data}`);
 		return await this.userService.updateUser(id, data);
+	}
+
+	// POST /user/:id/profile-picture
+	@Post(":id/profile-picture")
+	@ZodParam(userIdParamSchema, "id")
+	@UseInterceptors(FileInterceptor("file"))
+	@ZodOk(userResponseSchema)
+	async uploadProfilePicture(
+		@Param(new ZodValidationPipe(userIdParamSchema)) id: UserIdParamSchema,
+		@UploadedFile() file: Express.Multer.File,
+	) {
+		return await this.userService.updateProfilePicture(id, file);
 	}
 
 	// DELETE /user/:id

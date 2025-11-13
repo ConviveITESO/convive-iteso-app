@@ -1,7 +1,7 @@
 "use client";
 
-import { User } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Camera, User } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,6 +14,7 @@ interface UserProfile {
 	name: string;
 	email: string;
 	role: string;
+	profile: string | null;
 }
 
 export default function ProfileSettingsPage() {
@@ -23,7 +24,10 @@ export default function ProfileSettingsPage() {
 	const [isEditing, setIsEditing] = useState(false);
 	const [isLoading, setIsLoading] = useState(true);
 	const [isSaving, setIsSaving] = useState(false);
+	const [isUploadingImage, setIsUploadingImage] = useState(false);
 	const [error, setError] = useState("");
+	const [imagePreview, setImagePreview] = useState<string | null>(null);
+	const fileInputRef = useRef<HTMLInputElement>(null);
 
 	useEffect(() => {
 		if (!isAuthenticated) return;
@@ -52,6 +56,55 @@ export default function ProfileSettingsPage() {
 		loadCurrentUser();
 	}, [isAuthenticated]);
 
+	const handleImageClick = () => {
+		fileInputRef.current?.click();
+	};
+
+	const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+		const file = e.target.files?.[0];
+		if (!file || !profile) return;
+
+		// Validate file type
+		if (!file.type.startsWith("image/")) {
+			setError("Please select an image file");
+			return;
+		}
+
+		// Validate file size (e.g., 5MB max)
+		if (file.size > 5 * 1024 * 1024) {
+			setError("Image size should be less than 5MB");
+			return;
+		}
+
+		setIsUploadingImage(true);
+		setError("");
+
+		try {
+			const formData = new FormData();
+			formData.append("file", file);
+
+			const response = await fetch(`${getApiUrl()}/user/${profile.id}/profile-picture`, {
+				method: "POST",
+				body: formData,
+				credentials: "include",
+			});
+
+			if (!response.ok) {
+				setError("Failed to upload profile picture");
+				return;
+			}
+
+			const updatedProfile: UserProfile = await response.json();
+			setProfile(updatedProfile);
+			setImagePreview(updatedProfile.profile);
+		} catch (err) {
+			console.error("Error uploading profile picture", err);
+			setError("Failed to upload profile picture");
+		} finally {
+			setIsUploadingImage(false);
+		}
+	};
+
 	const handleSave = async () => {
 		if (!profile) return;
 
@@ -59,9 +112,11 @@ export default function ProfileSettingsPage() {
 		setError("");
 
 		try {
-			const response = await fetch(`${getApiUrl()}/users/${profile.id}`, {
+			const response = await fetch(`${getApiUrl()}/user/${profile.id}`, {
 				method: "PATCH",
-				headers: { "Content-Type": "application/json" },
+				headers: {
+					"Content-Type": "application/json",
+				},
 				body: JSON.stringify({ username }),
 				credentials: "include",
 			});
@@ -107,10 +162,36 @@ export default function ProfileSettingsPage() {
 
 			{/* Content */}
 			<div className="p-4 space-y-6 max-w-md mx-auto lg:max-w-2xl">
-				{/* Profile Icon */}
+				{/* Profile Picture */}
 				<div className="flex justify-center pt-6">
-					<div className="flex size-24 items-center justify-center rounded-full bg-muted">
-						<User className="size-12 text-muted-foreground" />
+					<div className="relative">
+						<div className="flex size-24 items-center justify-center rounded-full bg-muted overflow-hidden">
+							{imagePreview ? (
+								<img src={imagePreview} alt="Profile" className="w-full h-full object-cover" />
+							) : (
+								<User className="size-12 text-muted-foreground" />
+							)}
+						</div>
+						<button
+							type="button"
+							onClick={handleImageClick}
+							disabled={isUploadingImage}
+							className="absolute bottom-0 right-0 flex size-8 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
+							aria-label="Upload profile picture"
+						>
+							{isUploadingImage ? (
+								<div className="size-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
+							) : (
+								<Camera className="size-4" />
+							)}
+						</button>
+						<input
+							ref={fileInputRef}
+							type="file"
+							accept="image/*"
+							onChange={handleImageChange}
+							className="hidden"
+						/>
 					</div>
 				</div>
 

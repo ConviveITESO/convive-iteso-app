@@ -123,7 +123,11 @@ export default function FeedPage() {
 				{/* 🔜 Próximos eventos */}
 				<section>
 					<div className="max-h-[600px] overflow-y-auto pr-2">
-						<EventsGrid events={filteredEvents} onEventClick={handleEventClick} />
+						<EventsGrid
+							events={filteredEvents}
+							onEventClick={handleEventClick}
+							eventsLoading={false}
+						/>
 					</div>
 				</section>
 

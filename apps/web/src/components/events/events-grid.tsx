@@ -6,6 +6,7 @@ import type {
 	SubscribedEventResponseArraySchema,
 } from "@repo/schemas";
 import { EventCard } from "./event-card";
+import { FeedSkeleton } from "./feed-skeleton";
 import { NoEventsFound } from "./no-events-found";
 
 type GridEvent =
@@ -24,6 +25,7 @@ export function hasGroupWithId(event: GridEvent): event is CreatorEventResponseA
 
 interface EventsGridProps {
 	events: GridEventArray;
+	eventsLoading: boolean;
 	onEventClick: (eventId: string) => void;
 	mode?: "admin" | "subscription";
 	onEdit?: (eventId: string) => void;
@@ -37,6 +39,7 @@ interface EventsGridProps {
 
 export function EventsGrid({
 	events,
+	eventsLoading,
 	onEventClick,
 	mode,
 	onEdit,
@@ -47,9 +50,15 @@ export function EventsGrid({
 	onViewStats,
 	onUnsubscribe,
 }: EventsGridProps) {
-	const hasEvents = events.length > 0;
+	if (eventsLoading) {
+		return (
+			<div className="col-span-full py-12 text-center">
+				<FeedSkeleton />
+			</div>
+		);
+	}
 
-	if (!hasEvents) {
+	if (events.length === 0) {
 		return (
 			<div className="col-span-full py-12 text-center">
 				<NoEventsFound />
