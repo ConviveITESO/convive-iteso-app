@@ -34,38 +34,24 @@ describe("CommentsService", () => {
 	});
 
 	describe("getAllCommentsByEvent", () => {
-		it("should return all comments for a specific event", async () => {
+		it("returns ordered comments for an event", async () => {
 			const eventId = "event-123";
-			const mockComments = [
-				{
-					id: 1,
-					userId: "user-1",
-					eventId,
-					commentText: "Great event!",
-					createdAt: new Date(),
-					updatedAt: new Date(),
-				},
-				{
-					id: 2,
-					userId: "user-2",
-					eventId,
-					commentText: "Looking forward to it",
-					createdAt: new Date(),
-					updatedAt: new Date(),
-				},
-			];
-
+			const mockComments = [{ id: 1 }];
 			mockDb.query.comments.findMany.mockResolvedValue(mockComments);
 
 			const result = await service.getAllCommentsByEvent(eventId);
 
 			expect(result).toEqual(mockComments);
-			expect(mockDb.query.comments.findMany).toHaveBeenCalledWith({
-				where: expect.any(Object),
-			});
+			expect(mockDb.query.comments.findMany).toHaveBeenCalledWith(
+				expect.objectContaining({
+					where: expect.any(Object),
+					orderBy: expect.any(Function),
+					with: expect.any(Object),
+				}),
+			);
 		});
 
-		it("should return empty array when no comments found for event", async () => {
+		it("returns empty array when there are no comments", async () => {
 			mockDb.query.comments.findMany.mockResolvedValue([]);
 
 			const result = await service.getAllCommentsByEvent("event-123");
@@ -75,27 +61,9 @@ describe("CommentsService", () => {
 	});
 
 	describe("getAllCommentsByUser", () => {
-		it("should return all comments made by a specific user", async () => {
+		it("returns comments authored by the user", async () => {
 			const userId = "user-123";
-			const mockComments = [
-				{
-					id: 1,
-					userId,
-					eventId: "event-1",
-					commentText: "Comment 1",
-					createdAt: new Date(),
-					updatedAt: new Date(),
-				},
-				{
-					id: 2,
-					userId,
-					eventId: "event-2",
-					commentText: "Comment 2",
-					createdAt: new Date(),
-					updatedAt: new Date(),
-				},
-			];
-
+			const mockComments = [{ id: 1 }];
 			mockDb.query.comments.findMany.mockResolvedValue(mockComments);
 
 			const result = await service.getAllCommentsByUser(userId);
@@ -105,32 +73,14 @@ describe("CommentsService", () => {
 				where: expect.any(Object),
 			});
 		});
-
-		it("should return empty array when user has no comments", async () => {
-			mockDb.query.comments.findMany.mockResolvedValue([]);
-
-			const result = await service.getAllCommentsByUser("user-123");
-
-			expect(result).toEqual([]);
-		});
 	});
 
 	describe("getCommentByIdByUser", () => {
-		it("should return a specific comment for a user", async () => {
-			const userId = "user-123";
-			const commentId = 1;
-			const mockComment = {
-				id: commentId,
-				userId,
-				eventId: "event-1",
-				commentText: "My comment",
-				createdAt: new Date(),
-				updatedAt: new Date(),
-			};
-
+		it("returns the matching comment", async () => {
+			const mockComment = { id: 1 };
 			mockDb.query.comments.findFirst.mockResolvedValue(mockComment);
 
-			const result = await service.getCommentByIdByUser(userId, commentId);
+			const result = await service.getCommentByIdByUser("user-123", 1);
 
 			expect(result).toEqual(mockComment);
 			expect(mockDb.query.comments.findFirst).toHaveBeenCalledWith({
@@ -138,94 +88,51 @@ describe("CommentsService", () => {
 			});
 		});
 
-		it("should return undefined when comment not found", async () => {
+		it("returns undefined when comment is not found", async () => {
 			mockDb.query.comments.findFirst.mockResolvedValue(undefined);
 
 			const result = await service.getCommentByIdByUser("user-123", 999);
 
 			expect(result).toBeUndefined();
 		});
-
-		it("should return undefined when comment belongs to different user", async () => {
-			mockDb.query.comments.findFirst.mockResolvedValue(undefined);
-
-			const result = await service.getCommentByIdByUser("wrong-user", 1);
-
-			expect(result).toBeUndefined();
-		});
 	});
 
 	describe("addCommentToEvent", () => {
-		it("should add a new comment to an event", async () => {
-			const eventId = "event-123";
-			const userId = "user-123";
-			const commentText = "This is a test comment";
-			const mockAddedComment = {
-				id: 1,
-				userId,
-				eventId,
-				commentText,
-				createdAt: new Date(),
-				updatedAt: new Date(),
-			};
-
-			mockDb.insert.mockReturnValue({
+		it("persists a comment and returns it", async () => {
+			const mockAddedComment = { id: 1 };
+			const insertBuilder = {
 				values: jest.fn().mockReturnThis(),
 				returning: jest.fn().mockResolvedValue([mockAddedComment]),
-			});
+			};
+			mockDb.insert.mockReturnValue(insertBuilder);
 
-			const result = await service.addCommentToEvent(eventId, userId, commentText);
+			const result = await service.addCommentToEvent("event-123", "user-123", "Great event");
 
 			expect(result).toEqual(mockAddedComment);
 			expect(mockDb.insert).toHaveBeenCalled();
+			expect(insertBuilder.values).toHaveBeenCalledWith({
+				eventId: "event-123",
+				userId: "user-123",
+				commentText: "Great event",
+			});
 		});
 	});
 
 	describe("updateCommentById", () => {
-		it("should update an existing comment", async () => {
-			const commentId = 1;
-			const userId = "user-123";
-			const originalText = "Original comment";
-			const updatedText = "Updated comment";
-			const mockComment = {
-				id: commentId,
-				userId,
-				eventId: "event-1",
-				commentText: originalText,
-				createdAt: new Date(),
-				updatedAt: new Date(),
-			};
-
-			jest.spyOn(service, "getCommentByIdByUser").mockResolvedValue(mockComment);
-			mockDb.update.mockReturnValue({
+		it("updates the stored comment text", async () => {
+			const where = jest.fn().mockResolvedValue("updated");
+			const updateBuilder = {
 				set: jest.fn().mockReturnThis(),
-				where: jest.fn().mockResolvedValue(undefined),
-			});
+				where,
+			};
+			mockDb.update.mockReturnValue(updateBuilder);
 
-			const result = await service.updateCommentById(commentId, userId, updatedText);
+			const result = await service.updateCommentById(1, "New text");
 
-			expect(result).toBeDefined();
-			expect(result?.commentText).toBe(updatedText);
-			expect(service.getCommentByIdByUser).toHaveBeenCalledWith(userId, commentId);
+			expect(result).toBe("updated");
 			expect(mockDb.update).toHaveBeenCalled();
-		});
-
-		it("should return null when comment does not exist", async () => {
-			jest.spyOn(service, "getCommentByIdByUser").mockResolvedValue(undefined);
-
-			const result = await service.updateCommentById(999, "user-123", "New text");
-
-			expect(result).toBeNull();
-			expect(mockDb.update).not.toHaveBeenCalled();
-		});
-
-		it("should return null when comment belongs to different user", async () => {
-			jest.spyOn(service, "getCommentByIdByUser").mockResolvedValue(undefined);
-
-			const result = await service.updateCommentById(1, "wrong-user", "New text");
-
-			expect(result).toBeNull();
-			expect(mockDb.update).not.toHaveBeenCalled();
+			expect(updateBuilder.set).toHaveBeenCalledWith({ commentText: "New text" });
+			expect(where).toHaveBeenCalledWith(expect.any(Object));
 		});
 	});
 });

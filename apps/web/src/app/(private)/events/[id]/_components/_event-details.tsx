@@ -1,22 +1,46 @@
 import type { UserResponseSchema } from "@repo/schemas";
-import { Calendar, Clock, User } from "lucide-react";
+import { Calendar, Clock, StarIcon, User } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { formatDateLong, formatDateTimeShort, formatTimeRange, isSameDay } from "@/lib/date-utils";
+import CommentsModal from "./_comments-modal";
 
 interface EventDetailsProps {
 	description: string;
 	startDate: Date;
 	endDate: Date;
+	eventId: string;
 	createdBy: UserResponseSchema;
+	ratingAverage?: number;
 }
 
-export function EventDetails({ description, startDate, endDate, createdBy }: EventDetailsProps) {
+export function EventDetails({
+	description,
+	startDate,
+	endDate,
+	ratingAverage,
+	eventId,
+	createdBy,
+}: EventDetailsProps) {
 	const isMultiDay = !isSameDay(startDate, endDate);
 
 	return (
 		<>
-			<h2 className="text-xl font-medium text-foreground mb-4">About this event</h2>
-			<p className="text-base text-foreground/70 leading-relaxed mb-6">{description}</p>
+			<div className="flex items-center justify-between">
+				<div>
+					<h2 className="text-xl font-medium text-foreground mb-4">About this event</h2>
+					<p className="text-base text-foreground/70 leading-relaxed mb-6">{description}</p>
+				</div>
+				{ratingAverage !== undefined && ratingAverage >= 0 ? (
+					<div className="flex items-center gap-6">
+						<div>
+							<StarIcon fill="#ffbf00" color="#ffbf00" />
+							<strong>{ratingAverage.toFixed(1)}</strong>
+						</div>
+
+						<CommentsModal eventId={eventId} />
+					</div>
+				) : undefined}
+			</div>
 
 			<Separator className="my-6" />
 

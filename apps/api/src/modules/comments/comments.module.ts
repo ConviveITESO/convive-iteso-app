@@ -1,4 +1,5 @@
-import { Module } from "@nestjs/common";
+import { MiddlewareConsumer, Module, NestModule } from "@nestjs/common";
+import { AuthMiddleware } from "../auth/middlewares/auth.middleware";
 import { DatabaseModule } from "../database/database.module";
 import { CommentsController } from "./comments.controller";
 import { CommentsService } from "./comments.service";
@@ -8,4 +9,8 @@ import { CommentsService } from "./comments.service";
 	controllers: [CommentsController],
 	providers: [CommentsService],
 })
-export class CommentsModule {}
+export class CommentsModule implements NestModule {
+	configure(consumer: MiddlewareConsumer) {
+		consumer.apply(AuthMiddleware).forRoutes(CommentsController);
+	}
+}

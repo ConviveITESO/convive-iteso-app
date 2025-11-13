@@ -1,51 +1,68 @@
+import { BadRequestException, NotFoundException } from "@nestjs/common";
 import { Test, TestingModule } from "@nestjs/testing";
-import { DATABASE_CONNECTION } from "../database/connection";
+import { UserRequest } from "@/types/user.request";
 import { RatingsController } from "./ratings.controller";
 import { RatingsService } from "./ratings.service";
 
 describe("RatingsController", () => {
 	let controller: RatingsController;
-	let _service: RatingsService;
+
+	const mockRatingsService = {
+		addRatingToEvent: jest.fn(),
+		deleteRatingFromEvent: jest.fn(),
+	};
 
 	beforeEach(async () => {
-		const mockDatabaseConnection = {
-			query: {
-				ratings: {
-					findFirst: jest.fn(),
-				},
-			},
-			insert: jest.fn().mockReturnThis(),
-			values: jest.fn().mockReturnThis(),
-			returning: jest.fn(),
-			update: jest.fn().mockReturnThis(),
-			set: jest.fn().mockReturnThis(),
-			where: jest.fn().mockReturnThis(),
-			delete: jest.fn().mockReturnThis(),
-		};
-
 		const module: TestingModule = await Test.createTestingModule({
 			controllers: [RatingsController],
-			providers: [
-				RatingsService,
-				{
-					provide: DATABASE_CONNECTION,
-					useValue: mockDatabaseConnection,
-				},
-			],
+			providers: [{ provide: RatingsService, useValue: mockRatingsService }],
 		}).compile();
 
 		controller = module.get<RatingsController>(RatingsController);
-		_service = module.get<RatingsService>(RatingsService);
+		jest.clearAllMocks();
 	});
 
 	it("should be defined", () => {
 		expect(controller).toBeDefined();
 	});
 
-	// TODO: Add tests for controller endpoints once they are implemented
-	// Examples:
-	// - GET /ratings/:eventId/:userId - get rating
-	// - POST /ratings - create rating (with auth)
-	// - PUT /ratings/:eventId/:userId - update rating (with auth)
-	// - DELETE /ratings/:eventId/:userId - delete rating (with auth)
+	it("creates a rating for the provided event", async () => {
+		const req = { user: { id: "user-1" } } as UserRequest;
+		const created = { id: 1, score: 4 };
+		mockRatingsService.addRatingToEvent.mockResolvedValue(created);
+
+		const result = await controller.addRatingToEvent("event-1", req, { score: 4 });
+
+		expect(result).toEqual(created);
+		expect(mockRatingsService.addRatingToEvent).toHaveBeenCalledWith("event-1", "user-1", {
+			score: 4,
+		});
+	});
+
+	it("throws BadRequestException when the rating cannot be created", async () => {
+		const req = { user: { id: "user-1" } } as UserRequest;
+		mockRatingsService.addRatingToEvent.mockResolvedValue(null);
+
+		await expect(controller.addRatingToEvent("event-1", req, { score: 4 })).rejects.toThrow(
+			BadRequestException,
+		);
+	});
+
+	it("removes an existing rating", async () => {
+		const req = { user: { id: "user-1", name: "Test" } } as UserRequest;
+		const deleted = { id: 1 };
+		mockRatingsService.deleteRatingFromEvent.mockResolvedValue(deleted);
+
+		const result = await controller.removeRatingToEvent("event-1", req);
+
+		expect(result).toEqual(deleted);
+		expect(mockRatingsService.deleteRatingFromEvent).toHaveBeenCalledWith("user-1", "event-1");
+	});
+
+	it("throws NotFoundException when there is nothing to delete", async () => {
+		const req = { user: { id: "user-1", name: "Test" } } as UserRequest;
+		mockRatingsService.deleteRatingFromEvent.mockResolvedValue(null);
+
+		await expect(controller.removeRatingToEvent("event-1", req)).rejects.toThrow(NotFoundException);
+	});
 });

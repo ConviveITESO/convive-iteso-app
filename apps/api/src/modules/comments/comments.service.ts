@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { AppDatabase, DATABASE_CONNECTION } from "../database/connection";
 import { comments } from "../database/schemas";
 
@@ -8,7 +8,24 @@ export class CommentsService {
 	constructor(@Inject(DATABASE_CONNECTION) private readonly db: AppDatabase) {}
 
 	async getAllCommentsByEvent(eventId: string) {
-		return await this.db.query.comments.findMany({ where: eq(comments.eventId, eventId) });
+		return await this.db.query.comments.findMany({
+			columns: {
+				id: true,
+				createdAt: true,
+				updatedAt: true,
+				commentText: true,
+			},
+			where: eq(comments.eventId, eventId),
+			with: {
+				user: {
+					columns: {
+						name: true,
+						profile: true,
+					},
+				},
+			},
+			orderBy: () => desc(comments.createdAt),
+		});
 	}
 
 	async getAllCommentsByUser(userId: string) {
@@ -29,14 +46,11 @@ export class CommentsService {
 		return added;
 	}
 
-	async updateCommentById(commentId: number, userId: string, text: string) {
-		const comment = await this.getCommentByIdByUser(userId, commentId);
-		if (!comment) return null;
-		comment.commentText = text;
-
-		await this.db.update(comments).set({ commentText: text }).where(eq(comments.id, commentId));
-
-		return comment;
+	async updateCommentById(commentId: number, text: string) {
+		return await this.db
+			.update(comments)
+			.set({ commentText: text })
+			.where(eq(comments.id, commentId));
 	}
 
 	// TODO: complete

@@ -9,6 +9,11 @@ const createRatingExample = {
 	score: 4.5,
 };
 
+export const eventIdParamSchma = z.uuid().openapi("EventIdParamSchema", {
+	description: "Event ID",
+	example: "550e8400-e29b-41d4-a716-446655440000",
+});
+
 const scoreRules = z.coerce
 	.number({ error: "The rating value is required" })
 	.min(1, {

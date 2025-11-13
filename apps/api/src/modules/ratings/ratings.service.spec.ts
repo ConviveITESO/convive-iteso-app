@@ -4,46 +4,32 @@ import { RatingsService } from "./ratings.service";
 
 describe("RatingsService", () => {
 	let service: RatingsService;
-	let mockDb: {
+	const mockDb = {
 		query: {
 			ratings: {
-				findFirst: jest.Mock;
-			};
-		};
-		insert: jest.Mock;
-		values: jest.Mock;
-		returning: jest.Mock;
-		update: jest.Mock;
-		set: jest.Mock;
-		where: jest.Mock;
-		delete: jest.Mock;
+				findFirst: jest.fn(),
+			},
+			events: {
+				findFirst: jest.fn(),
+			},
+		},
+		insert: jest.fn(),
+		update: jest.fn(),
+		delete: jest.fn(),
 	};
 
 	beforeEach(async () => {
-		const mockDatabaseConnection = {
-			query: {
-				ratings: {
-					findFirst: jest.fn(),
-				},
-			},
-			insert: jest.fn().mockReturnThis(),
-			values: jest.fn().mockReturnThis(),
-			returning: jest.fn(),
-			update: jest.fn().mockReturnThis(),
-			set: jest.fn().mockReturnThis(),
-			where: jest.fn().mockReturnThis(),
-			delete: jest.fn().mockReturnThis(),
-		};
-
 		const module: TestingModule = await Test.createTestingModule({
 			providers: [
 				RatingsService,
-				{ provide: DATABASE_CONNECTION, useValue: mockDatabaseConnection },
+				{
+					provide: DATABASE_CONNECTION,
+					useValue: mockDb,
+				},
 			],
 		}).compile();
 
 		service = module.get<RatingsService>(RatingsService);
-		mockDb = module.get(DATABASE_CONNECTION);
 		jest.clearAllMocks();
 	});
 
@@ -52,82 +38,120 @@ describe("RatingsService", () => {
 	});
 
 	describe("getRatingByPrimaryKey", () => {
-		it("returns rating when found", async () => {
-			const rating = {
-				userId: "u1",
-				eventId: "e1",
-				score: 4,
-				createdAt: new Date(),
-				updatedAt: new Date(),
-			};
+		it("returns the stored rating", async () => {
+			const rating = { eventId: "e1" };
 			mockDb.query.ratings.findFirst.mockResolvedValue(rating);
-			const result = await service.getRatingByPrimaryKey("u1", "e1");
-			expect(result).toEqual(rating);
-			expect(mockDb.query.ratings.findFirst).toHaveBeenCalled();
+
+			const result = await service.getRatingByPrimaryKey("user-1", "e1");
+
+			expect(result).toBe(rating);
+			expect(mockDb.query.ratings.findFirst).toHaveBeenCalledWith({
+				where: expect.any(Object),
+			});
 		});
 
-		it("returns undefined when not found", async () => {
+		it("returns undefined when no rating matches", async () => {
 			mockDb.query.ratings.findFirst.mockResolvedValue(undefined);
-			const result = await service.getRatingByPrimaryKey("u1", "e1");
+
+			const result = await service.getRatingByPrimaryKey("user-1", "missing");
+
 			expect(result).toBeUndefined();
 		});
 	});
 
 	describe("addRatingToEvent", () => {
-		it("inserts and returns created rating", async () => {
-			const created = { userId: "u1", eventId: "e1", score: 5 };
-			(mockDb.returning as unknown as jest.Mock).mockResolvedValue([created]);
-			const result = await service.addRatingToEvent("e1", "u1", { score: 5 });
-			expect(mockDb.insert).toHaveBeenCalled();
-			expect(mockDb.values).toHaveBeenCalledWith({ eventId: "e1", userId: "u1", score: 5 });
+		it("returns null when the event does not exist", async () => {
+			mockDb.query.events.findFirst.mockResolvedValue(undefined);
+
+			const result = await service.addRatingToEvent("missing", "user-1", { score: 5 });
+
+			expect(result).toBeNull();
+			expect(mockDb.insert).not.toHaveBeenCalled();
+		});
+
+		it("returns null when the event has not finished", async () => {
+			mockDb.query.events.findFirst.mockResolvedValue({
+				endDate: new Date(Date.now() + 60_000),
+			});
+
+			const result = await service.addRatingToEvent("future-event", "user-1", { score: 5 });
+
+			expect(result).toBeNull();
+			expect(mockDb.insert).not.toHaveBeenCalled();
+		});
+
+		it("persists a rating when the event already ended", async () => {
+			const created = { eventId: "event-1", userId: "user-1", score: 5 };
+			const insertBuilder = {
+				values: jest.fn().mockReturnThis(),
+				returning: jest.fn().mockResolvedValue([created]),
+			};
+			mockDb.query.events.findFirst.mockResolvedValue({
+				endDate: new Date(Date.now() - 60_000),
+			});
+			mockDb.insert.mockReturnValue(insertBuilder);
+
+			const result = await service.addRatingToEvent("event-1", "user-1", { score: 5 });
+
 			expect(result).toEqual(created);
+			expect(insertBuilder.values).toHaveBeenCalledWith({
+				eventId: "event-1",
+				userId: "user-1",
+				score: 5,
+			});
+			expect(insertBuilder.returning).toHaveBeenCalled();
 		});
 	});
 
+	type Rating = Awaited<ReturnType<RatingsService["getRatingByPrimaryKey"]>>;
+
 	describe("updateRatingToEvent", () => {
-		it("returns null if rating does not exist", async () => {
+		it("returns null when the rating does not exist", async () => {
 			jest.spyOn(service, "getRatingByPrimaryKey").mockResolvedValue(undefined);
-			const result = await service.updateRatingToEvent("e1", "u1", { score: 3 });
+
+			const result = await service.updateRatingToEvent("event-1", "user-1", { score: 3 });
+
 			expect(result).toBeNull();
 		});
 
-		it("updates and returns the rating when it exists", async () => {
-			const existing = {
-				userId: "u1",
-				eventId: "e1",
-				score: 2,
-				createdAt: new Date(),
-				updatedAt: new Date(),
+		it("updates the rating when it exists", async () => {
+			const existing = { eventId: "event-1", userId: "user-1", score: 1 } as NonNullable<Rating>;
+			const updateBuilder = {
+				set: jest.fn().mockReturnThis(),
+				where: jest.fn().mockResolvedValue(undefined),
 			};
 			jest.spyOn(service, "getRatingByPrimaryKey").mockResolvedValue(existing);
-			const result = await service.updateRatingToEvent("e1", "u1", { score: 4 });
+			mockDb.update.mockReturnValue(updateBuilder);
+
+			const result = await service.updateRatingToEvent("event-1", "user-1", { score: 4 });
+
 			expect(result?.score).toBe(4);
-			expect(mockDb.update).toHaveBeenCalled();
-			expect(mockDb.set).toHaveBeenCalledWith({ score: 4 });
-			expect(mockDb.where).toHaveBeenCalled();
+			expect(updateBuilder.set).toHaveBeenCalledWith({ score: 4 });
+			expect(updateBuilder.where).toHaveBeenCalledWith(expect.any(Object));
 		});
 	});
 
 	describe("deleteRatingFromEvent", () => {
-		it("returns null if rating does not exist", async () => {
+		it("returns null when rating is missing", async () => {
 			jest.spyOn(service, "getRatingByPrimaryKey").mockResolvedValue(undefined);
-			const result = await service.deleteRatingFromEvent("u1", "e1");
+
+			const result = await service.deleteRatingFromEvent("user-1", "event-1");
+
 			expect(result).toBeNull();
 		});
 
-		it("deletes and returns existing rating", async () => {
-			const existing = {
-				userId: "u1",
-				eventId: "e1",
-				score: 4,
-				createdAt: new Date(),
-				updatedAt: new Date(),
+		it("deletes and returns the rating", async () => {
+			const existing = { eventId: "event-1", userId: "user-1", score: 2 } as NonNullable<Rating>;
+			const deleteBuilder = {
+				where: jest.fn().mockResolvedValue(undefined),
 			};
 			jest.spyOn(service, "getRatingByPrimaryKey").mockResolvedValue(existing);
-			const result = await service.deleteRatingFromEvent("u1", "e1");
+			mockDb.delete.mockReturnValue(deleteBuilder);
+
+			const result = await service.deleteRatingFromEvent("user-1", "event-1");
+
 			expect(result).toEqual(existing);
-			expect(mockDb.delete).toHaveBeenCalled();
-			expect(mockDb.where).toHaveBeenCalled();
+			expect(deleteBuilder.where).toHaveBeenCalledWith(expect.any(Object));
 		});
 	});
 });

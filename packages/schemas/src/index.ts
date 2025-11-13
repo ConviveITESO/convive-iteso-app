@@ -5,6 +5,7 @@ export { prettifyError, treeifyError, ZodError } from "zod";
 export * from "./analytics";
 export * from "./badges";
 export * from "./categories";
+export * from "./comments";
 export * from "./events";
 export * from "./groups";
 export * from "./locations";

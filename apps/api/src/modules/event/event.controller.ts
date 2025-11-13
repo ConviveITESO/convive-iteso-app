@@ -76,8 +76,10 @@ export class EventController {
 	@ZodOk(eventResponseSchema)
 	async getEventById(
 		@Param(new ZodValidationPipe(eventIdParamSchema)) idParam: EventIdParamSchema,
+		@Req() req: UserRequest,
 	): Promise<EventResponseSchema> {
-		const event = await this.eventsService.getEventByIdOrThrow(idParam.id);
+		const userId = req.user.id;
+		const event = await this.eventsService.getEventByIdOrThrow(idParam.id, userId);
 		return event;
 	}
 
@@ -106,7 +108,8 @@ export class EventController {
 		const data: CreateEventSchema = result.data;
 		const userId = req.user.id;
 		const eventId = await this.eventsService.createEvent(data, userId, imageFile);
-		const event = await this.eventsService.getEventByIdOrThrow(eventId);
+		const event = await this.eventsService.getEventByIdOrThrow(eventId, userId);
+
 		return event;
 	}
 
@@ -121,7 +124,7 @@ export class EventController {
 	): Promise<EventResponseSchema> {
 		const userId = req.user.id;
 		await this.eventsService.updateEvent(data, id, userId);
-		return this.eventsService.getEventByIdOrThrow(id);
+		return this.eventsService.getEventByIdOrThrow(id, userId);
 	}
 
 	// PUT /events/:id/change-status
