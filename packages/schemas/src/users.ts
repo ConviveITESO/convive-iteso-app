@@ -107,6 +107,7 @@ export const userResponseSchema = z
 		email: z.string(),
 		status: z.string(),
 		role: z.string(),
+		profile: z.string().nullable(),
 		createdAt: z.string(),
 		updatedAt: z.string().nullable(),
 		deletedAt: z.string().nullable(),

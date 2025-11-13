@@ -1,4 +1,5 @@
 import { Test, TestingModule } from "@nestjs/testing";
+import { UserRequest } from "@/types/user.request";
 import { UserController } from "./user.controller";
 import { UserService } from "./user.service";
 
@@ -10,6 +11,7 @@ describe("UserController", () => {
 		getUserById: jest.fn(),
 		createUser: jest.fn(),
 		updateUser: jest.fn(),
+		updateProfilePicture: jest.fn(),
 		deleteUser: jest.fn(),
 	};
 
@@ -37,6 +39,19 @@ describe("UserController", () => {
 
 			expect(mockUserService.getUsers).toHaveBeenCalledWith(query);
 			expect(response).toEqual(result);
+		});
+	});
+
+	describe("getCurrentUser", () => {
+		it("should call userService.getUserById with current user id and return the result", async () => {
+			const user = { id: "current-user-id", name: "Current User" };
+			const req = { user: { id: "current-user-id" } } as UserRequest;
+			mockUserService.getUserById.mockResolvedValueOnce(user);
+
+			const response = await controller.getCurrentUser(req);
+
+			expect(mockUserService.getUserById).toHaveBeenCalledWith({ id: "current-user-id" });
+			expect(response).toEqual(user);
 		});
 	});
 
@@ -92,6 +107,49 @@ describe("UserController", () => {
 			const response = await controller.updateUser(data, { id: "1" });
 
 			expect(mockUserService.updateUser).toHaveBeenCalledWith({ id: "1" }, data);
+			expect(response).toEqual(updatedUser);
+		});
+	});
+
+	describe("uploadProfilePicture", () => {
+		const mockFile = {
+			buffer: Buffer.from("fake-image-data"),
+			mimetype: "image/jpeg",
+			originalname: "profile.jpg",
+			fieldname: "file",
+			encoding: "7bit",
+			size: 12345,
+		} as Express.Multer.File;
+
+		it("should call userService.updateProfilePicture and return the result", async () => {
+			const updatedUser = {
+				id: "1",
+				name: "Alice",
+				email: "alice@iteso.mx",
+				status: "active" as const,
+				profile: "https://bucket.s3.region.amazonaws.com/profile/123.jpg",
+			};
+			mockUserService.updateProfilePicture.mockResolvedValueOnce(updatedUser);
+
+			const response = await controller.uploadProfilePicture({ id: "1" }, mockFile);
+
+			expect(mockUserService.updateProfilePicture).toHaveBeenCalledWith({ id: "1" }, mockFile);
+			expect(response).toEqual(updatedUser);
+		});
+
+		it("should handle file upload for different user ids", async () => {
+			const updatedUser = {
+				id: "2",
+				name: "Bob",
+				email: "bob@iteso.mx",
+				status: "active" as const,
+				profile: "https://bucket.s3.region.amazonaws.com/profile/456.jpg",
+			};
+			mockUserService.updateProfilePicture.mockResolvedValueOnce(updatedUser);
+
+			const response = await controller.uploadProfilePicture({ id: "2" }, mockFile);
+
+			expect(mockUserService.updateProfilePicture).toHaveBeenCalledWith({ id: "2" }, mockFile);
 			expect(response).toEqual(updatedUser);
 		});
 	});

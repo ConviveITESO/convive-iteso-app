@@ -14,7 +14,7 @@ export function SearchHeader({ searchQuery, onSearchChange }: SearchHeaderProps)
 					<Search className="absolute left-3 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />
 					<Input
 						type="text"
-						placeholder="Search events..."
+						placeholder="Search events by name, description or organizer..."
 						value={searchQuery}
 						onChange={(e) => onSearchChange(e.target.value)}
 						className="h-12 rounded-full pl-10 pr-4 shadow-md"

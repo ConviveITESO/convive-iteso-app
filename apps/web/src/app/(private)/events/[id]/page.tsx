@@ -100,7 +100,12 @@ export default function EventPage() {
 					<EventImage imageUrl={event.imageUrl} name={event.name} />
 
 					<div className="px-8 pb-8">
-						<EventDetails description={event.description} startDate={startDate} endDate={endDate} />
+						<EventDetails
+							description={event.description}
+							startDate={startDate}
+							endDate={endDate}
+							createdBy={event.createdBy}
+						/>
 						<SubscriptionStatus isWaitlisted={isWaitlisted} position={subscription.position} />
 						{showQr && (
 							<div className="w-full mt-4 p-4 text-center">
@@ -133,7 +138,12 @@ export default function EventPage() {
 				<EventImage imageUrl={event.imageUrl} name={event.name} />
 
 				<div className="px-8 pb-8">
-					<EventDetails description={event.description} startDate={startDate} endDate={endDate} />
+					<EventDetails
+						description={event.description}
+						startDate={startDate}
+						endDate={endDate}
+						createdBy={event.createdBy}
+					/>
 					<EventStats registeredCount={registeredCount} quota={event.quota} spotsLeft={spotsLeft} />
 					<Button
 						className={cn(
@@ -143,7 +153,7 @@ export default function EventPage() {
 								: "bg-primary text-primary-foreground hover:bg-primary/90",
 						)}
 						onClick={handleRegister}
-						disabled={eventHasStarted}
+						disabled={eventHasStarted || event.status === "deleted"}
 					>
 						{eventHasStarted
 							? "Event has started"

@@ -40,7 +40,11 @@ export default function MyEventsPage() {
 			}
 		},
 		onSuccess: async () => {
-			await queryClient.invalidateQueries({ queryKey: ["subscriptions", "events"] });
+			await Promise.all([
+				queryClient.invalidateQueries({ queryKey: ["subscriptions", "events"] }),
+				queryClient.invalidateQueries({ queryKey: ["subscription-check"] }),
+				queryClient.invalidateQueries({ queryKey: ["subscription-details"] }),
+			]);
 			setDialogOpen(false);
 			setSelectedEvent(null);
 		},
@@ -59,7 +63,7 @@ export default function MyEventsPage() {
 	}, []);
 	useHeaderTitle("My events");
 
-	if (!isAuthenticated || isLoading) {
+	if (!isAuthenticated) {
 		return (
 			<div className="flex min-h-screen items-center justify-center">
 				<p className="text-muted-foreground">Loading...</p>
@@ -113,6 +117,7 @@ export default function MyEventsPage() {
 						<TabsContent value="upcoming">
 							<EventsGrid
 								events={upcomingEvents}
+								eventsLoading={isLoading}
 								onEventClick={handleEventClick}
 								mode="subscription"
 								onUnsubscribe={handleUnsubscribe}
@@ -120,7 +125,11 @@ export default function MyEventsPage() {
 						</TabsContent>
 
 						<TabsContent value="past">
-							<EventsGrid events={pastEvents} onEventClick={handleEventClick} />
+							<EventsGrid
+								events={pastEvents}
+								eventsLoading={isLoading}
+								onEventClick={handleEventClick}
+							/>
 						</TabsContent>
 					</Tabs>
 				</div>
