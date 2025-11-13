@@ -11,6 +11,7 @@ import { EventDetails } from "./_components/_event-details";
 import { EventImage } from "./_components/_event-image";
 import { EventPass } from "./_components/_event-pass";
 import { EventStats } from "./_components/_event-stats";
+import RatingModal from "./_components/_rating-modal";
 import { SubscriptionStatus } from "./_components/_subscription-status";
 import { useEventData } from "./_use-event-data";
 
@@ -93,6 +94,7 @@ export default function EventPage() {
 		const now = new Date();
 		const tenMinutesBeforeStart = new Date(startDate.getTime() - 10 * 60 * 1000);
 		const showQr = now >= tenMinutesBeforeStart && now <= endDate && !isWaitlisted;
+		const hasEnded = endDate.getTime() < Date.now();
 
 		return (
 			<div className="min-h-screen bg-background">
@@ -100,23 +102,46 @@ export default function EventPage() {
 					<EventImage imageUrl={event.imageUrl} name={event.name} />
 
 					<div className="px-8 pb-8">
-						<EventDetails description={event.description} startDate={startDate} endDate={endDate} />
-						<SubscriptionStatus isWaitlisted={isWaitlisted} position={subscription.position} />
-						{showQr && (
-							<div className="w-full mt-4 p-4 text-center">
-								<EventPass event={event} subscription={subscription} />
-							</div>
+						<EventDetails
+							description={event.description}
+							startDate={startDate}
+							endDate={endDate}
+							ratingAverage={hasEnded ? event.ratingInfo?.ratingAverage || 0 : undefined}
+							eventId={eventId as string}
+							createdBy={event.createdBy}
+						/>
+
+						{/** Only show event metadata if it hasn't ended */}
+						{!hasEnded && (
+							<>
+								<SubscriptionStatus isWaitlisted={isWaitlisted} position={subscription.position} />
+
+								{showQr && (
+									<div className="w-full mt-4 p-4 text-center">
+										<EventPass event={event} subscription={subscription} />
+									</div>
+								)}
+
+								<Button
+									variant="secondary"
+									className="w-full mt-4 h-10"
+									onClick={() => {
+										router.push(`/groups/${event.group.id}`);
+									}}
+								>
+									Go to event group
+								</Button>
+							</>
 						)}
 
-						<Button
-							variant="secondary"
-							className="w-full mt-4 h-10"
-							onClick={() => {
-								router.push(`/groups/${event.group.id}`);
-							}}
-						>
-							Go to event group
-						</Button>
+						{/** Allow rating if it ended */}
+
+						{hasEnded && (
+							<RatingModal
+								userHasRated={event.ratingInfo?.userHasRated || false}
+								eventId={eventId || ""}
+							/>
+						)}
 					</div>
 				</div>
 			</div>
@@ -133,7 +158,13 @@ export default function EventPage() {
 				<EventImage imageUrl={event.imageUrl} name={event.name} />
 
 				<div className="px-8 pb-8">
-					<EventDetails description={event.description} startDate={startDate} endDate={endDate} />
+					<EventDetails
+						description={event.description}
+						startDate={startDate}
+						endDate={endDate}
+						eventId={eventId as string}
+						createdBy={event.createdBy}
+					/>
 					<EventStats registeredCount={registeredCount} quota={event.quota} spotsLeft={spotsLeft} />
 					<Button
 						className={cn(
@@ -143,7 +174,7 @@ export default function EventPage() {
 								: "bg-primary text-primary-foreground hover:bg-primary/90",
 						)}
 						onClick={handleRegister}
-						disabled={eventHasStarted}
+						disabled={eventHasStarted || event.status === "deleted"}
 					>
 						{eventHasStarted
 							? "Event has started"

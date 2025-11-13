@@ -10,13 +10,14 @@ import {
 	CategoryResponseSchema,
 	CreateEventSchema,
 	CreatorEventResponseArraySchema,
+	EventRatingInfoSchema,
 	EventResponseSchema,
 	GetEventsCreatedByUserQuerySchema,
 	GetEventsQuerySchema,
 	UpdateEventSchema,
 	UserResponseSchema,
 } from "@repo/schemas";
-import { and, eq, gt, isNull, like, lt, sql } from "drizzle-orm";
+import { and, avg, eq, gt, ilike, isNull, lt, or, sql } from "drizzle-orm";
 import { BadgeService } from "../badge/badge.service";
 import { CategoryService } from "../category/category.service";
 import { AppDatabase, DATABASE_CONNECTION } from "../database/connection";
@@ -31,12 +32,14 @@ import {
 	groups,
 	Location,
 	locations,
+	ratings,
 	subscriptions,
 	User,
 	users,
 } from "../database/schemas";
 import { GroupService } from "../group/group.service";
 import { LocationService } from "../location/location.service";
+import { RatingsService } from "../ratings/ratings.service";
 import { S3Service } from "../s3/s3.service";
 import { UserService } from "../user/user.service";
 
@@ -49,6 +52,7 @@ export class EventService {
 		private readonly locationService: LocationService,
 		private readonly categoryService: CategoryService,
 		private readonly badgeService: BadgeService,
+		private readonly ratingsService: RatingsService,
 		private readonly s3Service: S3Service,
 	) {}
 
@@ -61,7 +65,16 @@ export class EventService {
 			where.push(gt(events.endDate, now));
 		}
 		if (filters.name) {
-			where.push(like(events.name, `%${filters.name}%`));
+			const search = `%${filters.name}%`;
+			where.push(
+				// biome-ignore lint/style/noNonNullAssertion: <>
+				or(
+					ilike(events.name, search),
+					ilike(events.description, search),
+					ilike(users.name, search),
+					ilike(users.email, search),
+				)!,
+			);
 		}
 		if (filters.locationId) {
 			where.push(eq(events.locationId, filters.locationId));
@@ -128,6 +141,7 @@ export class EventService {
 				result.location,
 				result.categories,
 				result.badges,
+				undefined,
 			),
 		);
 	}
@@ -194,7 +208,7 @@ export class EventService {
 		}));
 	}
 
-	async getEventById(id: string): Promise<EventResponseSchema | undefined> {
+	async getEventById(id: string, userId: string): Promise<EventResponseSchema | undefined> {
 		const [event] = await this.db
 			.select({
 				event: events,
@@ -225,6 +239,7 @@ export class EventService {
 					) filter (where ${badges.id} is not null),
 					'[]'::json
 				)`,
+				ratings: avg(ratings.score),
 			})
 			.from(events)
 			.where(eq(events.id, id))
@@ -234,6 +249,7 @@ export class EventService {
 				locations,
 				and(eq(locations.id, events.locationId), eq(locations.status, "active")),
 			)
+			.leftJoin(ratings, eq(events.id, ratings.eventId))
 			.leftJoin(eventsCategories, eq(eventsCategories.eventId, events.id))
 			.leftJoin(
 				categories,
@@ -243,6 +259,18 @@ export class EventService {
 			.leftJoin(badges, and(eq(eventsBadges.badgeId, badges.id), eq(badges.status, "active")))
 			.groupBy(events.id, users.id, groups.id, locations.id);
 		if (!event) return event;
+
+		const ratingInfo: EventRatingInfoSchema = {
+			ratingAverage: Number(event.ratings),
+			userHasRated: false,
+		};
+
+		// Get if the user has already rated on an already finished event
+		if (event.event.endDate.getTime() < Date.now()) {
+			const userRating = await this.ratingsService.getRatingByPrimaryKey(userId, event.event.id);
+			if (userRating) ratingInfo.userHasRated = true;
+		}
+
 		return this.formatEvent(
 			event.event,
 			event.creator,
@@ -250,11 +278,12 @@ export class EventService {
 			event.location,
 			event.categories,
 			event.badges,
+			ratingInfo,
 		);
 	}
 
-	async getEventByIdOrThrow(id: string): Promise<EventResponseSchema> {
-		const event = await this.getEventById(id);
+	async getEventByIdOrThrow(id: string, userId: string): Promise<EventResponseSchema> {
+		const event = await this.getEventById(id, userId); // userId is necessary to ensure he hasn't rated yet
 		if (!event) throw new NotFoundException("Event not found");
 		return event;
 	}
@@ -280,7 +309,7 @@ export class EventService {
 
 	async updateEvent(data: UpdateEventSchema, id: string, userId: string): Promise<void> {
 		return this.db.transaction(async () => {
-			const event = await this.getEventByIdOrThrow(id);
+			const event = await this.getEventByIdOrThrow(id, userId);
 			if (event.createdBy.id !== userId)
 				throw new ForbiddenException("You do not have permission to edit this event");
 			if (event.status === "deleted")
@@ -292,7 +321,7 @@ export class EventService {
 	}
 
 	async changeEventStatus(id: string, user: UserResponseSchema): Promise<void> {
-		const event = await this.getEventByIdOrThrow(id);
+		const event = await this.getEventByIdOrThrow(id, user.id);
 		if (event.createdBy.id !== user.id && user.role !== "admin") {
 			throw new ForbiddenException("You do not have permission to delete this event");
 		}
@@ -311,6 +340,7 @@ export class EventService {
 		eventLocation: Location,
 		eventCategories: CategoryResponseSchema[],
 		eventBadges: BadgeResponseSchema[],
+		ratingInfo?: EventRatingInfoSchema,
 	): EventResponseSchema {
 		const group = this.groupService.formatGroup(eventGroup);
 		const createdBy = this.userService.formatUser(creator);
@@ -329,6 +359,7 @@ export class EventService {
 			categories: eventCategories,
 			badges: eventBadges,
 			imageUrl: event.imageUrl,
+			ratingInfo,
 		};
 	}
 

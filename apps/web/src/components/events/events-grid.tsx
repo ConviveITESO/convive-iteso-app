@@ -21,6 +21,7 @@ export function hasGroupWithId(event: GridEvent): event is CreatorEventResponseA
 
 interface EventsGridProps {
 	events: GridEventArray;
+	eventsLoading: boolean;
 	onEventClick: (eventId: string) => void;
 	mode?: "admin" | "subscription";
 	onEdit?: (eventId: string) => void;
@@ -34,6 +35,7 @@ interface EventsGridProps {
 
 export function EventsGrid({
 	events,
+	eventsLoading,
 	onEventClick,
 	mode,
 	onEdit,
@@ -44,6 +46,14 @@ export function EventsGrid({
 	onViewStats,
 	onUnsubscribe,
 }: EventsGridProps) {
+	if (eventsLoading) {
+		return (
+			<div className="col-span-full py-12 text-center">
+				<p className="text-muted-foreground">Loading...</p>
+			</div>
+		);
+	}
+
 	if (events.length === 0) {
 		return (
 			<div className="col-span-full py-12 text-center">

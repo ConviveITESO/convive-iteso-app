@@ -67,7 +67,7 @@ export default function MyEventsPage() {
 	}, []);
 	useHeaderTitle("My events");
 
-	if (!isAuthenticated || isLoading) {
+	if (!isAuthenticated) {
 		return (
 			<div className="flex min-h-screen items-center justify-center">
 				<MyEventsSkeleton />
@@ -127,14 +127,31 @@ export default function MyEventsPage() {
 							<MyEventsGrid
 								mode="upcoming"
 								events={upcomingEvents}
+<<<<<<< HEAD
 								isLoading={isLoading}
+=======
+								eventsLoading={isLoading}
+>>>>>>> origin/main
 								onEventClick={handleEventClick}
 								onUnsubscribe={handleUnsubscribe}
 							/>
+<<<<<<< HEAD
 						) : (
 							<MyEventsGrid events={pastEvents} onEventClick={handleEventClick} mode={"past"} />
 						)}
 					</div>
+=======
+						</TabsContent>
+
+						<TabsContent value="past">
+							<EventsGrid
+								events={pastEvents}
+								eventsLoading={isLoading}
+								onEventClick={handleEventClick}
+							/>
+						</TabsContent>
+					</Tabs>
+>>>>>>> origin/main
 				</div>
 
 				<DialogContent>

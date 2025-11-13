@@ -41,6 +41,15 @@ export default function ChatPage() {
 		});
 	};
 
+	const getInitials = (name: string) => {
+		return name
+			.split(" ")
+			.map((word) => word[0])
+			.join("")
+			.toUpperCase()
+			.slice(0, 2);
+	};
+
 	if (!groupId) {
 		return (
 			<div className="flex h-screen items-center justify-center bg-background">
@@ -72,10 +81,10 @@ export default function ChatPage() {
 								{messages.map((msg) => (
 									<div key={msg.id} className="mb-4 flex items-start gap-3">
 										<Avatar className="size-8 shrink-0">
-											<AvatarImage
-												src={`https://api.dicebear.com/8.x/initials/svg?seed=${msg.userId}`}
-											/>
-											<AvatarFallback>U</AvatarFallback>
+											{msg.profile ? <AvatarImage src={msg.profile} alt={msg.username} /> : null}
+											<AvatarFallback className="bg-muted">
+												{getInitials(msg.username)}
+											</AvatarFallback>
 										</Avatar>
 										<div className="flex flex-col">
 											<div className="flex items-center gap-2">

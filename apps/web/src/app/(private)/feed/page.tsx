@@ -27,7 +27,7 @@ export default function FeedPage() {
 	);
 	const { data: categories = [], isLoading: categoriesLoading } = useCategories(isAuthenticated);
 
-	if (!isAuthenticated || eventsLoading || categoriesLoading) {
+	if (!isAuthenticated || categoriesLoading) {
 		return (
 			<div className="flex min-h-screen items-center justify-center">
 				<p className="text-muted-foreground">Loading...</p>
@@ -63,7 +63,7 @@ export default function FeedPage() {
 					showAllOption={true}
 				/>
 
-				<EventsGrid events={events} onEventClick={handleEventClick} />
+				<EventsGrid events={events} onEventClick={handleEventClick} eventsLoading={eventsLoading} />
 			</div>
 		</div>
 	);
