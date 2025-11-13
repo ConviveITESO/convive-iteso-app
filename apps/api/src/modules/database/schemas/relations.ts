@@ -1,12 +1,14 @@
 import { relations } from "drizzle-orm";
 import { badges } from "./badges";
 import { categories } from "./categories";
+import { comments } from "./comments";
 import { eventImpressions } from "./event-impressions";
 import { events } from "./events";
 import { eventsBadges } from "./events-badges";
 import { eventsCategories } from "./events-categories";
 import { groups } from "./groups";
 import { locations } from "./locations";
+import { ratings } from "./ratings";
 import { users } from "./users";
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -16,6 +18,7 @@ export const usersRelations = relations(users, ({ many }) => ({
 	createdCategories: many(categories),
 	createdLocations: many(locations),
 	impressions: many(eventImpressions),
+	comments: many(comments),
 }));
 
 export const eventsRelations = relations(events, ({ one, many }) => ({
@@ -99,3 +102,17 @@ export const eventImpressionsRelations = relations(eventImpressions, ({ one }) =
 		references: [users.id],
 	}),
 }));
+
+export const usersRatings = relations(ratings, ({ one }) => {
+	return {
+		user: one(users, { fields: [ratings.userId], references: [users.id] }),
+		event: one(events, { fields: [ratings.eventId], references: [events.id] }),
+	};
+});
+
+export const commentsRelations = relations(comments, ({ one }) => {
+	return {
+		user: one(users, { fields: [comments.userId], references: [users.id] }),
+		event: one(events, { fields: [comments.eventId], references: [events.id] }),
+	};
+});

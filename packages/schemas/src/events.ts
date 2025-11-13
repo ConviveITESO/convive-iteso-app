@@ -100,6 +100,11 @@ export const updateEventSchema = createEventSchema
 // RESPONSE schemas
 // ==========================================================
 
+export const eventRatingInfoSchema = z.object({
+	ratingAverage: z.number(),
+	userHasRated: z.boolean(),
+});
+
 export const eventResponseSchemaExample = {
 	id: "550e8400-e29b-41d4-a716-446655440000",
 	name: "Event 1",
@@ -113,6 +118,10 @@ export const eventResponseSchemaExample = {
 	group: groupResponseSchemaExample,
 	categories: categoryResponseArraySchemaExample,
 	badges: badgeResponseArraySchemaExample,
+	ratingInfo: {
+		ratingAverage: 4.2,
+		userHasRated: true,
+	},
 };
 
 export const eventResponseSchema = z
@@ -130,6 +139,7 @@ export const eventResponseSchema = z
 		categories: categoryResponseArraySchema,
 		badges: badgeResponseArraySchema,
 		imageUrl: z.string(),
+		ratingInfo: eventRatingInfoSchema.optional(),
 	})
 	.openapi("EventResponseSchema", {
 		example: eventResponseSchemaExample,
@@ -231,6 +241,7 @@ export type GetEventsCreatedByUserQuerySchema = z.infer<typeof getEventsCreatedB
 export type EventIdParamSchema = z.infer<typeof eventIdParamSchema>;
 export type CreateEventSchema = z.infer<typeof createEventSchema>;
 export type UpdateEventSchema = z.infer<typeof updateEventSchema>;
+export type EventRatingInfoSchema = z.infer<typeof eventRatingInfoSchema>;
 export type EventResponseSchema = z.infer<typeof eventResponseSchema>;
 export type EventResponseArraySchema = z.infer<typeof eventResponseArraySchema>;
 export type CreatorEventResponseSchema = z.infer<typeof creatorEventResponseSchema>;
