@@ -330,6 +330,7 @@ ACM certificate has been created and is pending DNS validation:
 Add these DNS CNAME records to your domain:
 
 **For conviveitesofront.ricardonavarro.mx:**
+
 ```
 Name:  _377e864889e5482adade9f7151967b37.conviveitesofront.ricardonavarro.mx
 Type:  CNAME
@@ -337,6 +338,7 @@ Value: _6b50f0f83784b7c0f67d31bc131f0cb4.jkddzztszm.acm-validations.aws.
 ```
 
 **For conviveitesoback.ricardonavarro.mx:**
+
 ```
 Name:  _5ebafbef6ff730bc632f6fdc340b0fdf.conviveitesoback.ricardonavarro.mx
 Type:  CNAME
@@ -344,6 +346,7 @@ Value: _81206b15cf600cbbbf92d3fc9e1d06a2.jkddzztszm.acm-validations.aws.
 ```
 
 **After Certificate Validation:**
+
 1. Uncomment HTTPS listener and routing rules in `infra/alb.tf`
 2. Update HTTP listener to redirect to HTTPS
 3. Run `terraform apply`
@@ -364,6 +367,7 @@ curl -H "Host: conviveitesoback.ricardonavarro.mx" http://$ALB_DNS/health
 ```
 
 **Architecture:** Both domains point to the same ALB DNS. The ALB inspects the HTTP `Host` header and routes:
+
 - `conviveitesofront.ricardonavarro.mx` → Frontend Target Group (port 3000)
 - `conviveitesoback.ricardonavarro.mx` → Backend Target Group (port 8080)
 
@@ -507,6 +511,7 @@ curl -H "Host: conviveitesoback.ricardonavarro.mx" http://$ALB_DNS/health
   - [x] **Status**: Complete - No additional setup required ✅
 
 **✅ AWS Learner Lab Configuration Verified:**
+
 - LabRole already has `AmazonEC2ContainerRegistryReadOnly` policy attached
 - EC2 instances will have all necessary permissions to pull Docker images from ECR
 - No manual configuration needed
@@ -537,12 +542,14 @@ curl -H "Host: conviveitesoback.ricardonavarro.mx" http://$ALB_DNS/health
   - [x] Region (us-east-1 or us-west-2)
 
   **Acceptably hardcoded in ASG/ECR files (no variables needed):**
+
   - Instance types: t3.small for both (in asg-frontend.tf:14 and asg-backend.tf:15)
   - ASG counts: min=1, max=4, desired=2 (in both ASG files)
   - ECR repository names: "convive-frontend", "convive-backend" (in ecr.tf:13,39)
   - ECR image retention: 10 images (in ecr.tf lifecycle policies)
 
   **Removed (no longer needed for ECR-based deployment):**
+
   - ~~GitHub repository URL~~
   - ~~GitHub token~~ (not needed in Terraform, only in CI/CD)
 
@@ -579,22 +586,27 @@ This phase completely replaces the old SSH-based deployment with a modern ECR + 
 #### New Deployment Flow
 
 ```
-Developer pushes to main
+PR merged to main (direct push disabled)
          ↓
 GitHub Actions Triggered
          ↓
 ┌────────────────────────────────────┐
-│  1. Build Stage                    │
-│  - Build frontend Docker image     │
-│  - Build backend Docker image      │
-│  - Run tests in containers         │
+│  1. Migration Check Stage          │
+│  - Check apps/api/drizzle for new  │
+│    migration files                 │
+│  - If migrations exist:            │
+│    • Apply to production DB        │
+│    • Wait for completion           │
 └────────────────────────────────────┘
          ↓
 ┌────────────────────────────────────┐
-│  2. Push to ECR Stage              │
+│  2. Build & Push Stage             │
+│  - Build frontend Docker image     │
+│  - Build backend Docker image      │
 │  - Tag: latest + sha-<commit>      │
 │  - Push frontend to ECR            │
 │  - Push backend to ECR             │
+│  (Tests already passed in PR)      │
 └────────────────────────────────────┘
          ↓
 ┌────────────────────────────────────┐
@@ -613,91 +625,60 @@ GitHub Actions Triggered
 
 #### GitHub Actions Workflows
 
-- [ ] **Complete rewrite of .github/workflows/deploy.yml**
+- [x] **Complete rewrite of .github/workflows/deploy.yml**
 
-  **Job 1: Build and Push Images**
+  **Workflow Triggers & Guardrails**
 
-  - [ ] Checkout code
-  - [ ] Set up Docker Buildx
-  - [ ] Configure AWS credentials (Learner Lab)
-  - [ ] Login to Amazon ECR
-  - [ ] Extract commit SHA for tagging
-  - [ ] Build frontend Docker image
-    - [ ] Tag with `:latest`
-    - [ ] Tag with `:sha-<commit-sha>`
-    - [ ] Use cache layers for faster builds
-  - [ ] Push frontend image to ECR
-  - [ ] Build backend Docker image
-    - [ ] Tag with `:latest`
-    - [ ] Tag with `:sha-<commit-sha>`
-    - [ ] Use cache layers for faster builds
-  - [ ] Push backend image to ECR
-  - [ ] Output image digests and tags
+  - [x] Trigger only on `push` to `main` (merge commits; direct pushes blocked)
+  - [x] Require PR status checks to pass before merge (tests already executed)
 
-  **Job 2: Deploy via ASG Instance Refresh**
+  **Job 1: Migration Check & Apply**
 
-  - [ ] Depends on: build-and-push job
-  - [ ] Configure AWS credentials
-  - [ ] Get current ASG details (frontend & backend)
-  - [ ] Start instance refresh for frontend ASG
-    - [ ] MinHealthyPercentage: 90 (for rolling updates)
-    - [ ] Wait for refresh to complete
-    - [ ] Timeout: 15 minutes
-  - [ ] Start instance refresh for backend ASG
-    - [ ] MinHealthyPercentage: 90
-    - [ ] Wait for refresh to complete
-    - [ ] Timeout: 15 minutes
-  - [ ] Verify all instances healthy
-  - [ ] Verify ALB target groups healthy
-  - [ ] Run smoke tests against ALB endpoints
+  - [x] Checkout code
+  - [x] Install migration tooling (`pnpm`, Drizzle CLI)
+  - [x] Detect new migration files under `apps/api/drizzle`
+    - [x] If none found → mark step skipped (output "no migrations")
+    - [x] If found → continue
+  - [x] Configure database credentials (GitHub secrets)
+  - [x] Apply migrations to production database
+  - [x] Capture applied migration list as job output
 
-  **Job 3: Notification**
+  **Job 2: Build & Push Images**
 
-  - [ ] Send deployment notification (Slack, Discord, or GitHub Issue comment)
-  - [ ] Include deployed commit SHA
-  - [ ] Include deployment duration
+  - [x] Needs: migration job (always runs, even if migrations skipped)
+  - [x] Configure AWS credentials (Learner Lab)
+  - [x] Set up Docker Buildx with cache
+  - [x] Login to Amazon ECR
+  - [x] Extract commit SHA for tagging
+  - [x] Build frontend Docker image
+    - [x] Tag with `:latest`
+    - [x] Tag with `:sha-<commit-sha>`
+    - [x] Use cache layers for faster builds
+  - [x] Push frontend image to ECR
+  - [x] Build backend Docker image
+    - [x] Tag with `:latest`
+    - [x] Tag with `:sha-<commit-sha>`
+    - [x] Use cache layers for faster builds
+  - [x] Push backend image to ECR
+  - [x] Output image digests and tags
+  - [x] ⚠️ Do **not** rerun tests here (PR workflow already covers them)
 
-- [ ] **Create scripts/deploy-asg-refresh.sh** - ASG Instance Refresh Script
+  **Job 3: Deploy via ASG Instance Refresh**
 
-  ```bash
-  #!/bin/bash
-  # Script to trigger ASG instance refresh
-
-  - [ ] Accept parameters: ASG name, region, min healthy percentage
-  - [ ] Start instance refresh using AWS CLI
-  - [ ] Poll refresh status every 30 seconds
-  - [ ] Show progress (instances refreshed / total)
-  - [ ] Wait for completion (success or failure)
-  - [ ] Return exit code 0 for success, 1 for failure
-  - [ ] Log all actions with timestamps
-  - [ ] Support rollback on failure
-  ```
-
-- [ ] **Create scripts/verify-deployment.sh** - Deployment Verification Script
-
-  ```bash
-  #!/bin/bash
-  # Script to verify deployment health
-
-  - [ ] Check ALB target group health
-  - [ ] Test frontend endpoint via ALB
-  - [ ] Test backend API health endpoint via ALB
-  - [ ] Verify correct Docker image tags on instances (via SSM)
-  - [ ] Return exit code 0 for success, 1 for failure
-  ```
-
-- [ ] **Update .github/workflows/validate.yml** (Optional Enhancement)
-
-  - [ ] Add Docker build test (ensure images build successfully)
-  - [ ] Run tests inside Docker containers (not on runner)
-  - [ ] Validate Dockerfiles with hadolint
-
-- [ ] **Create .github/workflows/ecr-cleanup.yml** (Optional Maintenance)
-
-  - [ ] Scheduled workflow (weekly)
-  - [ ] Delete untagged images older than 7 days
-  - [ ] Delete images older than 30 days (except :latest and recent SHAs)
-  - [ ] Respect lifecycle policies
+  - [x] Needs: build-and-push job
+  - [x] Configure AWS credentials
+  - [x] Get current ASG details (frontend & backend)
+  - [x] Start instance refresh for frontend ASG
+    - [x] MinHealthyPercentage: 90 (rolling updates)
+    - [x] Wait for refresh to complete
+    - [x] Timeout: 15 minutes
+  - [x] Start instance refresh for backend ASG
+    - [x] MinHealthyPercentage: 90
+    - [x] Wait for refresh to complete
+    - [x] Timeout: 15 minutes
+  - [x] Verify all instances healthy
+  - [x] Verify ALB target groups healthy
+  - [x] Run smoke tests against ALB endpoints
 
 #### Required GitHub Secrets (Updated for ECR)
 
@@ -771,65 +752,6 @@ GitHub Actions Triggered
   - [ ] Link to DEPLOYMENT.md
   - [ ] Add badge for deployment status (optional)
   - [ ] Document ECR repositories
-
-- [ ] **Update CLAUDE.md**
-
-  - [ ] Document ECR-based deployment strategy
-  - [ ] Update development workflow
-  - [ ] Add commands for local Docker testing
-
-#### Rollback and Manual Deployment Procedures
-
-**Rollback to Previous Version:**
-
-- [ ] **Option 1: Redeploy Previous Commit SHA**
-
-  ```bash
-  # 1. Find previous successful deployment SHA from GitHub Actions history
-  # 2. Manually trigger workflow with that commit
-  # 3. Or update Launch Template to use previous image tag
-  ```
-
-- [ ] **Option 2: Update Launch Template Image Tag**
-
-  ```bash
-  # 1. Update user data in Launch Template to pull specific SHA
-  # 2. Trigger ASG instance refresh
-  # Example: docker pull <account>.dkr.ecr.us-east-1.amazonaws.com/convive-frontend:sha-abc123
-  ```
-
-- [ ] **Option 3: Emergency SSH via SSM**
-  ```bash
-  # 1. Connect to instances via Systems Manager Session Manager
-  # 2. Manually pull previous image: docker pull <ecr-url>:sha-<old-commit>
-  # 3. Restart containers: docker-compose down && docker-compose up -d
-  # 4. Repeat for all instances (not recommended, use ASG refresh instead)
-  ```
-
-**Manual Deployment (without GitHub Actions):**
-
-- [ ] **Using AWS CLI**
-
-  ```bash
-  # 1. Build images locally
-  docker build -t convive-frontend:latest ./apps/web
-  docker build -t convive-backend:latest ./apps/api
-
-  # 2. Tag for ECR
-  docker tag convive-frontend:latest <account>.dkr.ecr.us-east-1.amazonaws.com/convive-frontend:latest
-  docker tag convive-backend:latest <account>.dkr.ecr.us-east-1.amazonaws.com/convive-backend:latest
-
-  # 3. Login to ECR
-  aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin <account>.dkr.ecr.us-east-1.amazonaws.com
-
-  # 4. Push to ECR
-  docker push <account>.dkr.ecr.us-east-1.amazonaws.com/convive-frontend:latest
-  docker push <account>.dkr.ecr.us-east-1.amazonaws.com/convive-backend:latest
-
-  # 5. Trigger ASG instance refresh
-  aws autoscaling start-instance-refresh --auto-scaling-group-name <frontend-asg-name> --region us-east-1
-  aws autoscaling start-instance-refresh --auto-scaling-group-name <backend-asg-name> --region us-east-1
-  ```
 
 #### Benefits of ECR-Based Deployment
 
@@ -931,7 +853,7 @@ GitHub Actions Triggered
 
 - [ ] Test database connectivity
   - [ ] From backend instance, test RDS connection
-  - [ ] Run database migration if needed
+- [ ] Run database migrations via CI/CD after applying infrastructure (Drizzle `drizzle-kit migrate` runs as part of the deployment pipeline, not during Terraform/user-data)
   - [ ] Verify data accessible
 
 ---
@@ -1046,6 +968,7 @@ GitHub Actions Triggered
   - [x] **Status**: Script created, tested, and working correctly
 
 **Usage:**
+
 ```bash
 # With confirmation prompt
 ./scripts/cleanup-infrastructure.sh
@@ -1137,12 +1060,14 @@ GitHub Actions Triggered
 ### Implementation Progress
 
 **Phase 1: Pre-Migration Preparation** ✅
+
 - Completed environment variable inventory
 - Completed domain and DNS inventory
 - Documented current application configuration
 - Documented rollback plan
 
 **Phase 2: Terraform Infrastructure Code** ✅ **COMPLETE**
+
 - ✅ **ECR Repositories**: Successfully deployed and tested (4 resources)
   - Frontend repository: `215350372069.dkr.ecr.us-east-1.amazonaws.com/convive-frontend`
   - Backend repository: `215350372069.dkr.ecr.us-east-1.amazonaws.com/convive-backend`
@@ -1249,6 +1174,7 @@ GitHub Actions Triggered
   - Deleted `infra/user_data.sh.tpl` (replaced by role-specific templates)
 
 **Phase 2 Summary:**
+
 - **Total Resources**: 32 deployed (30 infrastructure + 2 data sources)
 - **EC2 Instances**: 4 running (2 frontend + 2 backend)
 - **Infrastructure Tested**: Full lifecycle validated (create → destroy → recreate)
@@ -1256,26 +1182,31 @@ GitHub Actions Triggered
 - **HTTPS Support**: Ready (pending certificate validation)
 
 **Phase 9: Infrastructure Cleanup** ✅ (Tools Ready)
+
 - Created automated cleanup script for testing and budget management
 
 ### Issues Encountered
 
 **Issue 1: Terraform Variable Requirements**
+
 - **Problem**: Running `terraform apply` with `-target` flags still required all variables to be defined
 - **Solution**: Created `infra/terraform.tfvars` with placeholder values for unused variables
 - **Status**: Resolved
 
 **Issue 2: Cleanup Script Testing**
+
 - **Problem**: Needed a reliable way to destroy all resources for testing
 - **Solution**: Created targeted destruction script that handles dependencies correctly
 - **Status**: Resolved and working
 
 **Issue 3: IAM Permissions in AWS Learner Lab**
+
 - **Problem**: AWS Learner Lab doesn't allow modifying LabRole via Terraform (no `iam:AttachRolePolicy` or `iam:PutRolePolicy` permissions)
 - **Solution**: Verified that LabRole already has `AmazonEC2ContainerRegistryReadOnly` policy attached by default
 - **Status**: Resolved - No additional configuration needed
 
 **Issue 4: PostgreSQL Version Availability**
+
 - **Problem**: PostgreSQL 16.3 not available in AWS Learner Lab region
   ```
   Error: Cannot find version 16.3 for postgres
@@ -1284,6 +1215,7 @@ GitHub Actions Triggered
 - **Status**: Resolved
 
 **Issue 5: HTTPS Listener Requires Validated Certificate**
+
 - **Problem**: ALB HTTPS listener cannot use PENDING_VALIDATION ACM certificate
   ```
   Error: The certificate must have a fully-qualified domain name, a supported signature, and a supported key size
@@ -1294,6 +1226,7 @@ GitHub Actions Triggered
 ### Successful Validations
 
 ✅ **Full Infrastructure Lifecycle Testing** (2025-11-08)
+
 - **Create**: Successfully deployed all 32 resources (30 infrastructure + 2 routing rules)
 - **Verify**: Confirmed 4 EC2 instances running (2 frontend + 2 backend)
 - **Destroy**: Successfully cleaned up all 30 resources using cleanup script
@@ -1301,12 +1234,14 @@ GitHub Actions Triggered
 - **Result**: 100% success rate - Infrastructure is fully repeatable ✅
 
 ✅ **ACM Certificate Manager Support Discovery**
+
 - Verified AWS Learner Lab **DOES support** AWS Certificate Manager
 - Successfully created certificate via CLI and Terraform
 - Certificate ARN: `arn:aws:acm:us-east-1:215350372069:certificate/753e8954-b02e-490e-8fbb-999484dd2395`
 - Status: PENDING_VALIDATION (DNS records needed for validation)
 
 ✅ **RDS PostgreSQL Deployment**
+
 - Successfully created DB subnet group spanning both AZs
 - Deployed PostgreSQL 16.10 on db.t4g.micro
 - Single-AZ configuration for cost optimization
@@ -1314,6 +1249,7 @@ GitHub Actions Triggered
 - Connection configured in backend user data scripts
 
 ✅ **HTTP Host-Based Routing** (Testing Without DNS)
+
 - Successfully deployed HTTP listener with host-based routing rules
 - Frontend rule: `conviveitesofront.ricardonavarro.mx` → Frontend TG (port 3000)
 - Backend rule: `conviveitesoback.ricardonavarro.mx` → Backend TG (port 8080)
@@ -1321,6 +1257,7 @@ GitHub Actions Triggered
 - HTTPS configuration ready (commented out pending certificate validation)
 
 ✅ **Auto Scaling Groups Operational**
+
 - Frontend ASG: 2 instances running (Min: 1, Desired: 2, Max: 4)
 - Backend ASG: 2 instances running (Min: 1, Desired: 2, Max: 4)
 - Both ASGs launched instances automatically
@@ -1329,6 +1266,7 @@ GitHub Actions Triggered
 - ELB health checks configured (5 min grace period)
 
 ✅ **Application Load Balancer**
+
 - ALB deployed and operational
 - 2 Target groups created (frontend: 3000, backend: 8080)
 - Sticky sessions enabled (24h cookies)
@@ -1337,6 +1275,7 @@ GitHub Actions Triggered
 - ALB DNS: `convive-iteso-alb-1502049336.us-east-1.elb.amazonaws.com`
 
 ✅ **Security Groups**
+
 - ALB SG: HTTP/HTTPS from internet
 - Frontend SG: Port 3000 from ALB only
 - Backend SG: Port 8080 from ALB, port 6379 from self (Redis)
@@ -1344,6 +1283,7 @@ GitHub Actions Triggered
 - All security groups tested and verified working
 
 ✅ **VPC Endpoints**
+
 - S3 Gateway Endpoint successfully deployed
 - Type: Gateway (FREE - no charges)
 - State: Available
@@ -1351,12 +1291,14 @@ GitHub Actions Triggered
 - Benefits: Faster S3 access, no NAT costs
 
 ✅ **IAM Configuration**
+
 - LabRole and LabInstanceProfile data sources working
 - Verified LabRole has `AmazonEC2ContainerRegistryReadOnly` policy
 - EC2 instances can pull from ECR (permissions verified)
 - No manual IAM configuration needed
 
 ✅ **ECR Repositories**
+
 - Frontend repository: `convive-frontend`
 - Backend repository: `convive-backend`
 - Lifecycle policies configured (keep last 10 images)
@@ -1364,12 +1306,14 @@ GitHub Actions Triggered
 - Ready for Docker image pushes
 
 ✅ **User Data Scripts**
+
 - Frontend template: ECR-based deployment for Next.js
 - Backend template: ECR-based deployment for NestJS + Redis
 - Both templates tested and validated
 - Fast boot times: ~2 minutes (no build required)
 
 ✅ **Infrastructure File Organization**
+
 - Removed obsolete files (ec2.tf, security.tf, secrets.tf, user_data.sh.tpl)
 - Updated outputs.tf with new ALB and ASG outputs
 - All Terraform configurations validated successfully
@@ -1378,6 +1322,7 @@ GitHub Actions Triggered
 ### Optimization Opportunities
 
 **Future Improvements:**
+
 - Consider adding automated tests for Terraform configurations
 - Add cost estimation to cleanup script
 - Create a script to quickly spin up/down infrastructure for testing
