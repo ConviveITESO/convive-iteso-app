@@ -61,7 +61,7 @@ export default function ChatPage() {
 	return (
 		<div className="flex h-screen flex-col bg-background">
 			<div className="border-b px-4 py-3 flex items-center justify-between">
-				<h1 className="text-lg font-semibold">Chat del grupo</h1>
+				<h1 className="text-lg font-semibold">Group chat</h1>
 			</div>
 
 			<Card className="flex flex-1 flex-col rounded-none border-0">
