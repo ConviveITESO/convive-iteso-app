@@ -64,6 +64,18 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Verify database connection
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          pnpm --filter api exec node -e "
+            const { Client } = require('pg');
+            const client = new Client({ connectionString: process.env.DATABASE_URL });
+            client.connect()
+              .then(() => client.end())
+              .catch((err) => { console.error(err); process.exit(1); });
+          "
+
       - name: Detect new migrations
         id: detect
         run: |
