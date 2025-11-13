@@ -31,7 +31,7 @@ export default function FeedPage() {
 		isAuthenticated,
 	);
 
-	// 📦 Obtener eventos pasados
+	// Obtener eventos pasados
 	const { data: pastEvents = [], isLoading: pastLoading } = useEvents(
 		"",
 		null,
@@ -39,10 +39,10 @@ export default function FeedPage() {
 		isAuthenticated,
 	);
 
-	// 📦 Obtener categorías
+	// Obtener categorías
 	const { data: categories = [], isLoading: categoriesLoading } = useCategories(isAuthenticated);
 
-	// ⏳ Skeleton mientras carga
+	// Skeleton mientras carga
 	if (!isAuthenticated || eventsLoading || categoriesLoading || pastLoading) {
 		return (
 			<div className="flex min-h-screen items-center justify-center">
@@ -53,7 +53,7 @@ export default function FeedPage() {
 
 	const handleEventClick = (eventId: string) => router.push(`/events/${eventId}`);
 
-	// 🎯 Filtro de eventos usando los filtros globales
+	// Filtro de eventos usando los filtros globales
 	const filteredEvents = allEvents.filter((event) => {
 		const matchesSearch = event.name.toLowerCase().includes(debouncedSearch.toLowerCase());
 
@@ -71,8 +71,8 @@ export default function FeedPage() {
 		return matchesSearch && matchesCategory && matchesLocation && matchesDate;
 	});
 
-	// 🗓️ Filtro de eventos de hoy
-	const todayEvents = filteredEvents.filter((e) => {
+	// Filtro de eventos de hoy
+	const todayEvents = allEvents.filter((e) => {
 		const eventDate = new Date(e.startDate);
 		const now = new Date();
 		return (
