@@ -2,9 +2,12 @@
 
 import type { SubscribedEventResponseSchema } from "@repo/schemas";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { ClockIcon, HistoryIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
-import { EventsGrid } from "@/components/events/events-grid";
+import { MyEventsGrid } from "@/components/my-events/my-events-grid";
+import { MyEventsSkeleton } from "@/components/my-events/my-events-skeleton";
+import { TabsUnderline } from "@/components/my-events/tabs-underline";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -14,7 +17,6 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/use-auth";
 import { useHeaderTitle } from "@/hooks/use-header-title";
 import { useSubscribedEvents } from "@/hooks/use-subscribed-events";
@@ -41,7 +43,9 @@ export default function MyEventsPage() {
 		},
 		onSuccess: async () => {
 			await Promise.all([
-				queryClient.invalidateQueries({ queryKey: ["subscriptions", "events"] }),
+				queryClient.invalidateQueries({
+					queryKey: ["subscriptions", "events"],
+				}),
 				queryClient.invalidateQueries({ queryKey: ["subscription-check"] }),
 				queryClient.invalidateQueries({ queryKey: ["subscription-details"] }),
 			]);
@@ -66,7 +70,7 @@ export default function MyEventsPage() {
 	if (!isAuthenticated || isLoading) {
 		return (
 			<div className="flex min-h-screen items-center justify-center">
-				<p className="text-muted-foreground">Loading...</p>
+				<MyEventsSkeleton />
 			</div>
 		);
 	}
@@ -97,36 +101,40 @@ export default function MyEventsPage() {
 	return (
 		<Dialog open={dialogOpen} onOpenChange={handleDialogChange}>
 			<div className="min-h-screen bg-background">
-				{/* Header */}
-				<div className="border-b bg-background">
-					<div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
-						<div className="flex items-center gap-3">
-							<h1 className="text-xl font-semibold">Your events</h1>
-						</div>
-					</div>
-				</div>
-
 				{/* Tabs and Content */}
 				<div className="mx-auto max-w-7xl px-4 py-6">
-					<Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-						<TabsList className="mb-6">
-							<TabsTrigger value="upcoming">Upcoming</TabsTrigger>
-							<TabsTrigger value="past">Past</TabsTrigger>
-						</TabsList>
+					<TabsUnderline
+						tabs={[
+							{
+								id: "upcoming",
+								label: "Upcoming",
+								icon: <ClockIcon />,
+								count: upcomingEvents.length,
+							},
+							{
+								id: "past",
+								label: "Past",
+								icon: <HistoryIcon />,
+								count: pastEvents.length,
+							},
+						]}
+						active={activeTab}
+						onChange={setActiveTab}
+					/>
 
-						<TabsContent value="upcoming">
-							<EventsGrid
+					<div className="mt-6">
+						{activeTab === "upcoming" ? (
+							<MyEventsGrid
+								mode="upcoming"
 								events={upcomingEvents}
+								isLoading={isLoading}
 								onEventClick={handleEventClick}
-								mode="subscription"
 								onUnsubscribe={handleUnsubscribe}
 							/>
-						</TabsContent>
-
-						<TabsContent value="past">
-							<EventsGrid events={pastEvents} onEventClick={handleEventClick} />
-						</TabsContent>
-					</Tabs>
+						) : (
+							<MyEventsGrid events={pastEvents} onEventClick={handleEventClick} mode={"past"} />
+						)}
+					</div>
 				</div>
 
 				<DialogContent>
