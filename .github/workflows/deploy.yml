@@ -199,7 +199,7 @@ jobs:
 
   deploy:
     name: Refresh Auto Scaling Groups
-    needs: [check-conditions, build-and-push]
+    needs: [check-conditions, migrations, build-and-push]
     if: ${{ needs.check-conditions.outputs.should_deploy == 'true' }}
     runs-on: ubuntu-latest
     env:
