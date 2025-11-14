@@ -130,7 +130,7 @@ jobs:
           if [ "${{ steps.detect.outputs.has_migrations }}" = "true" ]; then
             SUMMARY=$(grep -E "(Applied|Skipping)" migrate.log || true)
             SUMMARY=${SUMMARY:-"Applied pending migrations"}
-            printf 'applied_migrations<<"EOF"\n%s\nEOF\n' "$SUMMARY" >> "$GITHUB_OUTPUT"
+            printf 'applied_migrations<<EOF\n%s\nEOF\n' "$SUMMARY" >> "$GITHUB_OUTPUT"
           else
             echo "applied_migrations=None (no migrations detected)" >> "$GITHUB_OUTPUT"
           fi

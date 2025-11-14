@@ -16,8 +16,17 @@ resource "aws_instance" "migrations" {
   iam_instance_profile        = data.aws_iam_instance_profile.lab_instance_profile.name
 
   user_data = base64encode(templatefile("${path.module}/user-data-migrations.sh.tpl", {
-    repo_url     = var.migrations_repo_url
-    github_token = var.github_token
+    repo_url           = var.migrations_repo_url
+    github_token       = var.github_token
+    database_url       = "postgresql://${var.app_db_username}:${var.app_db_password}@${aws_db_instance.postgres.address}:${aws_db_instance.postgres.port}/${var.db_name}?sslmode=verify-full&sslrootcert=%2Fetc%2Fssl%2Fcerts%2Frds-ca-bundle.pem"
+    aws_region         = var.aws_region
+    db_master_username = var.db_username
+    db_master_password = var.db_password
+    db_address         = aws_db_instance.postgres.address
+    db_port            = aws_db_instance.postgres.port
+    db_name            = var.db_name
+    app_db_username    = var.app_db_username
+    app_db_password    = var.app_db_password
   }))
 
   root_block_device {
