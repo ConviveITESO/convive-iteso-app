@@ -30,7 +30,7 @@ resource "aws_launch_template" "frontend" {
   user_data = base64encode(templatefile("${path.module}/user-data-frontend.sh.tpl", {
     ecr_registry   = split("/", aws_ecr_repository.frontend.repository_url)[0]
     frontend_image = aws_ecr_repository.frontend.repository_url
-    api_url        = "http://${var.backend_domain}"  # Using HTTP for testing (change to HTTPS after certificate validation)
+    api_url        = "http://${var.backend_domain}" # Using HTTP for testing (change to HTTPS after certificate validation)
   }))
 
   # Monitoring
@@ -119,7 +119,7 @@ resource "aws_autoscaling_group" "frontend" {
   instance_refresh {
     strategy = "Rolling"
     preferences {
-      min_healthy_percentage = 50 # Keep at least 50% healthy during refresh
+      min_healthy_percentage = 50  # Keep at least 50% healthy during refresh
       instance_warmup        = 300 # Wait 5 min before considering instance healthy
     }
   }

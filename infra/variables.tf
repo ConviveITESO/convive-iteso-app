@@ -51,6 +51,24 @@ variable "availability_zone" {
   description = "Availability zone for the EC2 instance"
 }
 
+variable "migrations_instance_type" {
+  type        = string
+  default     = "t3.small"
+  description = "Instance type for the dedicated migration EC2"
+}
+
+variable "migrations_volume_size" {
+  type        = number
+  default     = 30
+  description = "Root volume size (GB) for the migration EC2"
+}
+
+variable "migrations_repo_url" {
+  type        = string
+  default     = "https://github.com/ConviveITESO/convive-iteso-app.git"
+  description = "Git repository URL cloned on the migration EC2"
+}
+
 variable "github_user" {
   description = "Your GitHub username or org name"
   type        = string

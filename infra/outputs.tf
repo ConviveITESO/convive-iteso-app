@@ -41,3 +41,16 @@ output "rds_endpoint" {
   value       = aws_db_instance.postgres.endpoint
   sensitive   = true
 }
+
+# -----------------------------------------------------------------------------
+# Migration Runner Outputs
+# -----------------------------------------------------------------------------
+output "migrations_instance_id" {
+  description = "ID of the dedicated migration EC2 instance"
+  value       = aws_instance.migrations.id
+}
+
+output "migrations_instance_public_ip" {
+  description = "Public IP of the migration instance for SSH access"
+  value       = aws_instance.migrations.public_ip
+}

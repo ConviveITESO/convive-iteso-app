@@ -46,6 +46,11 @@ key_name = "vockey"
 # AWS Learner Lab: use "us-east-1a" or "us-east-1b"
 availability_zone = "us-east-1a"
 
+# Optional: dedicated migration instance overrides
+# migrations_instance_type = "t3.small"
+# migrations_volume_size   = 40
+# migrations_repo_url      = "https://github.com/ConviveITESO/convive-iteso-app.git"
+
 # =============================================================================
 # GitHub Configuration (for Let's Encrypt, if needed later)
 # =============================================================================

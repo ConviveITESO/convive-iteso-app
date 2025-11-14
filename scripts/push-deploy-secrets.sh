@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-ENV_FILE="${1:-"$ROOT_DIR/deply.env"}"
+ENV_FILE="${1:-"$ROOT_DIR/.env.deploy"}"
 REPO="${REPO:-ConviveITESO/convive-iteso-app}"
 
 if ! command -v gh >/dev/null 2>&1; then
@@ -42,5 +42,20 @@ push_secret ALB_SMOKE_TEST_URL "${ALB_SMOKE_TEST_URL:-}"
 push_secret AWS_ACCESS_KEY_ID "${AWS_ACCESS_KEY_ID:-}"
 push_secret AWS_SECRET_ACCESS_KEY "${AWS_SECRET_ACCESS_KEY:-}"
 push_secret AWS_SESSION_TOKEN "${AWS_SESSION_TOKEN:-}"
+push_secret MIGRATIONS_HOST "${MIGRATIONS_HOST:-}"
+push_secret MIGRATIONS_SSH_USER "${MIGRATIONS_SSH_USER:-}"
+
+private_key_value=""
+if [ -n "${MIGRATIONS_SSH_PRIVATE_KEY:-}" ]; then
+  private_key_value="${MIGRATIONS_SSH_PRIVATE_KEY}"
+elif [ -n "${MIGRATIONS_SSH_PRIVATE_KEY_PATH:-}" ] && [ -f "${MIGRATIONS_SSH_PRIVATE_KEY_PATH}" ]; then
+  private_key_value="$(cat "${MIGRATIONS_SSH_PRIVATE_KEY_PATH}")"
+fi
+
+if [ -n "$private_key_value" ]; then
+  push_secret MIGRATIONS_SSH_PRIVATE_KEY "$private_key_value"
+else
+  echo "Skipping MIGRATIONS_SSH_PRIVATE_KEY (set MIGRATIONS_SSH_PRIVATE_KEY or MIGRATIONS_SSH_PRIVATE_KEY_PATH)"
+fi
 
 echo "GitHub secrets updated for $REPO using $ENV_FILE."

@@ -29,11 +29,11 @@ resource "aws_launch_template" "backend" {
 
   # User data script (installs Redis, pulls Docker image from ECR, starts container)
   user_data = base64encode(templatefile("${path.module}/user-data-backend.sh.tpl", {
-    ecr_registry  = split("/", aws_ecr_repository.backend.repository_url)[0]
-    backend_image = aws_ecr_repository.backend.repository_url
-    database_url  = "postgresql://${var.app_db_username}:${var.app_db_password}@${aws_db_instance.postgres.address}:${aws_db_instance.postgres.port}/${var.db_name}?sslmode=verify-full&sslrootcert=%2Fetc%2Fssl%2Fcerts%2Frds-ca-bundle.pem"
-    backend_url   = "http://${var.backend_domain}"   # Using HTTP for testing (change to HTTPS after certificate validation)
-    frontend_url  = "http://${var.frontend_domain}"  # Using HTTP for testing (change to HTTPS after certificate validation)
+    ecr_registry       = split("/", aws_ecr_repository.backend.repository_url)[0]
+    backend_image      = aws_ecr_repository.backend.repository_url
+    database_url       = "postgresql://${var.app_db_username}:${var.app_db_password}@${aws_db_instance.postgres.address}:${aws_db_instance.postgres.port}/${var.db_name}?sslmode=verify-full&sslrootcert=%2Fetc%2Fssl%2Fcerts%2Frds-ca-bundle.pem"
+    backend_url        = "http://${var.backend_domain}"  # Using HTTP for testing (change to HTTPS after certificate validation)
+    frontend_url       = "http://${var.frontend_domain}" # Using HTTP for testing (change to HTTPS after certificate validation)
     db_master_username = var.db_username
     db_master_password = var.db_password
     app_db_username    = var.app_db_username
@@ -150,7 +150,7 @@ resource "aws_autoscaling_group" "backend" {
   instance_refresh {
     strategy = "Rolling"
     preferences {
-      min_healthy_percentage = 50 # Keep at least 50% healthy during refresh
+      min_healthy_percentage = 50  # Keep at least 50% healthy during refresh
       instance_warmup        = 300 # Wait 5 min before considering instance healthy
     }
   }

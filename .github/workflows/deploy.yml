@@ -7,6 +7,11 @@ on:
     types:
       - completed
   workflow_dispatch:
+    inputs:
+      branch:
+        description: "Branch to deploy (defaults to main)"
+        required: false
+        default: "main"
 
 concurrency:
   group: deploy-${{ github.ref }}
@@ -17,6 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       should_deploy: ${{ steps.check.outputs.should_deploy }}
+      target_branch: ${{ steps.branch.outputs.target_branch }}
     steps:
       - id: check
         run: |
@@ -31,6 +37,17 @@ jobs:
           else
             echo "should_deploy=false" >> "$GITHUB_OUTPUT"
           fi
+      - id: branch
+        env:
+          DISPATCH_BRANCH: ${{ github.event.inputs.branch }}
+        run: |
+          branch="main"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            if [ -n "$DISPATCH_BRANCH" ]; then
+              branch="$DISPATCH_BRANCH"
+            fi
+          fi
+          echo "target_branch=$branch" >> "$GITHUB_OUTPUT"
 
   migrations:
     name: Apply migrations (if needed)
@@ -42,39 +59,13 @@ jobs:
     outputs:
       has_migrations: ${{ steps.detect.outputs.has_migrations }}
       applied_migrations: ${{ steps.summarize.outputs.applied_migrations }}
+    env:
+      DEPLOY_BRANCH: ${{ needs.check-conditions.outputs.target_branch }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 10.15.1
-          run_install: false
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Verify database connection
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: |
-          pnpm --filter api exec node -e "
-            const { Client } = require('pg');
-            const client = new Client({ connectionString: process.env.DATABASE_URL });
-            client.connect()
-              .then(() => client.end())
-              .catch((err) => { console.error(err); process.exit(1); });
-          "
 
       - name: Detect new migrations
         id: detect
@@ -97,12 +88,41 @@ jobs:
             echo "No new migrations detected"
           fi
 
-      - name: Apply migrations
+      - name: Prepare SSH key
+        if: steps.detect.outputs.has_migrations == 'true'
+        id: ssh-key
+        env:
+          PRIVATE_KEY: ${{ secrets.MIGRATIONS_SSH_PRIVATE_KEY }}
+        run: |
+          if [ -z "$PRIVATE_KEY" ]; then
+            echo "MIGRATIONS_SSH_PRIVATE_KEY secret is not set" >&2
+            exit 1
+          fi
+          KEY_PATH="$RUNNER_TEMP/migrations_key"
+          printf '%s\n' "$PRIVATE_KEY" | tr -d '\r' > "$KEY_PATH"
+          chmod 600 "$KEY_PATH"
+          echo "path=$KEY_PATH" >> "$GITHUB_OUTPUT"
+
+      - name: Run remote migrations
         if: steps.detect.outputs.has_migrations == 'true'
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          MIGRATIONS_HOST: ${{ secrets.MIGRATIONS_HOST }}
+          MIGRATIONS_SSH_USER: ${{ secrets.MIGRATIONS_SSH_USER }}
+          KEY_PATH: ${{ steps.ssh-key.outputs.path }}
         run: |
-          pnpm --filter api run db:migrate | tee migrate.log
+          set -euo pipefail
+          if [ -z "$MIGRATIONS_HOST" ]; then
+            echo "MIGRATIONS_HOST secret is not set" >&2
+            exit 1
+          fi
+          if [ -z "$KEY_PATH" ]; then
+            echo "Missing SSH key path from previous step" >&2
+            exit 1
+          fi
+          SSH_USER="${MIGRATIONS_SSH_USER:-ec2-user}"
+          echo "Running migrations on branch $DEPLOY_BRANCH via ${SSH_USER}@${MIGRATIONS_HOST}"
+          ssh -o StrictHostKeyChecking=no -i "$KEY_PATH" "${SSH_USER}@${MIGRATIONS_HOST}" \
+            "sudo convive-migrate.sh '$DEPLOY_BRANCH'" | tee migrate.log
 
       - name: Summarize migrations
         id: summarize

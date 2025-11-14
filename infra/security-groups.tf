@@ -153,9 +153,47 @@ resource "aws_security_group" "backend_instances" {
 }
 
 # -----------------------------------------------------------------------------
+# Migration Runner Security Group
+# -----------------------------------------------------------------------------
+# Provides controlled SSH access to the migration EC2 instance and allows it to
+# reach outbound dependencies like GitHub and RDS.
+
+resource "aws_security_group" "migrations" {
+  name        = "${var.project_name}-migrations-sg"
+  description = "Security group for database migration runner"
+  vpc_id      = aws_vpc.main.id
+
+  # SSH access for manual migration sessions (restrict in production)
+  ingress {
+    description = "SSH access"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # Outbound access to reach GitHub, RDS, etc.
+  egress {
+    description = "Allow all outbound traffic"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name        = "${var.project_name}-migrations-sg"
+    Application = "ConviveITESO"
+    Component   = "migrations"
+    ManagedBy   = "terraform"
+  }
+}
+
+# -----------------------------------------------------------------------------
 # RDS Database Security Group
 # -----------------------------------------------------------------------------
-# Allows inbound PostgreSQL traffic (5432) from backend instances only
+# Allows inbound PostgreSQL traffic (5432) from backend instances and the
+# migration runner
 # No outbound rules needed (RDS doesn't initiate outbound connections)
 
 resource "aws_security_group" "rds" {
@@ -170,6 +208,14 @@ resource "aws_security_group" "rds" {
     to_port         = 5432
     protocol        = "tcp"
     security_groups = [aws_security_group.backend_instances.id]
+  }
+
+  ingress {
+    description     = "PostgreSQL from migration runner"
+    from_port       = 5432
+    to_port         = 5432
+    protocol        = "tcp"
+    security_groups = [aws_security_group.migrations.id]
   }
 
   # Outbound traffic (minimal, RDS manages this)
