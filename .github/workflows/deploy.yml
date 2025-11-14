@@ -452,7 +452,22 @@ jobs:
         env:
           ALB_SMOKE_TEST_URL: ${{ secrets.ALB_SMOKE_TEST_URL }}
         run: |
-          curl --fail --silent --show-error "$ALB_SMOKE_TEST_URL"
+          set -euo pipefail
+          run_curl() {
+            local url="$1"
+            echo "Probing $url"
+            curl --fail --silent --show-error --max-time 10 "$url"
+          }
+          if ! run_curl "$ALB_SMOKE_TEST_URL"; then
+            if [[ "$ALB_SMOKE_TEST_URL" == https://* ]]; then
+              ALT_URL="http://${ALB_SMOKE_TEST_URL#https://}"
+              echo "HTTPS probe failed, retrying over HTTP at $ALT_URL"
+              run_curl "$ALT_URL"
+            else
+              echo "ALB smoke test failed for $ALB_SMOKE_TEST_URL" >&2
+              exit 1
+            fi
+          fi
 
       - name: Deployment summary
         run: |
