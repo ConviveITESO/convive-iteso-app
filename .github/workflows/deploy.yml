@@ -289,13 +289,23 @@ jobs:
       - name: Start frontend instance refresh
         id: frontend_refresh
         run: |
-          REFRESH_ID=$(aws autoscaling start-instance-refresh \
+          set -euo pipefail
+          EXISTING=$(aws autoscaling describe-instance-refreshes \
             --auto-scaling-group-name "$FRONTEND_ASG_NAME" \
-            --preferences MinHealthyPercentage=90 \
-            --output text \
-            --query 'InstanceRefreshId')
+            --query 'InstanceRefreshes[?Status==`InProgress`][0].InstanceRefreshId' \
+            --output text)
+          if [ -n "$EXISTING" ] && [ "$EXISTING" != "None" ]; then
+            REFRESH_ID="$EXISTING"
+            echo "Frontend ASG already refreshing with $REFRESH_ID"
+          else
+            REFRESH_ID=$(aws autoscaling start-instance-refresh \
+              --auto-scaling-group-name "$FRONTEND_ASG_NAME" \
+              --preferences MinHealthyPercentage=90 \
+              --output text \
+              --query 'InstanceRefreshId')
+            echo "Started frontend ASG refresh: $REFRESH_ID"
+          fi
           echo "id=$REFRESH_ID" >> "$GITHUB_OUTPUT"
-          echo "Started frontend ASG refresh: $REFRESH_ID"
 
       - name: Wait for frontend refresh completion
         run: |
@@ -307,13 +317,23 @@ jobs:
       - name: Start backend instance refresh
         id: backend_refresh
         run: |
-          REFRESH_ID=$(aws autoscaling start-instance-refresh \
+          set -euo pipefail
+          EXISTING=$(aws autoscaling describe-instance-refreshes \
             --auto-scaling-group-name "$BACKEND_ASG_NAME" \
-            --preferences MinHealthyPercentage=90 \
-            --output text \
-            --query 'InstanceRefreshId')
+            --query 'InstanceRefreshes[?Status==`InProgress`][0].InstanceRefreshId' \
+            --output text)
+          if [ -n "$EXISTING" ] && [ "$EXISTING" != "None" ]; then
+            REFRESH_ID="$EXISTING"
+            echo "Backend ASG already refreshing with $REFRESH_ID"
+          else
+            REFRESH_ID=$(aws autoscaling start-instance-refresh \
+              --auto-scaling-group-name "$BACKEND_ASG_NAME" \
+              --preferences MinHealthyPercentage=90 \
+              --output text \
+              --query 'InstanceRefreshId')
+            echo "Started backend ASG refresh: $REFRESH_ID"
+          fi
           echo "id=$REFRESH_ID" >> "$GITHUB_OUTPUT"
-          echo "Started backend ASG refresh: $REFRESH_ID"
 
       - name: Wait for backend refresh completion
         run: |
