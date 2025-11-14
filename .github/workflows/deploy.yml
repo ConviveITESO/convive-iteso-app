@@ -309,10 +309,11 @@ jobs:
 
       - name: Wait for frontend refresh completion
         run: |
-          AWS_MAX_ATTEMPTS=30 AWS_POLL_DELAY_SECONDS=30 \
-            aws autoscaling wait instance-refresh-completed \
-              --auto-scaling-group-name "$FRONTEND_ASG_NAME" \
-              --instance-refresh-id "${{ steps.frontend_refresh.outputs.id }}"
+          export AWS_MAX_ATTEMPTS=30
+          export AWS_POLL_DELAY_SECONDS=30
+          aws autoscaling wait instance-refresh-completed \
+            --auto-scaling-group-name "$FRONTEND_ASG_NAME" \
+            --instance-refresh-id "${{ steps.frontend_refresh.outputs.id }}"
 
       - name: Start backend instance refresh
         id: backend_refresh
@@ -337,10 +338,11 @@ jobs:
 
       - name: Wait for backend refresh completion
         run: |
-          AWS_MAX_ATTEMPTS=30 AWS_POLL_DELAY_SECONDS=30 \
-            aws autoscaling wait instance-refresh-completed \
-              --auto-scaling-group-name "$BACKEND_ASG_NAME" \
-              --instance-refresh-id "${{ steps.backend_refresh.outputs.id }}"
+          export AWS_MAX_ATTEMPTS=30
+          export AWS_POLL_DELAY_SECONDS=30
+          aws autoscaling wait instance-refresh-completed \
+            --auto-scaling-group-name "$BACKEND_ASG_NAME" \
+            --instance-refresh-id "${{ steps.backend_refresh.outputs.id }}"
 
       - name: Verify ALB target groups healthy
         run: |
