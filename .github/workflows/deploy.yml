@@ -321,12 +321,48 @@ jobs:
           echo "id=$REFRESH_ID" >> "$GITHUB_OUTPUT"
 
       - name: Wait for frontend refresh completion
+        env:
+          WAIT_ATTEMPTS: 30
+          WAIT_DELAY: 30
         run: |
-          export AWS_MAX_ATTEMPTS=30
-          export AWS_POLL_DELAY_SECONDS=30
-          aws autoscaling wait instance-refresh-completed \
-            --auto-scaling-group-name "$FRONTEND_ASG_NAME" \
-            --instance-refresh-id "${{ steps.frontend_refresh.outputs.id }}"
+          set -euo pipefail
+          export AWS_PAGER=""
+          REFRESH_ID="${{ steps.frontend_refresh.outputs.id }}"
+          if [ -z "$REFRESH_ID" ] || [ "$REFRESH_ID" = "None" ]; then
+            echo "No frontend instance refresh ID to monitor" >&2
+            exit 1
+          fi
+          attempt=1
+          status="InProgress"
+          while [ "$attempt" -le "$WAIT_ATTEMPTS" ]; do
+            status=$(aws autoscaling describe-instance-refreshes \
+              --auto-scaling-group-name "$FRONTEND_ASG_NAME" \
+              --instance-refresh-ids "$REFRESH_ID" \
+              --query 'InstanceRefreshes[0].Status' \
+              --output text)
+            echo "Frontend refresh $REFRESH_ID status: $status (attempt $attempt/$WAIT_ATTEMPTS)"
+            case "$status" in
+              Successful)
+                break
+                ;;
+              Failed|Cancelled)
+                echo "Frontend refresh $REFRESH_ID ended with status $status" >&2
+                exit 1
+                ;;
+              InProgress|Pending|Cancelling)
+                sleep "$WAIT_DELAY"
+                ;;
+              *)
+                echo "Frontend refresh $REFRESH_ID reported unknown status '$status'" >&2
+                sleep "$WAIT_DELAY"
+                ;;
+            esac
+            attempt=$((attempt + 1))
+          done
+          if [ "$status" != "Successful" ]; then
+            echo "Frontend refresh $REFRESH_ID did not complete within allotted time" >&2
+            exit 1
+          fi
 
       - name: Start backend instance refresh
         id: backend_refresh
@@ -363,12 +399,48 @@ jobs:
           echo "id=$REFRESH_ID" >> "$GITHUB_OUTPUT"
 
       - name: Wait for backend refresh completion
+        env:
+          WAIT_ATTEMPTS: 30
+          WAIT_DELAY: 30
         run: |
-          export AWS_MAX_ATTEMPTS=30
-          export AWS_POLL_DELAY_SECONDS=30
-          aws autoscaling wait instance-refresh-completed \
-            --auto-scaling-group-name "$BACKEND_ASG_NAME" \
-            --instance-refresh-id "${{ steps.backend_refresh.outputs.id }}"
+          set -euo pipefail
+          export AWS_PAGER=""
+          REFRESH_ID="${{ steps.backend_refresh.outputs.id }}"
+          if [ -z "$REFRESH_ID" ] || [ "$REFRESH_ID" = "None" ]; then
+            echo "No backend instance refresh ID to monitor" >&2
+            exit 1
+          fi
+          attempt=1
+          status="InProgress"
+          while [ "$attempt" -le "$WAIT_ATTEMPTS" ]; do
+            status=$(aws autoscaling describe-instance-refreshes \
+              --auto-scaling-group-name "$BACKEND_ASG_NAME" \
+              --instance-refresh-ids "$REFRESH_ID" \
+              --query 'InstanceRefreshes[0].Status' \
+              --output text)
+            echo "Backend refresh $REFRESH_ID status: $status (attempt $attempt/$WAIT_ATTEMPTS)"
+            case "$status" in
+              Successful)
+                break
+                ;;
+              Failed|Cancelled)
+                echo "Backend refresh $REFRESH_ID ended with status $status" >&2
+                exit 1
+                ;;
+              InProgress|Pending|Cancelling)
+                sleep "$WAIT_DELAY"
+                ;;
+              *)
+                echo "Backend refresh $REFRESH_ID reported unknown status '$status'" >&2
+                sleep "$WAIT_DELAY"
+                ;;
+            esac
+            attempt=$((attempt + 1))
+          done
+          if [ "$status" != "Successful" ]; then
+            echo "Backend refresh $REFRESH_ID did not complete within allotted time" >&2
+            exit 1
+          fi
 
       - name: Verify ALB target groups healthy
         run: |
