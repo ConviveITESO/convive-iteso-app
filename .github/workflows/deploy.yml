@@ -290,20 +290,33 @@ jobs:
         id: frontend_refresh
         run: |
           set -euo pipefail
-          EXISTING=$(aws autoscaling describe-instance-refreshes \
+          REFRESH_ID=""
+          START_OUTPUT=$(mktemp)
+          START_ERROR=$(mktemp)
+          trap 'rm -f "$START_OUTPUT" "$START_ERROR"' EXIT
+          if aws autoscaling start-instance-refresh \
             --auto-scaling-group-name "$FRONTEND_ASG_NAME" \
-            --query 'InstanceRefreshes[?Status==`InProgress`][0].InstanceRefreshId' \
-            --output text)
-          if [ -n "$EXISTING" ] && [ "$EXISTING" != "None" ]; then
-            REFRESH_ID="$EXISTING"
-            echo "Frontend ASG already refreshing with $REFRESH_ID"
-          else
-            REFRESH_ID=$(aws autoscaling start-instance-refresh \
-              --auto-scaling-group-name "$FRONTEND_ASG_NAME" \
-              --preferences MinHealthyPercentage=90 \
-              --output text \
-              --query 'InstanceRefreshId')
+            --preferences MinHealthyPercentage=90 \
+            --output text \
+            --query 'InstanceRefreshId' >"$START_OUTPUT" 2>"$START_ERROR"; then
+            REFRESH_ID=$(cat "$START_OUTPUT")
             echo "Started frontend ASG refresh: $REFRESH_ID"
+          else
+            if grep -q "InstanceRefreshInProgress" "$START_ERROR"; then
+              REFRESH_ID=$(aws autoscaling describe-instance-refreshes \
+                --auto-scaling-group-name "$FRONTEND_ASG_NAME" \
+                --query "InstanceRefreshes[?Status=='InProgress']|[0].InstanceRefreshId" \
+                --output text)
+              if [ -z "$REFRESH_ID" ] || [ "$REFRESH_ID" = "None" ]; then
+                echo "Frontend ASG refresh already in progress but ID not found" >&2
+                cat "$START_ERROR" >&2
+                exit 1
+              fi
+              echo "Frontend ASG already refreshing with $REFRESH_ID"
+            else
+              cat "$START_ERROR" >&2
+              exit 1
+            fi
           fi
           echo "id=$REFRESH_ID" >> "$GITHUB_OUTPUT"
 
@@ -319,20 +332,33 @@ jobs:
         id: backend_refresh
         run: |
           set -euo pipefail
-          EXISTING=$(aws autoscaling describe-instance-refreshes \
+          REFRESH_ID=""
+          START_OUTPUT=$(mktemp)
+          START_ERROR=$(mktemp)
+          trap 'rm -f "$START_OUTPUT" "$START_ERROR"' EXIT
+          if aws autoscaling start-instance-refresh \
             --auto-scaling-group-name "$BACKEND_ASG_NAME" \
-            --query 'InstanceRefreshes[?Status==`InProgress`][0].InstanceRefreshId' \
-            --output text)
-          if [ -n "$EXISTING" ] && [ "$EXISTING" != "None" ]; then
-            REFRESH_ID="$EXISTING"
-            echo "Backend ASG already refreshing with $REFRESH_ID"
-          else
-            REFRESH_ID=$(aws autoscaling start-instance-refresh \
-              --auto-scaling-group-name "$BACKEND_ASG_NAME" \
-              --preferences MinHealthyPercentage=90 \
-              --output text \
-              --query 'InstanceRefreshId')
+            --preferences MinHealthyPercentage=90 \
+            --output text \
+            --query 'InstanceRefreshId' >"$START_OUTPUT" 2>"$START_ERROR"; then
+            REFRESH_ID=$(cat "$START_OUTPUT")
             echo "Started backend ASG refresh: $REFRESH_ID"
+          else
+            if grep -q "InstanceRefreshInProgress" "$START_ERROR"; then
+              REFRESH_ID=$(aws autoscaling describe-instance-refreshes \
+                --auto-scaling-group-name "$BACKEND_ASG_NAME" \
+                --query "InstanceRefreshes[?Status=='InProgress']|[0].InstanceRefreshId" \
+                --output text)
+              if [ -z "$REFRESH_ID" ] || [ "$REFRESH_ID" = "None" ]; then
+                echo "Backend ASG refresh already in progress but ID not found" >&2
+                cat "$START_ERROR" >&2
+                exit 1
+              fi
+              echo "Backend ASG already refreshing with $REFRESH_ID"
+            else
+              cat "$START_ERROR" >&2
+              exit 1
+            fi
           fi
           echo "id=$REFRESH_ID" >> "$GITHUB_OUTPUT"
 
