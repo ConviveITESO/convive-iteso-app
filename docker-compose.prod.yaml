@@ -13,8 +13,6 @@ services:
     build:
       context: .
       dockerfile: ./apps/api/Dockerfile
-      args:
-        ENV_FILE: ${ENV_FILE:-.env.prod}
     restart: unless-stopped
     ports:
       - "${API_PORT:-8080}:8080"
@@ -32,7 +30,8 @@ services:
       context: .
       dockerfile: ./apps/web/Dockerfile
       args:
-        ENV_FILE: ${ENV_FILE:-.env.prod}
+        # Build-time environment variable (compiled into Next.js bundle)
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080}
     restart: unless-stopped
     ports:
       - "${WEB_PORT:-3000}:3000"
