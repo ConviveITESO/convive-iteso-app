@@ -49,6 +49,10 @@ fi
 
 aws_region=$(extract_tfvar aws_region)
 aws_region=${aws_region:-us-east-1}
+
+# Extract domain configuration for build-time environment variables
+backend_domain=$(extract_tfvar backend_domain)
+frontend_domain=$(extract_tfvar frontend_domain)
 aws_args=(--region "$aws_region" --profile "$AWS_PROFILE")
 
 rds_identifier="${project_name}-postgres"
@@ -144,6 +148,8 @@ AWS_SECRET_ACCESS_KEY=${aws_secret_access_key}
 AWS_SESSION_TOKEN=${aws_session_token}
 FRONTEND_ASG_NAME=${frontend_asg_name}
 BACKEND_ASG_NAME=${backend_asg_name}
+# Build-time environment variables (compiled into Docker images)
+NEXT_PUBLIC_API_URL=http://${backend_domain}
 # Optional: only required when enabling ALB smoke tests
 ALB_SMOKE_TEST_URL=${alb_url}
 # Migration runner SSH configuration

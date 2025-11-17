@@ -198,6 +198,8 @@ jobs:
           context: .
           file: ./apps/web/Dockerfile
           push: true
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
           tags: |
             ${{ steps.tags.outputs.frontend_latest }}
             ${{ steps.tags.outputs.frontend_sha }}
