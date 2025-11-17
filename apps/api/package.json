@@ -40,7 +40,7 @@
 		"@nestjs/platform-express": "^11.1.6",
 		"@nestjs/schedule": "^6.0.1",
 		"@nestjs/bullmq": "^11.0.1",
-		"@nestjs/swagger": "^11.2.0",
+		"@nestjs/swagger": "^11.2.2",
 		"@repo/schemas": "workspace:*",
 		"bullmq": "^5.41.0",
 		"cookie-parser": "^1.4.7",
