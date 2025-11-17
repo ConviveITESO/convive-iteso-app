@@ -223,8 +223,6 @@ docker run -d \
   -e LOCAL_SMTP_PORT="${local_smtp_port}" \
   -e MAILTRAP_API_KEY="${mailtrap_api_key}" \
   -e AWS_REGION="$AWS_REGION" \
-  -e AWS_ACCESS_KEY_ID="${aws_access_key_id}" \
-  -e AWS_SECRET_ACCESS_KEY="${aws_secret_access_key}" \
   -e S3_BUCKET_NAME="${s3_bucket_name}" \
   "${backend_image}:latest"
 

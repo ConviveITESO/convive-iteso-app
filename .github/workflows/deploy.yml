@@ -228,6 +228,7 @@ jobs:
       AWS_REGION: ${{ secrets.AWS_REGION }}
       FRONTEND_ASG_NAME: ${{ secrets.FRONTEND_ASG_NAME }}
       BACKEND_ASG_NAME: ${{ secrets.BACKEND_ASG_NAME }}
+      ALB_SMOKE_TEST_URL: ${{ secrets.ALB_SMOKE_TEST_URL }}
     permissions:
       contents: read
     steps:
@@ -451,8 +452,6 @@ jobs:
 
       - name: Smoke tests against ALB
         if: env.ALB_SMOKE_TEST_URL != ''
-        env:
-          ALB_SMOKE_TEST_URL: ${{ secrets.ALB_SMOKE_TEST_URL }}
         run: |
           set -euo pipefail
           run_curl() {
