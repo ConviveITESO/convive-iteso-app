@@ -89,11 +89,11 @@ docker stop convive-frontend 2>/dev/null || true
 docker rm convive-frontend 2>/dev/null || true
 
 # Run frontend container
+# Note: NEXT_PUBLIC_API_URL is compiled into the bundle at build time via Docker build args
 docker run -d \
   --name convive-frontend \
   --restart unless-stopped \
   -p 3000:3000 \
-  -e NEXT_PUBLIC_API_URL="${api_url}" \
   -e NODE_ENV=production \
   ${frontend_image}:latest
 

@@ -27,10 +27,10 @@ resource "aws_launch_template" "frontend" {
   }
 
   # User data script (pulls Docker image from ECR and starts container)
+  # Note: NEXT_PUBLIC_API_URL is now baked into the Docker image at build time
   user_data = base64encode(templatefile("${path.module}/user-data-frontend.sh.tpl", {
     ecr_registry   = split("/", aws_ecr_repository.frontend.repository_url)[0]
     frontend_image = aws_ecr_repository.frontend.repository_url
-    api_url        = "http://${var.backend_domain}" # Using HTTP for testing (change to HTTPS after certificate validation)
   }))
 
   # Monitoring
