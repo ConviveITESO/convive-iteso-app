@@ -18,6 +18,9 @@ services:
       - "${API_PORT:-8080}:8080"
     networks:
       - convive-network
+    # Runtime environment variables (DATABASE_URL, etc.)
+    env_file:
+      - ./apps/api/.env
     healthcheck:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1"]
       interval: 30s
@@ -39,6 +42,9 @@ services:
       - convive-network
     depends_on:
       - api
+    # Runtime environment variables (if needed)
+    env_file:
+      - ./apps/web/.env
     healthcheck:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000 || exit 1"]
       interval: 30s
