@@ -36,7 +36,10 @@
 		"test:debug": "pnpm run --filter ./apps/api test:debug",
 		"test:e2e": "pnpm run --filter ./apps/api test:e2e",
 		"ci": "(pnpm run test --silent || true) && pnpm run test:e2e --silent",
-		"ui:add": "pnpm --filter ./apps/web ui:add"
+		"ui:add": "pnpm --filter ./apps/web ui:add",
+		"e2e": "playwright test",
+		"e2e:ui": "playwright test --ui",
+		"e2e:codegen": "playwright codegen http://localhost:3000"
 	},
 	"keywords": [],
 	"author": "",
@@ -47,6 +50,8 @@
 		"@commitlint/config-conventional": "^19.8.1",
 		"@repo/schemas": "workspace:*",
 		"@repo/typescript-config": "workspace:*",
+		"@playwright/test": "^1.49.0",
+		"playwright-bdd": "^8.4.1",
 		"commitlint": "^19.8.1",
 		"lefthook": "^1.12.3",
 		"turbo": "^2.5.6",
