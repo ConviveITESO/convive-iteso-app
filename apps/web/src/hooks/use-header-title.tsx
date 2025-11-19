@@ -16,7 +16,7 @@ type HeaderOptions = {
 	backHref?: string;
 };
 
-export const DEFAULT_HEADER_TITLE = "Convive IITESO";
+export const DEFAULT_HEADER_TITLE = "Convive ITESO";
 
 const HeaderTitleContext = createContext<HeaderTitleContextValue | undefined>(undefined);
 
