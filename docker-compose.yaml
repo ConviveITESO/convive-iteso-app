@@ -61,3 +61,29 @@ services:
         echo 'Creating S3 bucket...'
         aws --endpoint-url=http://localstack:4566 s3 mb s3://convive-iteso-dev
       "
+
+  notifications-worker:
+    image: node:22
+    container_name: convive-iteso-worker
+    working_dir: /workspace
+    depends_on:
+      - redis
+      - mailhog
+      - localstack
+    env_file:
+      - ./apps/api/.env
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      LOCAL_SMTP_HOST: mailhog
+      LOCAL_SMTP_PORT: 1025
+      DATABASE_URL: postgresql://user:unsafe@db:5432/convive-iteso-db
+      AWS_ENDPOINT_URL: http://localstack:4566
+      CHOKIDAR_USEPOLLING: "true"
+      NODE_ENV: development
+    volumes:
+      - .:/workspace
+    command: >
+      bash -lc "corepack enable &&
+      corepack prepare pnpm@10.15.1 --activate &&
+      pnpm --filter ./apps/api dev:worker"

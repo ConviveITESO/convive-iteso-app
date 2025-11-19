@@ -1,8 +1,15 @@
 import { InjectQueue } from "@nestjs/bullmq";
 import { Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { Job, Queue } from "bullmq";
-import { NOTIFICATIONS_QUEUE, SUBSCRIPTION_CREATED_JOB } from "./notifications.constants";
-import { SubscriptionCreatedNotificationPayload } from "./notifications.types";
+import {
+	NOTIFICATIONS_QUEUE,
+	REGISTRATION_CONFIRMATION_JOB,
+	SUBSCRIPTION_CREATED_JOB,
+} from "./notifications.constants";
+import {
+	RegistrationConfirmationNotificationPayload,
+	SubscriptionCreatedNotificationPayload,
+} from "./notifications.types";
 
 @Injectable()
 export class NotificationsQueueService {
@@ -26,7 +33,27 @@ export class NotificationsQueueService {
 		return job.id as string;
 	}
 
-	async getJob(jobId: string): Promise<Job<SubscriptionCreatedNotificationPayload>> {
+	async enqueueRegistrationConfirmation(
+		payload: RegistrationConfirmationNotificationPayload,
+	): Promise<string> {
+		const job = await this.queue.add(REGISTRATION_CONFIRMATION_JOB, payload, {
+			removeOnComplete: true,
+			removeOnFail: false,
+			attempts: 3,
+			backoff: {
+				type: "exponential",
+				delay: 1000,
+			},
+		});
+		this.logger.debug(`Enqueued registration-confirmation notification for ${payload.userEmail}`);
+		return job.id as string;
+	}
+
+	async getJob(
+		jobId: string,
+	): Promise<
+		Job<SubscriptionCreatedNotificationPayload | RegistrationConfirmationNotificationPayload>
+	> {
 		const job = await this.queue.getJob(jobId);
 		if (!job) {
 			throw new NotFoundException(`Notification job ${jobId} not found`);
