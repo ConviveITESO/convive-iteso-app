@@ -6,6 +6,7 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { UserResponseSchema } from "@repo/schemas";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { DATABASE_CONNECTION } from "../database/connection";
+import { NotificationsQueueService } from "../notifications/notifications.service";
 import { S3Service } from "../s3/s3.service";
 import { AuthService } from "./auth.service";
 
@@ -50,6 +51,10 @@ describe("AuthService", () => {
 		getFileUrl: jest.fn().mockResolvedValue("https://s3.mock/profile.png"),
 	};
 
+	const mockNotificationsService = {
+		enqueueRegistrationConfirmation: jest.fn().mockResolvedValue("job-id"),
+	};
+
 	beforeEach(async () => {
 		const module: TestingModule = await Test.createTestingModule({
 			providers: [
@@ -57,6 +62,7 @@ describe("AuthService", () => {
 				{ provide: DATABASE_CONNECTION, useValue: mockDb },
 				{ provide: ConfigService, useValue: mockConfigService },
 				{ provide: S3Service, useValue: mockS3Service },
+				{ provide: NotificationsQueueService, useValue: mockNotificationsService },
 			],
 		}).compile();
 
