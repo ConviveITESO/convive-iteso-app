@@ -36,14 +36,39 @@ resource "aws_s3_bucket_versioning" "uploads" {
 # -----------------------------------------------------------------------------
 # S3 Bucket Public Access Block
 # -----------------------------------------------------------------------------
-# Block all public access by default (use signed URLs for temporary access)
+# Allow public read access to objects via bucket policy (but block public ACLs)
 resource "aws_s3_bucket_public_access_block" "uploads" {
   bucket = aws_s3_bucket.uploads.id
 
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
+  block_public_acls       = true  # Block public ACLs
+  block_public_policy     = false # Allow bucket policy for public reads
+  ignore_public_acls      = true  # Ignore any existing public ACLs
+  restrict_public_buckets = false # Allow public bucket policy
+}
+
+# -----------------------------------------------------------------------------
+# S3 Bucket Policy
+# -----------------------------------------------------------------------------
+# Allow public read access to all objects (images, etc.)
+# Uploads still require AWS credentials (IAM role)
+resource "aws_s3_bucket_policy" "uploads_public_read" {
+  bucket = aws_s3_bucket.uploads.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "PublicReadGetObject"
+        Effect    = "Allow"
+        Principal = "*"
+        Action    = "s3:GetObject"
+        Resource  = "${aws_s3_bucket.uploads.arn}/*"
+      }
+    ]
+  })
+
+  # Ensure public access block is configured first
+  depends_on = [aws_s3_bucket_public_access_block.uploads]
 }
 
 # -----------------------------------------------------------------------------
