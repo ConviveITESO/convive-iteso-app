@@ -102,10 +102,17 @@ This project is built as a monorepo using [Turborepo](https://turbo.build/) with
    pnpm run dev
    ```
 
-9. **Check the emails sent**
+9. **Background worker**
+   Docker Compose now starts the `notifications-worker` service automatically (mail + Redis need to be running). Restart it independently with `docker compose up -d notifications-worker`. If you prefer to run it outside Docker, use:
    ```bash
-   http://localhost:8025
+   pnpm --filter ./apps/api dev:worker
    ```
+   The API enqueues background jobs (registration confirmations, etc.); this worker must be running to process them.
+
+10. **Check the emails sent**
+    ```bash
+    http://localhost:8025
+    ```
 
 This will start both the API server and web application in development mode with hot reloading.
 
@@ -152,6 +159,7 @@ The project includes a production-ready Docker configuration with `docker-compos
 
 - **API Service**: NestJS backend running on port 8080 with health checks
 - **Web Service**: Next.js frontend running on port 3000 with health checks
+- **Notifications Worker**: BullMQ worker consuming background jobs (registration confirmations, etc.)
 - **Database**: External PostgreSQL (AWS RDS) - not containerized for production
 
 ## 🛠️ Development Tools

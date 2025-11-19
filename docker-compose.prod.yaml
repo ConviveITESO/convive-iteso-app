@@ -50,3 +50,17 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+
+  # Notifications worker (BullMQ)
+  notifications-worker:
+    build:
+      context: .
+      dockerfile: ./apps/api/Dockerfile
+    command: ["node", "apps/api/dist/src/notifications.worker.js"]
+    restart: unless-stopped
+    env_file:
+      - ./apps/api/.env
+    networks:
+      - convive-network
+    depends_on:
+      - api
