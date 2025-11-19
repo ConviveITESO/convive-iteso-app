@@ -208,6 +208,11 @@ jobs:
       - name: Update DATABASE_URL for Docker network
         run: sed -i 's|localhost:5432|db:5432|g' apps/api/.env
 
+      - name: Export build-time environment variables
+        run: |
+          # Extract NEXT_PUBLIC_API_URL from web .env file
+          echo "NEXT_PUBLIC_API_URL=$(grep NEXT_PUBLIC_API_URL apps/web/.env | cut -d '=' -f2)" >> $GITHUB_ENV
+
       - name: Start DB with Docker Compose
         run: make prod-up-ci
 

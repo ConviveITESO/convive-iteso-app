@@ -2,29 +2,477 @@ name: Deploy
 
 on:
   workflow_run:
-    workflows: ["Validate Code"]
+    workflows:
+      - Validate Code
     types:
       - completed
-    branches:
-      - main
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Branch to deploy (defaults to main)"
+        required: false
+        default: "main"
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  deploy:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+  check-conditions:
     runs-on: ubuntu-latest
+    outputs:
+      should_deploy: ${{ steps.check.outputs.should_deploy }}
+      target_branch: ${{ steps.branch.outputs.target_branch }}
     steps:
-      - name: Set up SSH
+      - id: check
         run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.EC2_PUBLIC_IP }} >> ~/.ssh/known_hosts
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "should_deploy=true" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event_name }}" = "workflow_run" ] && \
+               [ "${{ github.event.workflow_run.conclusion }}" = "success" ] && \
+               [ "${{ github.event.workflow_run.event }}" = "pull_request" ] && \
+               [ "${{ github.event.workflow_run.pull_requests[0].merged }}" = "true" ] && \
+               [ "${{ github.event.workflow_run.pull_requests[0].base.ref }}" = "main" ]; then
+            echo "should_deploy=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_deploy=false" >> "$GITHUB_OUTPUT"
+          fi
+      - id: branch
+        env:
+          DISPATCH_BRANCH: ${{ github.event.inputs.branch }}
+        run: |
+          branch="main"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            if [ -n "$DISPATCH_BRANCH" ]; then
+              branch="$DISPATCH_BRANCH"
+            fi
+          fi
+          echo "target_branch=$branch" >> "$GITHUB_OUTPUT"
 
-      - name: Deploy to EC2
+  migrations:
+    name: Apply migrations (if needed)
+    needs: check-conditions
+    if: ${{ needs.check-conditions.outputs.should_deploy == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      has_migrations: ${{ steps.detect.outputs.has_migrations }}
+      applied_migrations: ${{ steps.summarize.outputs.applied_migrations }}
+    env:
+      DEPLOY_BRANCH: ${{ needs.check-conditions.outputs.target_branch }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect new migrations
+        id: detect
         run: |
-          ssh ubuntu@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
-            cd ~/convive-iteso-app
-            git pull origin main
-            make prod-down
-            make prod-up
-          EOF
+          set -eo pipefail
+          BEFORE="${{ github.event.before }}"
+          ZERO="0000000000000000000000000000000000000000"
+          if [ -z "$BEFORE" ] || [ "$BEFORE" = "$ZERO" ]; then
+            CHANGED=$(git ls-tree --full-tree -r HEAD --name-only | grep '^apps/api/drizzle/' || true)
+          else
+            CHANGED=$(git diff --name-only "$BEFORE" '${{ github.sha }}' -- 'apps/api/drizzle/' || true)
+          fi
+
+          if [ -n "$CHANGED" ]; then
+            echo "has_migrations=true" >> "$GITHUB_OUTPUT"
+            printf '%s\n' "$CHANGED" > migrations.txt
+            echo "Detected migrations:\n$CHANGED"
+          else
+            echo "has_migrations=false" >> "$GITHUB_OUTPUT"
+            echo "No new migrations detected"
+          fi
+
+      - name: Prepare SSH key
+        if: steps.detect.outputs.has_migrations == 'true'
+        id: ssh-key
+        env:
+          PRIVATE_KEY: ${{ secrets.MIGRATIONS_SSH_PRIVATE_KEY }}
+        run: |
+          if [ -z "$PRIVATE_KEY" ]; then
+            echo "MIGRATIONS_SSH_PRIVATE_KEY secret is not set" >&2
+            exit 1
+          fi
+          KEY_PATH="$RUNNER_TEMP/migrations_key"
+          printf '%s\n' "$PRIVATE_KEY" | tr -d '\r' > "$KEY_PATH"
+          chmod 600 "$KEY_PATH"
+          echo "path=$KEY_PATH" >> "$GITHUB_OUTPUT"
+
+      - name: Run remote migrations
+        if: steps.detect.outputs.has_migrations == 'true'
+        env:
+          MIGRATIONS_HOST: ${{ secrets.MIGRATIONS_HOST }}
+          MIGRATIONS_SSH_USER: ${{ secrets.MIGRATIONS_SSH_USER }}
+          KEY_PATH: ${{ steps.ssh-key.outputs.path }}
+        run: |
+          set -euo pipefail
+          if [ -z "$MIGRATIONS_HOST" ]; then
+            echo "MIGRATIONS_HOST secret is not set" >&2
+            exit 1
+          fi
+          if [ -z "$KEY_PATH" ]; then
+            echo "Missing SSH key path from previous step" >&2
+            exit 1
+          fi
+          SSH_USER="${MIGRATIONS_SSH_USER:-ec2-user}"
+          echo "Running migrations on branch $DEPLOY_BRANCH via ${SSH_USER}@${MIGRATIONS_HOST}"
+          ssh -o StrictHostKeyChecking=no -i "$KEY_PATH" "${SSH_USER}@${MIGRATIONS_HOST}" \
+            "sudo convive-migrate.sh '$DEPLOY_BRANCH'" | tee migrate.log
+
+      - name: Summarize migrations
+        id: summarize
+        run: |
+          if [ "${{ steps.detect.outputs.has_migrations }}" = "true" ]; then
+            SUMMARY=$(grep -E "(Applied|Skipping)" migrate.log || true)
+            SUMMARY=${SUMMARY:-"Applied pending migrations"}
+            printf 'applied_migrations<<EOF\n%s\nEOF\n' "$SUMMARY" >> "$GITHUB_OUTPUT"
+          else
+            echo "applied_migrations=None (no migrations detected)" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Upload migration logs
+        if: steps.detect.outputs.has_migrations == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: migration-logs
+          path: migrate.log
+
+  build-and-push:
+    name: Build and push Docker images
+    needs: [check-conditions, migrations]
+    if: ${{ needs.check-conditions.outputs.should_deploy == 'true' }}
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+      FRONTEND_ECR_REPOSITORY: ${{ secrets.FRONTEND_ECR_REPOSITORY }}
+      BACKEND_ECR_REPOSITORY: ${{ secrets.BACKEND_ECR_REPOSITORY }}
+    permissions:
+      contents: read
+    outputs:
+      frontend_tag: ${{ steps.tags.outputs.frontend_sha }}
+      backend_tag: ${{ steps.tags.outputs.backend_sha }}
+      frontend_digest: ${{ steps.build_frontend.outputs.digest }}
+      backend_digest: ${{ steps.build_backend.outputs.digest }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Compute image tags
+        id: tags
+        run: |
+          SHORT_SHA="${GITHUB_SHA::7}"
+          FRONTEND_REPO="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${FRONTEND_ECR_REPOSITORY}"
+          BACKEND_REPO="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${BACKEND_ECR_REPOSITORY}"
+
+          echo "frontend_latest=${FRONTEND_REPO}:latest" >> "$GITHUB_OUTPUT"
+          echo "frontend_sha=${FRONTEND_REPO}:sha-${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+          echo "backend_latest=${BACKEND_REPO}:latest" >> "$GITHUB_OUTPUT"
+          echo "backend_sha=${BACKEND_REPO}:sha-${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+          echo "Frontend images: ${FRONTEND_REPO}:latest, ${FRONTEND_REPO}:sha-${SHORT_SHA}"
+          echo "Backend images: ${BACKEND_REPO}:latest, ${BACKEND_REPO}:sha-${SHORT_SHA}"
+
+      - name: Build and push frontend image
+        id: build_frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./apps/web/Dockerfile
+          push: true
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
+          tags: |
+            ${{ steps.tags.outputs.frontend_latest }}
+            ${{ steps.tags.outputs.frontend_sha }}
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,mode=max,scope=frontend
+
+      - name: Build and push backend image
+        id: build_backend
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./apps/api/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.tags.outputs.backend_latest }}
+            ${{ steps.tags.outputs.backend_sha }}
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,mode=max,scope=backend
+
+  deploy:
+    name: Refresh Auto Scaling Groups
+    needs: [check-conditions, migrations, build-and-push]
+    if: ${{ needs.check-conditions.outputs.should_deploy == 'true' }}
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      FRONTEND_ASG_NAME: ${{ secrets.FRONTEND_ASG_NAME }}
+      BACKEND_ASG_NAME: ${{ secrets.BACKEND_ASG_NAME }}
+      ALB_SMOKE_TEST_URL: ${{ secrets.ALB_SMOKE_TEST_URL }}
+    permissions:
+      contents: read
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Capture ASG details
+        id: asg
+        run: |
+          set -euo pipefail
+          aws autoscaling describe-auto-scaling-groups \
+            --auto-scaling-group-names "$FRONTEND_ASG_NAME" "$BACKEND_ASG_NAME" \
+            --query 'AutoScalingGroups[].{Name:AutoScalingGroupName,Desired:DesiredCapacity,Min:MinSize,Max:MaxSize,TargetGroups:TargetGroupARNs}' \
+            --output json > asg-details.json
+
+          python <<'PY'
+          import json, os, sys
+
+          with open("asg-details.json", "r", encoding="utf-8") as fh:
+              groups = json.load(fh)
+
+          name_map = {g["Name"]: g for g in groups}
+
+          frontend = name_map.get(os.environ["FRONTEND_ASG_NAME"])
+          backend = name_map.get(os.environ["BACKEND_ASG_NAME"])
+
+          if not frontend:
+              sys.stderr.write("Frontend ASG details not found\n")
+              sys.exit(1)
+          if not backend:
+              sys.stderr.write("Backend ASG details not found\n")
+              sys.exit(1)
+
+          if not frontend.get("TargetGroups"):
+              sys.stderr.write("Frontend ASG missing target group association\n")
+              sys.exit(1)
+          if not backend.get("TargetGroups"):
+              sys.stderr.write("Backend ASG missing target group association\n")
+              sys.exit(1)
+
+          with open("frontend_tg.txt", "w", encoding="utf-8") as fh:
+              fh.write(frontend["TargetGroups"][0])
+          with open("backend_tg.txt", "w", encoding="utf-8") as fh:
+              fh.write(backend["TargetGroups"][0])
+
+          print("Frontend ASG details:", frontend)
+          print("Backend ASG details:", backend)
+          PY
+
+          FRONTEND_TG=$(cat frontend_tg.txt)
+          BACKEND_TG=$(cat backend_tg.txt)
+          echo "frontend_tg=$FRONTEND_TG" >> "$GITHUB_OUTPUT"
+          echo "backend_tg=$BACKEND_TG" >> "$GITHUB_OUTPUT"
+          cat asg-details.json
+
+      - name: Start frontend instance refresh
+        id: frontend_refresh
+        run: |
+          set -euo pipefail
+          REFRESH_ID=""
+          START_OUTPUT=$(mktemp)
+          START_ERROR=$(mktemp)
+          trap 'rm -f "$START_OUTPUT" "$START_ERROR"' EXIT
+          if aws autoscaling start-instance-refresh \
+            --auto-scaling-group-name "$FRONTEND_ASG_NAME" \
+            --preferences MinHealthyPercentage=90 \
+            --output text \
+            --query 'InstanceRefreshId' >"$START_OUTPUT" 2>"$START_ERROR"; then
+            REFRESH_ID=$(cat "$START_OUTPUT")
+            echo "Started frontend ASG refresh: $REFRESH_ID"
+          else
+            if grep -q "InstanceRefreshInProgress" "$START_ERROR"; then
+              REFRESH_ID=$(aws autoscaling describe-instance-refreshes \
+                --auto-scaling-group-name "$FRONTEND_ASG_NAME" \
+                --query "InstanceRefreshes[?Status=='InProgress']|[0].InstanceRefreshId" \
+                --output text)
+              if [ -z "$REFRESH_ID" ] || [ "$REFRESH_ID" = "None" ]; then
+                echo "Frontend ASG refresh already in progress but ID not found" >&2
+                cat "$START_ERROR" >&2
+                exit 1
+              fi
+              echo "Frontend ASG already refreshing with $REFRESH_ID"
+            else
+              cat "$START_ERROR" >&2
+              exit 1
+            fi
+          fi
+          echo "id=$REFRESH_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for frontend refresh completion
+        env:
+          WAIT_ATTEMPTS: 30
+          WAIT_DELAY: 30
+        run: |
+          set -euo pipefail
+          export AWS_PAGER=""
+          REFRESH_ID="${{ steps.frontend_refresh.outputs.id }}"
+          if [ -z "$REFRESH_ID" ] || [ "$REFRESH_ID" = "None" ]; then
+            echo "No frontend instance refresh ID to monitor" >&2
+            exit 1
+          fi
+          attempt=1
+          status="InProgress"
+          while [ "$attempt" -le "$WAIT_ATTEMPTS" ]; do
+            status=$(aws autoscaling describe-instance-refreshes \
+              --auto-scaling-group-name "$FRONTEND_ASG_NAME" \
+              --instance-refresh-ids "$REFRESH_ID" \
+              --query 'InstanceRefreshes[0].Status' \
+              --output text)
+            echo "Frontend refresh $REFRESH_ID status: $status (attempt $attempt/$WAIT_ATTEMPTS)"
+            case "$status" in
+              Successful)
+                break
+                ;;
+              Failed|Cancelled)
+                echo "Frontend refresh $REFRESH_ID ended with status $status" >&2
+                exit 1
+                ;;
+              InProgress|Pending|Cancelling)
+                sleep "$WAIT_DELAY"
+                ;;
+              *)
+                echo "Frontend refresh $REFRESH_ID reported unknown status '$status'" >&2
+                sleep "$WAIT_DELAY"
+                ;;
+            esac
+            attempt=$((attempt + 1))
+          done
+          if [ "$status" != "Successful" ]; then
+            echo "Frontend refresh $REFRESH_ID did not complete within allotted time" >&2
+            exit 1
+          fi
+
+      - name: Start backend instance refresh
+        id: backend_refresh
+        run: |
+          set -euo pipefail
+          REFRESH_ID=""
+          START_OUTPUT=$(mktemp)
+          START_ERROR=$(mktemp)
+          trap 'rm -f "$START_OUTPUT" "$START_ERROR"' EXIT
+          if aws autoscaling start-instance-refresh \
+            --auto-scaling-group-name "$BACKEND_ASG_NAME" \
+            --preferences MinHealthyPercentage=90 \
+            --output text \
+            --query 'InstanceRefreshId' >"$START_OUTPUT" 2>"$START_ERROR"; then
+            REFRESH_ID=$(cat "$START_OUTPUT")
+            echo "Started backend ASG refresh: $REFRESH_ID"
+          else
+            if grep -q "InstanceRefreshInProgress" "$START_ERROR"; then
+              REFRESH_ID=$(aws autoscaling describe-instance-refreshes \
+                --auto-scaling-group-name "$BACKEND_ASG_NAME" \
+                --query "InstanceRefreshes[?Status=='InProgress']|[0].InstanceRefreshId" \
+                --output text)
+              if [ -z "$REFRESH_ID" ] || [ "$REFRESH_ID" = "None" ]; then
+                echo "Backend ASG refresh already in progress but ID not found" >&2
+                cat "$START_ERROR" >&2
+                exit 1
+              fi
+              echo "Backend ASG already refreshing with $REFRESH_ID"
+            else
+              cat "$START_ERROR" >&2
+              exit 1
+            fi
+          fi
+          echo "id=$REFRESH_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for backend refresh completion
+        env:
+          WAIT_ATTEMPTS: 30
+          WAIT_DELAY: 30
+        run: |
+          set -euo pipefail
+          export AWS_PAGER=""
+          REFRESH_ID="${{ steps.backend_refresh.outputs.id }}"
+          if [ -z "$REFRESH_ID" ] || [ "$REFRESH_ID" = "None" ]; then
+            echo "No backend instance refresh ID to monitor" >&2
+            exit 1
+          fi
+          attempt=1
+          status="InProgress"
+          while [ "$attempt" -le "$WAIT_ATTEMPTS" ]; do
+            status=$(aws autoscaling describe-instance-refreshes \
+              --auto-scaling-group-name "$BACKEND_ASG_NAME" \
+              --instance-refresh-ids "$REFRESH_ID" \
+              --query 'InstanceRefreshes[0].Status' \
+              --output text)
+            echo "Backend refresh $REFRESH_ID status: $status (attempt $attempt/$WAIT_ATTEMPTS)"
+            case "$status" in
+              Successful)
+                break
+                ;;
+              Failed|Cancelled)
+                echo "Backend refresh $REFRESH_ID ended with status $status" >&2
+                exit 1
+                ;;
+              InProgress|Pending|Cancelling)
+                sleep "$WAIT_DELAY"
+                ;;
+              *)
+                echo "Backend refresh $REFRESH_ID reported unknown status '$status'" >&2
+                sleep "$WAIT_DELAY"
+                ;;
+            esac
+            attempt=$((attempt + 1))
+          done
+          if [ "$status" != "Successful" ]; then
+            echo "Backend refresh $REFRESH_ID did not complete within allotted time" >&2
+            exit 1
+          fi
+
+      - name: Verify ALB target groups healthy
+        run: |
+          aws elbv2 describe-target-health --target-group-arn "${{ steps.asg.outputs.frontend_tg }}"
+          aws elbv2 describe-target-health --target-group-arn "${{ steps.asg.outputs.backend_tg }}"
+
+      - name: Smoke tests against ALB
+        if: env.ALB_SMOKE_TEST_URL != ''
+        run: |
+          set -euo pipefail
+          run_curl() {
+            local url="$1"
+            echo "Probing $url"
+            curl --fail --silent --show-error --max-time 10 "$url"
+          }
+          if ! run_curl "$ALB_SMOKE_TEST_URL"; then
+            if [[ "$ALB_SMOKE_TEST_URL" == https://* ]]; then
+              ALT_URL="http://${ALB_SMOKE_TEST_URL#https://}"
+              echo "HTTPS probe failed, retrying over HTTP at $ALT_URL"
+              run_curl "$ALT_URL"
+            else
+              echo "ALB smoke test failed for $ALB_SMOKE_TEST_URL" >&2
+              exit 1
+            fi
+          fi
+
+      - name: Deployment summary
+        run: |
+          echo "### Deployment Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Frontend image: ${{ needs.build-and-push.outputs.frontend_tag }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Backend image: ${{ needs.build-and-push.outputs.backend_tag }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Migrations: ${{ needs.migrations.outputs.applied_migrations }}" >> "$GITHUB_STEP_SUMMARY"

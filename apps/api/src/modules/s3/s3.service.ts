@@ -23,13 +23,19 @@ export class S3Service {
 		const endpoint = this.configService.get<string>("s3.endpoint");
 		this.bucketName = this.configService.get<string>("s3.bucketName") || "";
 
+		// Only pass explicit credentials if provided; otherwise use default credential chain (EC2 IAM role)
+		const credentials =
+			accessKeyId && secretAccessKey
+				? {
+						accessKeyId,
+						secretAccessKey,
+						...(sessionToken && { sessionToken }),
+					}
+				: undefined;
+
 		this.s3Client = new S3Client({
 			region,
-			credentials: {
-				accessKeyId: accessKeyId || "",
-				secretAccessKey: secretAccessKey || "",
-				...(sessionToken && { sessionToken }),
-			},
+			...(credentials && { credentials }),
 			...(endpoint && {
 				endpoint,
 				forcePathStyle: true, // For localstack compatibility

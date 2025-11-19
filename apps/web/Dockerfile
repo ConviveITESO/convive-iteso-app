@@ -23,6 +23,10 @@ RUN pnpm install --frozen-lockfile --ignore-scripts
 # Build stage
 FROM base AS builder
 
+# Accept build-time environment variables
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+
 # Copy source code
 COPY packages/schemas ./packages/schemas
 COPY packages/typescript-config ./packages/typescript-config
@@ -32,6 +36,7 @@ COPY apps/web ./apps/web
 RUN pnpm --filter @repo/schemas build
 
 # Build the web application
+# NEXT_PUBLIC_API_URL is now available and will be compiled into the bundle
 RUN pnpm --filter web build
 
 # Production stage
@@ -57,13 +62,10 @@ COPY --from=builder /app/packages/schemas/package.json ./packages/schemas/
 COPY --from=builder --chown=nextjs:nodejs /app/packages/schemas/dist ./packages/schemas/dist
 
 # Copy built Next.js application
+# Note: NEXT_PUBLIC_* vars are already compiled into the bundle during build
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/public ./apps/web/public
-
-# Copy environment file (controlled by build arg)
-ARG ENV_FILE=.env.prod
-COPY apps/web/${ENV_FILE} ./.env
 
 USER nextjs
 
