@@ -1,15 +1,6 @@
 "use client";
 
-import {
-	ArrowLeft,
-	Bell,
-	Calendar,
-	CalendarCheck,
-	Home,
-	LogOut,
-	Menu,
-	SettingsIcon,
-} from "lucide-react";
+import { ArrowLeft, Calendar, CalendarCheck, Home, LogOut, Menu, SettingsIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -77,15 +68,6 @@ export default function AppHeader() {
 						</h1>
 
 						<div className="flex items-center -space-x-2">
-							<Button
-								variant="ghost"
-								size="icon"
-								onClick={() => router.push("/notifications")}
-								className="hover:bg-white/20 text-white h-12 w-12 rounded-full cursor-pointer hover:text-white"
-							>
-								<Bell className="h-5 w-5" />
-							</Button>
-
 							<Button
 								variant="ghost"
 								size="icon"
