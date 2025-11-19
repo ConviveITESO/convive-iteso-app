@@ -32,8 +32,8 @@ resource "aws_launch_template" "backend" {
     ecr_registry       = split("/", aws_ecr_repository.backend.repository_url)[0]
     backend_image      = aws_ecr_repository.backend.repository_url
     database_url       = "postgresql://${var.app_db_username}:${var.app_db_password}@${aws_db_instance.postgres.address}:${aws_db_instance.postgres.port}/${var.db_name}?sslmode=verify-full&sslrootcert=%2Fetc%2Fssl%2Fcerts%2Frds-ca-bundle.pem"
-    backend_url        = "http://${var.backend_domain}"  # Using HTTP for testing (change to HTTPS after certificate validation)
-    frontend_url       = "http://${var.frontend_domain}" # Using HTTP for testing (change to HTTPS after certificate validation)
+    backend_url        = "https://${var.backend_domain}"
+    frontend_url       = "https://${var.frontend_domain}"
     db_master_username = var.db_username
     db_master_password = var.db_password
     app_db_username    = var.app_db_username
@@ -45,7 +45,7 @@ resource "aws_launch_template" "backend" {
     # OAuth Configuration
     client_id     = var.oauth_client_id
     client_secret = var.oauth_client_secret
-    redirect_uri  = "http://${var.backend_domain}/auth/oauth-callback"
+    redirect_uri  = "https://${var.backend_domain}/auth/oauth-callback"
 
     # Admin Configuration
     admin_token = var.admin_token

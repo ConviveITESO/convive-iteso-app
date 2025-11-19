@@ -110,17 +110,22 @@ resource "aws_lb_target_group" "backend" {
 }
 
 # -----------------------------------------------------------------------------
-# HTTP Listener (Port 80) - Host-Based Routing for Testing
+# HTTP Listener (Port 80) - Redirect to HTTPS
 # -----------------------------------------------------------------------------
 resource "aws_lb_listener" "http" {
   load_balancer_arn = aws_lb.main.arn
   port              = "80"
   protocol          = "HTTP"
 
-  # Default action: forward to frontend (fallback)
+  # Default action: redirect to HTTPS
   default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.frontend.arn
+    type = "redirect"
+
+    redirect {
+      port        = "443"
+      protocol    = "HTTPS"
+      status_code = "HTTP_301"
+    }
   }
 
   tags = {
@@ -131,63 +136,8 @@ resource "aws_lb_listener" "http" {
 }
 
 # -----------------------------------------------------------------------------
-# HTTP Host-Based Routing Rules (Port 80) - FOR TESTING WITHOUT DNS
+# HTTPS Listener (Port 443)
 # -----------------------------------------------------------------------------
-
-# Frontend routing rule (conviveitesofront.ricardonavarro.mx)
-resource "aws_lb_listener_rule" "frontend_http" {
-  listener_arn = aws_lb_listener.http.arn
-  priority     = 100
-
-  action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.frontend.arn
-  }
-
-  condition {
-    host_header {
-      values = [var.frontend_domain]
-    }
-  }
-
-  tags = {
-    Name        = "${var.project_name}-frontend-http-rule"
-    Application = "ConviveITESO"
-    Component   = "frontend"
-    ManagedBy   = "terraform"
-  }
-}
-
-# Backend routing rule (conviveitesoback.ricardonavarro.mx)
-resource "aws_lb_listener_rule" "backend_http" {
-  listener_arn = aws_lb_listener.http.arn
-  priority     = 200
-
-  action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.backend.arn
-  }
-
-  condition {
-    host_header {
-      values = [var.backend_domain]
-    }
-  }
-
-  tags = {
-    Name        = "${var.project_name}-backend-http-rule"
-    Application = "ConviveITESO"
-    Component   = "backend"
-    ManagedBy   = "terraform"
-  }
-}
-
-# -----------------------------------------------------------------------------
-# HTTPS Listener (Port 443) - COMMENTED OUT UNTIL CERTIFICATE IS VALIDATED
-# -----------------------------------------------------------------------------
-# Uncomment this block once ACM certificate DNS validation is complete
-# Then update the HTTP listener above to redirect to HTTPS
-/*
 resource "aws_lb_listener" "https" {
   load_balancer_arn = aws_lb.main.arn
   port              = "443"
@@ -208,7 +158,11 @@ resource "aws_lb_listener" "https" {
   }
 }
 
+# -----------------------------------------------------------------------------
 # HTTPS Host-Based Routing Rules
+# -----------------------------------------------------------------------------
+
+# Frontend HTTPS routing rule
 resource "aws_lb_listener_rule" "frontend_https" {
   listener_arn = aws_lb_listener.https.arn
   priority     = 100
@@ -232,6 +186,7 @@ resource "aws_lb_listener_rule" "frontend_https" {
   }
 }
 
+# Backend HTTPS routing rule
 resource "aws_lb_listener_rule" "backend_https" {
   listener_arn = aws_lb_listener.https.arn
   priority     = 200
@@ -254,4 +209,3 @@ resource "aws_lb_listener_rule" "backend_https" {
     ManagedBy   = "terraform"
   }
 }
-*/
