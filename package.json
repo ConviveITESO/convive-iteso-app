@@ -29,6 +29,7 @@
 		"db:generate": "pnpm run --filter ./apps/api db:generate",
 		"db:studio": "pnpm run --filter ./apps/api db:studio",
 		"db:seed": "pnpm run --filter ./apps/api db:seed",
+		"db:seed:prod": "pnpm run --filter ./apps/api db:seed:prod",
 		"test": "pnpm run --filter ./apps/api test",
 		"test:watch": "pnpm run --filter ./apps/api test:watch",
 		"test:cov": "pnpm run --filter ./apps/api test:cov",

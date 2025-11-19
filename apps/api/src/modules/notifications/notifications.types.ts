@@ -4,3 +4,8 @@ export interface SubscriptionCreatedNotificationPayload {
 	eventName: string;
 	subscriberName: string;
 }
+
+export interface RegistrationConfirmationNotificationPayload {
+	userEmail: string;
+	userName: string;
+}

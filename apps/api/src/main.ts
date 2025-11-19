@@ -15,13 +15,14 @@ async function bootstrap() {
 	app.use(cookieParser());
 
 	// Configure CORS properly
+	const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
 	app.enableCors({
 		origin:
 			process.env.NODE_ENV === "production"
-				? ["https://your-production-domain.com"] // Replace with actual production domain
+				? [frontendUrl] // Use FRONTEND_URL environment variable
 				: ["http://localhost:3000", "http://localhost:3001"], // Development origins
 		credentials: true,
-		methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+		methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
 		allowedHeaders: ["Content-Type", "Authorization", "Cache-Control", "Pragma"],
 	});
 

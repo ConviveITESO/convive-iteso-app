@@ -59,12 +59,11 @@ COPY --from=builder --chown=nestjs:nodejs /app/packages/schemas/dist ./packages/
 # Copy built backend application
 COPY --from=builder --chown=nestjs:nodejs /app/apps/api/dist ./apps/api/dist
 
-# Copy environment file (controlled by build arg)
-ARG ENV_FILE=.env.prod
-COPY apps/api/${ENV_FILE} ./.env
-
 # Install only production dependencies
 RUN pnpm install --prod --frozen-lockfile --ignore-scripts
+
+# Note: Backend runtime environment variables are passed via EC2 user-data script
+# See: infra/user-data-backend.sh.tpl
 
 USER nestjs
 

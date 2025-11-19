@@ -75,8 +75,26 @@ export const createUserSchema = z
 
 export const updateUserSchema = createUserSchema
 	.partial()
+	.extend({
+		username: z
+			.string()
+			.min(3, "The username must be at least 3 characters long")
+			.optional()
+			.openapi({
+				description: "User username (alias for name)",
+			}),
+	})
 	.refine((data) => Object.keys(data).length > 0, {
 		message: "At least one field must be provided for update",
+	})
+	.transform((data) => {
+		// Transform username to name if provided
+		if (data.username && !data.name) {
+			data.name = data.username;
+		}
+		// Remove username from the object as it's not in the database
+		const { username: _username, ...rest } = data;
+		return rest;
 	})
 	.openapi("UpdateUserSchema", {
 		example: {

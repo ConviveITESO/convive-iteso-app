@@ -1,19 +1,235 @@
-# terraform.tfvars.example
-# Copy this file to terraform.tfvars and fill in the actual secrets before applying
+# =============================================================================
+# Terraform Variables Example for ConviveITESO Infrastructure
+# =============================================================================
+# Copy this file to `terraform.tfvars` and update with your actual values
+# =============================================================================
 
-project_name = ""
+# =============================================================================
+# Project Configuration
+# =============================================================================
 
-# RDS database configuration
-db_name     = ""
-db_username = ""
-db_password = ""
+# Project name used as prefix for all resources
+# This should match your GitHub repository name
+project_name = "convive-iteso"
 
-availability_zone =
-instance_type     = "t4g.micro" # or t4g.small
-ami_id            = ""
-key_name          = ""
+# =============================================================================
+# Database Configuration (RDS PostgreSQL)
+# =============================================================================
 
-github_user   =
-github_org    =
-github_token  =
-admin_email   =
+# Database administrator username
+# Requirements: 1-16 alphanumeric characters, must begin with a letter
+db_username = "admin"
+
+# Database administrator password (SENSITIVE - keep this secure!)
+# Requirements: 8-128 characters, no '@', '/', or '"'
+db_password = "CHANGE_THIS_SECURE_PASSWORD_123!"
+
+# Database name
+# Requirements: 1-63 alphanumeric characters, must begin with a letter
+db_name = "convivedb"
+
+# Application-specific database credentials (used by backend app)
+app_db_username = "conviveadmin"
+app_db_password = "CHANGE_THIS_APP_PASSWORD_456!"
+
+# =============================================================================
+# EC2 Configuration
+# =============================================================================
+
+# EC2 Key Pair name for SSH access
+# AWS Learner Lab default: "vockey"
+# Create your own if you need custom SSH access
+key_name = "vockey"
+
+# Primary availability zone for single-AZ resources (RDS)
+# Must match one of the zones in `availability_zones` list
+# AWS Learner Lab: use "us-east-1a" or "us-east-1b"
+availability_zone = "us-east-1a"
+
+# Optional: dedicated migration instance overrides
+# migrations_instance_type = "t3.small"
+# migrations_volume_size   = 40
+# migrations_repo_url      = "https://github.com/ConviveITESO/convive-iteso-app.git"
+
+# =============================================================================
+# GitHub Configuration (for Let's Encrypt, if needed later)
+# =============================================================================
+
+# Your GitHub username
+github_user = "your-github-username"
+
+# Your GitHub organization name
+github_org = "your-github-org"
+
+# GitHub personal access token with repo access
+# SENSITIVE - only needed if using GitHub-based deployment automation
+github_token = "ghp_your_github_token_here"
+
+# Email address for Let's Encrypt SSL certificate notifications
+admin_email = "your-email@example.com"
+
+# =============================================================================
+# Domain Configuration
+# =============================================================================
+
+# Frontend domain name (Next.js application)
+# Example: conviveitesofront.ricardonavarro.mx
+frontend_domain = "your-frontend-domain.example.com"
+
+# Backend API domain name (NestJS application)
+# Example: conviveitesoback.ricardonavarro.mx
+backend_domain = "your-backend-domain.example.com"
+
+# =============================================================================
+# SSL/TLS Configuration
+# =============================================================================
+
+# ACM Certificate ARN for HTTPS
+# IMPORTANT: Create ACM certificate first using AWS CLI or Console
+# The certificate must cover both frontend_domain and backend_domain
+# Status must be VALIDATED before enabling HTTPS listener in alb.tf
+#
+# Create certificate with AWS CLI:
+# aws acm request-certificate \
+#   --domain-name your-frontend-domain.example.com \
+#   --subject-alternative-names your-backend-domain.example.com \
+#   --validation-method DNS
+#
+# Then add DNS CNAME records to validate the certificate
+acm_certificate_arn = "arn:aws:acm:us-east-1:ACCOUNT_ID:certificate/CERTIFICATE_ID"
+
+# =============================================================================
+# OAuth Configuration
+# =============================================================================
+
+# OAuth client ID for Google/Microsoft authentication
+# SENSITIVE - keep this secure!
+oauth_client_id = "your-oauth-client-id"
+
+# OAuth client secret for Google/Microsoft authentication
+# SENSITIVE - keep this secure!
+oauth_client_secret = "your-oauth-client-secret"
+
+# =============================================================================
+# Admin Configuration
+# =============================================================================
+
+# Admin API token for backend administrative operations
+# SENSITIVE - keep this secure!
+admin_token = "your-admin-token-here"
+
+# =============================================================================
+# SMTP Configuration
+# =============================================================================
+
+# SMTP sender email address
+smtp_address = "noreply@yourdomain.com"
+
+# Local SMTP server configuration (for development/testing)
+# These are required by config validation but not used in production
+# local_smtp_host = "localhost"
+# local_smtp_port = 1025
+
+# Mailtrap API key for email service (or other SMTP provider)
+# SENSITIVE - keep this secure!
+mailtrap_api_key = "your-mailtrap-api-key"
+
+# =============================================================================
+# AWS Credentials Configuration (Optional - defaults provided)
+# =============================================================================
+# IMPORTANT: EC2 instances use IAM roles (LabRole) for actual AWS access
+# These variables have default placeholder values and are only needed for
+# config validation. You typically DO NOT need to set these.
+#
+# Only uncomment if you need to override the defaults:
+# aws_access_key_id = "not-used-iam-role"
+# aws_secret_access_key = "not-used-iam-role"
+
+# =============================================================================
+# VPC Configuration (Optional - defaults provided)
+# =============================================================================
+# Uncomment and modify if you need custom networking
+
+# VPC CIDR block
+# vpc_cidr = "10.0.0.0/16"
+
+# Public subnet CIDRs (for ALB, EC2 instances)
+# public_subnet_cidrs = ["10.0.1.0/24", "10.0.2.0/24"]
+
+# Database subnet CIDRs (for RDS)
+# database_subnet_cidrs = ["10.0.11.0/24", "10.0.12.0/24"]
+
+# Availability zones for multi-AZ resources (ALB, ASG)
+# AWS Learner Lab: must be in same region (us-east-1 or us-west-2)
+# availability_zones = ["us-east-1a", "us-east-1b"]
+
+# AWS Region
+# AWS Learner Lab supports: us-east-1 or us-west-2
+# aws_region = "us-east-1"
+
+# =============================================================================
+# EC2 Instance Configuration (Optional - hardcoded in ASG files)
+# =============================================================================
+# These values are currently hardcoded in asg-frontend.tf and asg-backend.tf
+# If you need to change them, edit the ASG files directly or extract to variables
+
+# Instance Types:
+# - Frontend: t3.small (asg-frontend.tf:14)
+# - Backend: t3.small (asg-backend.tf:15)
+
+# Auto Scaling Group Configuration:
+# - Frontend ASG: min=1, max=4, desired=2 (asg-frontend.tf:88-90)
+# - Backend ASG: min=1, max=4, desired=2 (asg-backend.tf:91-93)
+
+# =============================================================================
+# S3 Configuration (Optional - defaults provided)
+# =============================================================================
+# S3 bucket name for file uploads (profile pictures, event images, etc.)
+# Default: "convive-iteso-prod"
+# Managed in s3.tf with encryption, lifecycle policies, and CORS
+
+# Uncomment to override:
+# s3_bucket_name = "your-custom-bucket-name"
+
+# =============================================================================
+# ECR Configuration (Optional - hardcoded in ecr.tf)
+# =============================================================================
+# These values are currently hardcoded in ecr.tf
+# If you need to change them, edit ecr.tf directly
+
+# ECR Repository Names:
+# - Frontend: "convive-frontend" (ecr.tf:13)
+# - Backend: "convive-backend" (ecr.tf:39)
+
+# Image Retention Policy:
+# - Keep last 10 tagged images (ecr.tf lifecycle policies)
+# - Delete untagged images after 7 days
+
+# =============================================================================
+# AWS Learner Lab Constraints & Notes
+# =============================================================================
+
+# IMPORTANT CONSTRAINTS:
+# 1. Budget: ~$100/month maximum
+# 2. No NAT Gateways (costs $32-65/month)
+# 3. Limited to specific regions: us-east-1 or us-west-2
+# 4. Cannot modify IAM roles (LabRole is pre-configured)
+# 5. Use ARM-based instances where possible (db.t4g.micro, t3.small)
+# 6. Single-AZ RDS to save costs (multi-AZ doubles cost)
+# 7. Disable RDS backups and monitoring to save costs
+
+# COST OPTIMIZATION DECISIONS:
+# - Single ALB with host-based routing: ~$16/month (vs 2 ALBs at ~$32/month)
+# - No NAT Gateways: use public subnets only
+# - VPC Gateway Endpoint for S3: FREE (vs NAT Gateway)
+# - RDS single-AZ: ~$12/month (vs ~$24/month multi-AZ)
+# - t3.small instances: ~$15/month per instance
+# - Total estimated cost: ~$66/month (within Learner Lab budget)
+
+# DEPLOYMENT NOTES:
+# 1. Create ACM certificate FIRST and validate it
+# 2. Deploy infrastructure with `terraform apply`
+# 3. Build and push Docker images to ECR
+# 4. EC2 instances will auto-pull images from ECR
+# 5. Add DNS CNAME records to point domains to ALB DNS name
+# 6. Uncomment HTTPS listener in alb.tf once certificate is validated

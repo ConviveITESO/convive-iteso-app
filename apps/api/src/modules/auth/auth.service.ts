@@ -10,6 +10,7 @@ import { base64UrlEncode } from "../../utils/encoding";
 import { ConfigSchema } from "../config";
 import { AppDatabase, DATABASE_CONNECTION } from "../database/connection";
 import { User, users } from "../database/schemas";
+import { NotificationsQueueService } from "../notifications/notifications.service";
 import { S3Service } from "../s3/s3.service";
 
 interface TokenResponse {
@@ -27,6 +28,7 @@ export class AuthService {
 		@Inject(DATABASE_CONNECTION) private readonly db: AppDatabase,
 		private readonly configService: ConfigService<ConfigSchema>,
 		private readonly s3Service: S3Service,
+		private readonly notificationsQueueService: NotificationsQueueService,
 	) {
 		this.clientId = this.configService.getOrThrow("CLIENT_ID");
 		this.clientSecret = this.configService.getOrThrow("CLIENT_SECRET");
@@ -158,6 +160,12 @@ export class AuthService {
 				.then((res) => res[0]);
 			if (!newUser) throw new Error("Failed to create user");
 			user = this.formatUser(newUser);
+
+			// Enqueue registration confirmation notification
+			await this.notificationsQueueService.enqueueRegistrationConfirmation({
+				userEmail: newUser.email,
+				userName: newUser.name,
+			});
 		}
 
 		return {
