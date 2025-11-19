@@ -2,7 +2,6 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
 	output: "standalone",
-	// TODO: Remove this when moving to production and add the proper domains
 	images: {
 		remotePatterns: [
 			{
@@ -15,6 +14,18 @@ const nextConfig: NextConfig = {
 			{
 				protocol: "https",
 				hostname: "picsum.photos",
+				pathname: "/**",
+			},
+			// Production S3 bucket
+			{
+				protocol: "https",
+				hostname: "convive-iteso-prod.s3.us-east-1.amazonaws.com",
+				pathname: "/**",
+			},
+			// Alternative S3 URL format
+			{
+				protocol: "https",
+				hostname: "convive-iteso-prod.s3.amazonaws.com",
 				pathname: "/**",
 			},
 		],
