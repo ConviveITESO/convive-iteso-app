@@ -86,7 +86,7 @@ export function EventAnalyticsChart() {
 	const pieData = data.map((d) => ({ ...d, fill: chartConfig[d.name].color }));
 
 	return (
-		<Card data-chart={id} className="flex flex-col border-none">
+		<Card data-chart={id} className="flex flex-col border-none max-w-3xl">
 			<ChartStyle id={id} config={chartConfig} />
 			<CardHeader className="pb-0">
 				<CardTitle>Attendees</CardTitle>

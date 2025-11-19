@@ -1,70 +1,48 @@
 "use client";
 
-import { Image } from "lucide-react";
+import type { EventResponseSchema } from "@repo/schemas";
+import { Image as ImageIcon } from "lucide-react";
+import Image from "next/image";
+import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/use-auth";
 import { useHeaderTitle } from "@/hooks/use-header-title";
+import { getApiUrl } from "@/lib/api";
 import { EventAnalyticsChart } from "./_event-analysis-chart";
 import EventAnalyticsAssistants from "./_event-analytics-assistants";
 
 export default function EventAnalytics() {
 	const { isAuthenticated } = useAuth();
+	const [bannerImageUrl, setBannerImageUrl] = useState<string>();
 	useHeaderTitle("Event analytics", { showBackButton: true });
-	// ---- obtain page id ----
-	// const searchParams = useSearchParams();
+	const params = useParams();
+	const id = params.id;
 
-	// const pageId = searchParams.get("id") ?? null;
+	useEffect(() => {
+		const run = async () => {
+			const response = await fetch(`${getApiUrl()}/events/${id}`, { credentials: "include" });
+			const { imageUrl } = (await response.json()) as EventResponseSchema;
+			setBannerImageUrl(imageUrl);
+		};
+		run();
+	}, [id]);
 
 	if (!isAuthenticated) return <div>Loading...</div>;
 
-	// ---- eAPI state ----
-	/* const [apiData, setApiData] = useState<any>(null); */
-
-	/*   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null); */
-
-	/* useEffect(() => {
-		if (!pageId) return;
-		const ac = new AbortController();
-
-		(async () => {
-			try {
-				const res = await fetch(`/api/events/${encodeURIComponent(pageId)}`, {
-					signal: ac.signal,
-				});
-				if (!res.ok) throw new Error(`HTTP ${res.status}`);
-				const json = await res.json();
-				// setApiData(json)
-			} catch (err) {
-				if ((err as any).name !== "AbortError") {
-					// setError(String(err))
-				}
-			}
-		})();
-
-		return () => ac.abort();
-	}, [pageId]); // deps correctas */
-
 	return (
 		<>
-			{/* <div className="px-4 pt-4">
-				{pageId && (
-					<p className="text-xs text-gray-500">
-						ID: <span className="font-mono">{pageId}</span>
-					</p>
-				)}
-				{loading && <p className="text-sm text-gray-600">Cargando datos…</p>}
-				{error && <p className="text-sm text-red-600">Error: {error}</p>} 
-			</div>*/}
-
 			{/* image placeholder */}
 			<div className="flex justify-center pt-6">
 				<div
-					className="flex items-center justify-center w-10/12 h-40 bg-white rounded-4xl shadow-lg"
+					className="relative flex items-center justify-center w-10/12 h-40 bg-white rounded-4xl shadow-lg overflow-hidden"
 					style={{ boxShadow: "0px 2px 8px 0px rgba(99, 99, 99, 0.2)" }}
 				>
-					{/* TODO: Add event image */}
-					<Image className="h-12 w-12 text-gray-400" />
+					{bannerImageUrl ? (
+						<Image src={bannerImageUrl} alt="Image banner" fill={true} className="object-cover" />
+					) : (
+						<ImageIcon />
+					)}
 				</div>
 			</div>
 
