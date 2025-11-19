@@ -185,3 +185,12 @@
 		@apply bg-background text-foreground;
 	}
 }
+
+/* Oculta el scrollbar sin desactivar el desplazamiento */
+.hide-scrollbar {
+	-ms-overflow-style: none; /* IE y Edge */
+	scrollbar-width: none; /* Firefox */
+}
+.hide-scrollbar::-webkit-scrollbar {
+	display: none; /* Chrome, Safari */
+}

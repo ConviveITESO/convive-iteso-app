@@ -83,8 +83,8 @@ function getShuffledArray<T>(array: T[]): T[] {
 }
 
 async function resetDatabase(db: AppDatabase, seedUserEmails: string[]): Promise<void> {
-	await db.delete(schemas.eventsCategories);
-	await db.delete(schemas.eventsBadges);
+	//await db.delete(schemas.eventsCategories);
+	//await db.delete(schemas.eventsBadges);
 	await db.delete(schemas.usersGroups);
 	await db.delete(schemas.subscriptions);
 	await db.delete(schemas.comments);
