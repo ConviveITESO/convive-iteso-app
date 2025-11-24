@@ -37,7 +37,7 @@ export class RatingsService {
 
 		// The event has not ended
 		if (Date.now() < endDate.getTime()) {
-			this.logger.error(
+			this.logger.warn(
 				`Rating ${ratingData.score} was given to event ${eventId}, however the event is not finished yet.`,
 			);
 			return null;
