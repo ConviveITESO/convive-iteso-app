@@ -168,7 +168,7 @@ variable "admin_token" {
 variable "smtp_name" {
   description = "SMTP sender name"
   type        = string
-  default     = "ConviveITESO"
+  default     = "Convive ITESO"
 }
 
 variable "smtp_address" {
