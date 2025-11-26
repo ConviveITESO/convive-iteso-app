@@ -1,6 +1,7 @@
 "use client";
 
 import { Camera, User } from "lucide-react";
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -97,8 +98,7 @@ export default function ProfileSettingsPage() {
 			const updatedProfile: UserProfile = await response.json();
 			setProfile(updatedProfile);
 			setImagePreview(updatedProfile.profile);
-		} catch (err) {
-			console.error("Error uploading profile picture", err);
+		} catch (_error) {
 			setError("Failed to upload profile picture");
 		} finally {
 			setIsUploadingImage(false);
@@ -165,9 +165,16 @@ export default function ProfileSettingsPage() {
 				{/* Profile Picture */}
 				<div className="flex justify-center pt-6">
 					<div className="relative">
-						<div className="flex size-24 items-center justify-center rounded-full bg-muted overflow-hidden">
+						<div className="relative flex size-24 items-center justify-center overflow-hidden rounded-full bg-muted">
 							{imagePreview ? (
-								<img src={imagePreview} alt="Profile" className="w-full h-full object-cover" />
+								<Image
+									src={imagePreview}
+									alt="Profile"
+									fill
+									sizes="96px"
+									className="object-cover"
+									priority
+								/>
 							) : (
 								<User className="size-12 text-muted-foreground" />
 							)}
