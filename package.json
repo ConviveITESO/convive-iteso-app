@@ -37,7 +37,7 @@
 		"test:e2e": "pnpm run --filter ./apps/api test:e2e",
 		"ci": "(pnpm run test --silent || true) && pnpm run test:e2e --silent",
 		"ui:add": "pnpm --filter ./apps/web ui:add",
-		"e2e": "playwright test",
+		"e2e": "playwright test --headed",
 		"e2e:ui": "playwright test --ui",
 		"e2e:codegen": "playwright codegen http://localhost:3000"
 	},
@@ -60,5 +60,10 @@
 	},
 	"engines": {
 		"node": ">=22"
+	},
+	"pnpm": {
+		"overrides": {
+			"body-parser": "2.2.1"
+		}
 	}
 }
