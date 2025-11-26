@@ -34,7 +34,8 @@ coverage
 test-results/
 playwright/.cache/
 playwright-report/
-
+.e2e-results/
+**/test/.auth
 
 # Turbo
 .turbo

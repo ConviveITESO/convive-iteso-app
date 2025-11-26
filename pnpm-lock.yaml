@@ -26,6 +26,9 @@ importers:
       commitlint:
         specifier: ^19.8.1
         version: 19.8.1(@types/node@22.18.0)(typescript@5.9.2)
+      dotenv:
+        specifier: ^17.2.2
+        version: 17.2.2
       lefthook:
         specifier: ^1.12.3
         version: 1.12.3
