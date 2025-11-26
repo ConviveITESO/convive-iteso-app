@@ -219,3 +219,77 @@ variable "s3_bucket_name" {
   type        = string
   default     = "convive-iteso-prod"
 }
+
+# === Auto Scaling Configuration ===
+
+variable "backend_asg_min_size" {
+  description = "Minimum number of backend instances"
+  type        = number
+  default     = 2
+}
+
+variable "backend_asg_max_size" {
+  description = "Maximum number of backend instances"
+  type        = number
+  default     = 6
+}
+
+variable "backend_asg_desired_capacity" {
+  description = "Desired number of backend instances"
+  type        = number
+  default     = 3
+}
+
+variable "backend_cpu_target" {
+  description = "Target CPU utilization percentage for backend scaling"
+  type        = number
+  default     = 50.0
+}
+
+variable "backend_request_count_target" {
+  description = "Target request count per minute per target for backend scaling"
+  type        = number
+  default     = 800.0
+}
+
+variable "frontend_asg_min_size" {
+  description = "Minimum number of frontend instances"
+  type        = number
+  default     = 2
+}
+
+variable "frontend_asg_max_size" {
+  description = "Maximum number of frontend instances"
+  type        = number
+  default     = 6
+}
+
+variable "frontend_asg_desired_capacity" {
+  description = "Desired number of frontend instances"
+  type        = number
+  default     = 3
+}
+
+variable "frontend_cpu_target" {
+  description = "Target CPU utilization percentage for frontend scaling"
+  type        = number
+  default     = 55.0
+}
+
+variable "frontend_request_count_target" {
+  description = "Target request count per minute per target for frontend scaling"
+  type        = number
+  default     = 1000.0
+}
+
+variable "asg_instance_warmup" {
+  description = "Estimated time for instances to warm up (seconds)"
+  type        = number
+  default     = 180
+}
+
+variable "alb_health_check_interval" {
+  description = "Health check interval in seconds"
+  type        = number
+  default     = 15
+}

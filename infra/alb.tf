@@ -48,7 +48,7 @@ resource "aws_lb_target_group" "frontend" {
     healthy_threshold   = 2
     unhealthy_threshold = 3
     timeout             = 5
-    interval            = 30
+    interval            = var.alb_health_check_interval
     path                = "/"
     protocol            = "HTTP"
     matcher             = "200-399"
@@ -85,7 +85,7 @@ resource "aws_lb_target_group" "backend" {
     healthy_threshold   = 2
     unhealthy_threshold = 3
     timeout             = 5
-    interval            = 30
+    interval            = var.alb_health_check_interval
     path                = "/health"
     protocol            = "HTTP"
     matcher             = "200-399"
@@ -143,7 +143,7 @@ resource "aws_lb_listener" "https" {
   port              = "443"
   protocol          = "HTTPS"
   ssl_policy        = "ELBSecurityPolicy-TLS13-1-2-2021-06"
-  certificate_arn   = var.acm_certificate_arn
+  certificate_arn   = aws_acm_certificate_validation.main.certificate_arn
 
   # Default action: forward to frontend (fallback)
   default_action {

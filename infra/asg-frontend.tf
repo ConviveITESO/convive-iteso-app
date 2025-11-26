@@ -86,9 +86,9 @@ resource "aws_autoscaling_group" "frontend" {
   vpc_zone_identifier = [aws_subnet.public_az1.id, aws_subnet.public_az2.id]
 
   # Capacity configuration (aligned with AWS Learner Lab constraints)
-  min_size         = 1
-  max_size         = 4
-  desired_capacity = 2
+  min_size         = var.frontend_asg_min_size
+  max_size         = var.frontend_asg_max_size
+  desired_capacity = var.frontend_asg_desired_capacity
 
   # Health check configuration
   health_check_type         = "ELB" # Use ALB health checks
@@ -119,8 +119,8 @@ resource "aws_autoscaling_group" "frontend" {
   instance_refresh {
     strategy = "Rolling"
     preferences {
-      min_healthy_percentage = 50  # Keep at least 50% healthy during refresh
-      instance_warmup        = 300 # Wait 5 min before considering instance healthy
+      min_healthy_percentage = 50                    # Keep at least 50% healthy during refresh
+      instance_warmup        = var.asg_instance_warmup # Reduced from 300s to 180s for faster scaling
     }
   }
 
@@ -161,15 +161,34 @@ resource "aws_autoscaling_group" "frontend" {
 
 # Target tracking scaling policy (CPU-based)
 resource "aws_autoscaling_policy" "frontend_cpu" {
-  name                   = "${var.project_name}-frontend-cpu-scaling"
-  autoscaling_group_name = aws_autoscaling_group.frontend.name
-  policy_type            = "TargetTrackingScaling"
+  name                      = "${var.project_name}-frontend-cpu-scaling"
+  autoscaling_group_name    = aws_autoscaling_group.frontend.name
+  policy_type               = "TargetTrackingScaling"
+  estimated_instance_warmup = var.asg_instance_warmup
 
   target_tracking_configuration {
     predefined_metric_specification {
       predefined_metric_type = "ASGAverageCPUUtilization"
     }
-    target_value = 70.0 # Scale when average CPU > 70%
+    target_value     = var.frontend_cpu_target
+    disable_scale_in = false
+  }
+}
+
+# Target tracking scaling policy (Request Count-based)
+resource "aws_autoscaling_policy" "frontend_request_count" {
+  name                      = "${var.project_name}-frontend-request-count-scaling"
+  autoscaling_group_name    = aws_autoscaling_group.frontend.name
+  policy_type               = "TargetTrackingScaling"
+  estimated_instance_warmup = var.asg_instance_warmup
+
+  target_tracking_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ALBRequestCountPerTarget"
+      resource_label         = "${aws_lb.main.arn_suffix}/${aws_lb_target_group.frontend.arn_suffix}"
+    }
+    target_value     = var.frontend_request_count_target
+    disable_scale_in = false
   }
 }
 
