@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import path from "node:path";
 import { test as setup } from "@playwright/test";
 
@@ -7,6 +8,8 @@ const authFile = path.join(__dirname, ".auth/user.json");
 const { TEST_USER_EMAIL = "", TEST_USER_PASSWORD = "" } = process.env;
 
 setup("authenticate", async ({ page }) => {
+	await fs.promises.mkdir(path.dirname(authFile), { recursive: true });
+
 	// Perform authentication steps
 	await page.goto("/");
 	await page.getByRole("button", { name: "Sign in with ITESO" }).click();
