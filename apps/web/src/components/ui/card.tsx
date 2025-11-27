@@ -1,7 +1,33 @@
 import type * as React from "react";
 import { cn } from "@/lib/utils";
 
-function Card({ className, ...props }: React.ComponentProps<"div">) {
+type DivCardProps = {
+	as?: "div";
+} & React.HTMLAttributes<HTMLDivElement>;
+
+type ButtonCardProps = {
+	as: "button";
+} & React.ButtonHTMLAttributes<HTMLButtonElement>;
+
+type CardProps = DivCardProps | ButtonCardProps;
+
+function Card({ className, as = "div", ...props }: CardProps) {
+	if (as === "button") {
+		const buttonProps = props as React.ButtonHTMLAttributes<HTMLButtonElement>;
+		return (
+			<button
+				data-slot="card"
+				className={cn(
+					"bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm",
+					className,
+				)}
+				{...buttonProps}
+			/>
+		);
+	}
+
+	const divProps = props as React.HTMLAttributes<HTMLDivElement>;
+
 	return (
 		<div
 			data-slot="card"
@@ -9,7 +35,7 @@ function Card({ className, ...props }: React.ComponentProps<"div">) {
 				"bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm",
 				className,
 			)}
-			{...props}
+			{...divProps}
 		/>
 	);
 }
