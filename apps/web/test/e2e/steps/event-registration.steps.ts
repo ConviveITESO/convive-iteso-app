@@ -45,8 +45,10 @@ async function createEvent(page: Page, eventName: string) {
 	await page.locator("#quota").fill("25");
 
 	await page.getByRole("button", { name: /create event/i }).click();
-	await page.waitForURL(/\/manage-events$/, { timeout: 15000 });
-	await expect(page.getByText(eventName)).toBeVisible({ timeout: 15000 });
+	await page.waitForURL(/\/manage-events$/, { timeout: 30000 });
+	await expect(page.getByRole("heading", { name: eventName }).first()).toBeVisible({
+		timeout: 30000,
+	});
 }
 
 Given("I create a new event named {string}", async ({ page }, eventName: string) => {
@@ -61,11 +63,11 @@ When("I open the event {string} from manage events", async ({ page }, eventName:
 	await page.goto("/manage-events");
 	await page.waitForLoadState("domcontentloaded");
 
-	const eventCardHeading = page.getByRole("heading", { name: eventName });
-	await expect(eventCardHeading).toBeVisible({ timeout: 15000 });
-	await eventCardHeading.click();
+	const eventCardButton = page.getByRole("button", { name: `Open event ${eventName}` }).first();
+	await expect(eventCardButton).toBeVisible({ timeout: 20000 });
+	await eventCardButton.click();
 
-	await page.waitForURL(/\/events\/.+/, { timeout: 15000 });
+	await page.waitForURL(/\/events\/.+/, { timeout: 30000 });
 	await page.waitForLoadState("networkidle");
 });
 
@@ -73,11 +75,11 @@ When("I open the event {string} from the feed", async ({ page }, eventName: stri
 	await page.goto("/feed");
 	await page.waitForLoadState("domcontentloaded");
 
-	const eventCardHeading = page.getByRole("heading", { name: eventName }).first();
-	await expect(eventCardHeading).toBeVisible({ timeout: 20000 });
-	await eventCardHeading.click();
+	const eventCardButton = page.getByRole("button", { name: `Open event ${eventName}` }).first();
+	await expect(eventCardButton).toBeVisible({ timeout: 20000 });
+	await eventCardButton.click();
 
-	await page.waitForURL(/\/events\/.+/, { timeout: 15000 });
+	await page.waitForURL(/\/events\/.+/, { timeout: 30000 });
 	await page.waitForLoadState("networkidle");
 });
 

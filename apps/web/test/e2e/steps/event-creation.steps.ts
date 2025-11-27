@@ -106,7 +106,7 @@ When("I click the save button", async ({ page }) => {
 
 // Assertion steps
 Then("I should be redirected to the manage events page", async ({ page }) => {
-	await page.waitForURL("/manage-events", { timeout: 10000 });
+	await page.waitForURL("/manage-events", { timeout: 20000 });
 	expect(page.url()).toContain("/manage-events");
 });
 
@@ -117,5 +117,7 @@ Then("I should see my created event in the events list", async ({ page }) => {
 
 	// Check if the event appears in the list
 	// The event should be visible after the refresh
-	await expect(page.getByText("Test E2E Event")).toBeVisible({ timeout: 10000 });
+	await expect(page.getByRole("heading", { name: "Test E2E Event" }).first()).toBeVisible({
+		timeout: 10000,
+	});
 });

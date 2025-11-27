@@ -55,12 +55,21 @@ export function EventCard({
 		action?.();
 	};
 
+	const handleKeyDown = (e: React.KeyboardEvent) => {
+		if (e.key === "Enter" || e.key === " ") {
+			e.preventDefault();
+			onClick?.();
+		}
+	};
+
 	const locationName = "location" in event && event.location ? event.location.name : "";
 	const canUnsubscribe = mode === "subscription" && "subscriptionId" in event;
 
 	return (
 		<Card
-			onClick={onClick}
+			onClick={() => onClick?.()}
+			onKeyDown={handleKeyDown}
+			tabIndex={0}
 			className="relative cursor-pointer overflow-hidden rounded-3xl shadow-md hover:shadow-lg transition group h-64"
 		>
 			{/* Imagen de fondo (ocupa todo el card) */}
@@ -91,9 +100,17 @@ export function EventCard({
 					<h3 className="text-lg font-semibold leading-tight line-clamp-1">{event.name}</h3>
 					<p className="text-sm opacity-85">{formatDate(event.startDate)}</p>
 				</div>
-				<div className="flex items-center justify-center bg-white/90 hover:bg-white rounded-full size-9 transition">
+				<button
+					type="button"
+					onClick={(e) => {
+						e.stopPropagation();
+						onClick?.();
+					}}
+					className="flex items-center justify-center bg-white/90 hover:bg-white rounded-full size-9 transition"
+					aria-label={`Open event ${event.name}`}
+				>
 					<ArrowRight className="text-black size-5" />
-				</div>
+				</button>
 			</div>
 
 			{/* Acciones del modo admin o subscripción */}

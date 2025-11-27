@@ -1,9 +1,17 @@
 import type * as React from "react";
 import { cn } from "@/lib/utils";
 
-function Card({ className, ...props }: React.ComponentProps<"div">) {
+type CardElement = "div" | "button";
+
+type CardProps<T extends CardElement = "div"> = {
+	as?: T;
+} & React.ComponentPropsWithoutRef<T>;
+
+function Card<T extends CardElement = "div">({ className, as, ...props }: CardProps<T>) {
+	const Component = (as ?? "div") as CardElement;
+
 	return (
-		<div
+		<Component
 			data-slot="card"
 			className={cn(
 				"bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm",
