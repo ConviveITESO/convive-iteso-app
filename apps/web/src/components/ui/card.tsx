@@ -1,23 +1,41 @@
 import type * as React from "react";
 import { cn } from "@/lib/utils";
 
-type CardElement = "div" | "button";
+type DivCardProps = {
+	as?: "div";
+} & React.HTMLAttributes<HTMLDivElement>;
 
-type CardProps<T extends CardElement = "div"> = {
-	as?: T;
-} & React.ComponentPropsWithoutRef<T>;
+type ButtonCardProps = {
+	as: "button";
+} & React.ButtonHTMLAttributes<HTMLButtonElement>;
 
-function Card<T extends CardElement = "div">({ className, as, ...props }: CardProps<T>) {
-	const Component = (as ?? "div") as CardElement;
+type CardProps = DivCardProps | ButtonCardProps;
+
+function Card({ className, as = "div", ...props }: CardProps) {
+	if (as === "button") {
+		const buttonProps = props as React.ButtonHTMLAttributes<HTMLButtonElement>;
+		return (
+			<button
+				data-slot="card"
+				className={cn(
+					"bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm",
+					className,
+				)}
+				{...buttonProps}
+			/>
+		);
+	}
+
+	const divProps = props as React.HTMLAttributes<HTMLDivElement>;
 
 	return (
-		<Component
+		<div
 			data-slot="card"
 			className={cn(
 				"bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm",
 				className,
 			)}
-			{...props}
+			{...divProps}
 		/>
 	);
 }
