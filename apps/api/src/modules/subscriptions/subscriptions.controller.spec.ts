@@ -3,6 +3,7 @@ import {
 	CreateSubscriptionSchema,
 	EventIdParamSchema,
 	EventStatsResponseSchema,
+	SubscriptionCheckInRequestSchema,
 	SubscriptionIdParamSchema,
 	SubscriptionQuerySchema,
 	SubscriptionResponseSchema,
@@ -23,6 +24,8 @@ type MockedSubscriptionsService = jest.Mocked<
 		| "createSubscription"
 		| "updateSubscription"
 		| "deleteSubscription"
+		| "getQrCode"
+		| "checkIn"
 	>
 >;
 
@@ -40,6 +43,8 @@ describe("SubscriptionsController", () => {
 			createSubscription: jest.fn(),
 			updateSubscription: jest.fn(),
 			deleteSubscription: jest.fn(),
+			getQrCode: jest.fn(),
+			checkIn: jest.fn(),
 		};
 
 		const module: TestingModule = await Test.createTestingModule({
@@ -56,6 +61,41 @@ describe("SubscriptionsController", () => {
 
 	it("should be defined", () => {
 		expect(controller).toBeDefined();
+	});
+
+	describe("getQrCode", () => {
+		it("uses authenticated user id when available", async () => {
+			const req = { user: { id: "user-123" } } as UserRequest;
+			const body: CreateSubscriptionSchema = { eventId: "event-1" } as CreateSubscriptionSchema;
+			service.getQrCode.mockResolvedValue({ id: "qr" } as never);
+
+			await controller.getQrCode(body, req);
+
+			expect(service.getQrCode).toHaveBeenCalledWith("event-1", "user-123");
+		});
+
+		it("falls back to empty user id when request is missing", async () => {
+			service.getQrCode.mockResolvedValue({ id: "qr" } as never);
+
+			await controller.getQrCode({ eventId: "event-1" } as CreateSubscriptionSchema, undefined);
+
+			expect(service.getQrCode).toHaveBeenCalledWith("event-1", "");
+		});
+	});
+
+	describe("checkIn", () => {
+		it("delegates to the service", async () => {
+			const body = {
+				eventId: "event-1",
+				subscriptionId: "sub-1",
+			} as SubscriptionCheckInRequestSchema;
+			service.checkIn.mockResolvedValue({ status: "ok" } as never);
+
+			const result = await controller.checkIn(body);
+
+			expect(service.checkIn).toHaveBeenCalledWith("event-1", "sub-1");
+			expect(result).toEqual({ status: "ok" });
+		});
 	});
 
 	describe("getUserSubscriptions", () => {

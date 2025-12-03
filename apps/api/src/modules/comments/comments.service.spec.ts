@@ -13,6 +13,7 @@ describe("CommentsService", () => {
 		},
 		insert: jest.fn(),
 		update: jest.fn(),
+		where: jest.fn(),
 	};
 
 	beforeEach(async () => {
@@ -120,10 +121,9 @@ describe("CommentsService", () => {
 
 	describe("updateCommentById", () => {
 		it("updates the stored comment text", async () => {
-			const where = jest.fn().mockResolvedValue("updated");
 			const updateBuilder = {
 				set: jest.fn().mockReturnThis(),
-				where,
+				where: jest.fn().mockResolvedValue("updated"),
 			};
 			mockDb.update.mockReturnValue(updateBuilder);
 
@@ -132,7 +132,17 @@ describe("CommentsService", () => {
 			expect(result).toBe("updated");
 			expect(mockDb.update).toHaveBeenCalled();
 			expect(updateBuilder.set).toHaveBeenCalledWith({ commentText: "New text" });
-			expect(where).toHaveBeenCalledWith(expect.any(Object));
+			expect(updateBuilder.where).toHaveBeenCalledWith(expect.any(Object));
+		});
+
+		it("propagates update errors", async () => {
+			const updateBuilder = {
+				set: jest.fn().mockReturnThis(),
+				where: jest.fn().mockRejectedValue(new Error("fail")),
+			};
+			mockDb.update.mockReturnValue(updateBuilder);
+
+			await expect(service.updateCommentById(1, "New text")).rejects.toThrow("fail");
 		});
 	});
 });
