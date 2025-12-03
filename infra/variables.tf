@@ -283,9 +283,17 @@ variable "frontend_request_count_target" {
 }
 
 variable "asg_instance_warmup" {
-  description = "Estimated time for instances to warm up (seconds)"
+  description = "Estimated time for instances to warm up (seconds) - production value"
   type        = number
   default     = 180
+}
+
+# === Demo-Optimized Warmup Configuration ===
+
+variable "asg_instance_warmup_demo" {
+  description = "Reduced warmup time for classroom demonstration (seconds). Lower values make scaling faster for demos. Set to 60s for quick scale-up/down cycles."
+  type        = number
+  default     = 60 # 1 minute for fast demo response (production: 180s)
 }
 
 variable "alb_health_check_interval" {

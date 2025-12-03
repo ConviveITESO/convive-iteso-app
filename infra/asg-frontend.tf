@@ -119,8 +119,8 @@ resource "aws_autoscaling_group" "frontend" {
   instance_refresh {
     strategy = "Rolling"
     preferences {
-      min_healthy_percentage = 50                    # Keep at least 50% healthy during refresh
-      instance_warmup        = var.asg_instance_warmup # Reduced from 300s to 180s for faster scaling
+      min_healthy_percentage = 50                           # Keep at least 50% healthy during refresh
+      instance_warmup        = var.asg_instance_warmup_demo # Reduced for faster demo scaling
     }
   }
 
@@ -164,14 +164,14 @@ resource "aws_autoscaling_policy" "frontend_cpu" {
   name                      = "${var.project_name}-frontend-cpu-scaling"
   autoscaling_group_name    = aws_autoscaling_group.frontend.name
   policy_type               = "TargetTrackingScaling"
-  estimated_instance_warmup = var.asg_instance_warmup
+  estimated_instance_warmup = var.asg_instance_warmup_demo # Reduced for faster demo response
 
   target_tracking_configuration {
     predefined_metric_specification {
       predefined_metric_type = "ASGAverageCPUUtilization"
     }
     target_value     = var.frontend_cpu_target
-    disable_scale_in = false
+    disable_scale_in = false # Enable scale-in for demo
   }
 }
 
@@ -180,7 +180,7 @@ resource "aws_autoscaling_policy" "frontend_request_count" {
   name                      = "${var.project_name}-frontend-request-count-scaling"
   autoscaling_group_name    = aws_autoscaling_group.frontend.name
   policy_type               = "TargetTrackingScaling"
-  estimated_instance_warmup = var.asg_instance_warmup
+  estimated_instance_warmup = var.asg_instance_warmup_demo # Reduced for faster demo response
 
   target_tracking_configuration {
     predefined_metric_specification {
@@ -188,7 +188,7 @@ resource "aws_autoscaling_policy" "frontend_request_count" {
       resource_label         = "${aws_lb.main.arn_suffix}/${aws_lb_target_group.frontend.arn_suffix}"
     }
     target_value     = var.frontend_request_count_target
-    disable_scale_in = false
+    disable_scale_in = false # Enable scale-in for demo
   }
 }
 

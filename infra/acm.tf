@@ -75,7 +75,7 @@ output "certificate_validation_instructions" {
   To complete certificate validation, add these DNS records to your domain:
 
   ${join("\n  ", [for dvo in aws_acm_certificate.main.domain_validation_options :
-    "Domain: ${dvo.domain_name}\n  Type: ${dvo.resource_record_type}\n  Name: ${dvo.resource_record_name}\n  Value: ${dvo.resource_record_value}\n"])}
+"Domain: ${dvo.domain_name}\n  Type: ${dvo.resource_record_type}\n  Name: ${dvo.resource_record_name}\n  Value: ${dvo.resource_record_value}\n"])}
 
   Steps:
   1. Log in to your DNS provider (GoDaddy, Cloudflare, etc.)
