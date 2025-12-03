@@ -32,21 +32,28 @@ describe("SubscriptionsService", () => {
 		position: null,
 	};
 
+	// Helper function to create dates relative to now
+	const getDateFromNow = (daysOffset: number): Date => {
+		const date = new Date();
+		date.setDate(date.getDate() + daysOffset);
+		return date;
+	};
+
 	const mockEvent = {
 		id: "event-123",
 		name: "Test Event",
 		description: "Test Description",
-		startDate: new Date("2025-12-01"),
-		endDate: new Date("2025-12-02"),
+		startDate: getDateFromNow(35), // Event starts 35 days from now
+		endDate: getDateFromNow(36), // Event ends 36 days from now
 		quota: 10,
-		opensAt: new Date("2024-01-01"),
-		closesAt: new Date("2025-12-01"),
-		unregisterClosesAt: new Date("2025-11-30"),
+		opensAt: getDateFromNow(-30), // Registration opened 30 days ago
+		closesAt: getDateFromNow(30), // Registration closes 30 days from now
+		unregisterClosesAt: getDateFromNow(25), // Unregistration closes 25 days from now
 		createdBy: "user-456",
 		locationId: "location-123",
 		groupId: "group-123",
-		createdAt: new Date("2024-01-01"),
-		updatedAt: new Date("2024-01-01"),
+		createdAt: getDateFromNow(-60), // Created 60 days ago
+		updatedAt: getDateFromNow(-60), // Updated 60 days ago
 	};
 
 	const mockEventCreator = {
@@ -117,7 +124,7 @@ describe("SubscriptionsService", () => {
 				subscriptionId: "sub-1",
 				id: "event-1",
 				name: "Event 1",
-				startDate: new Date("2025-09-21T19:45:00Z"),
+				startDate: getDateFromNow(10), // Event starts 10 days from now
 				locationName: "Main Hall",
 			};
 			(mockDb.where as jest.Mock).mockResolvedValueOnce([rawRow]);
@@ -469,7 +476,7 @@ describe("SubscriptionsService", () => {
 		});
 
 		it("should throw ForbiddenException when registration not yet open", async () => {
-			const futureEvent = { ...mockEvent, opensAt: new Date("2026-01-01") };
+			const futureEvent = { ...mockEvent, opensAt: getDateFromNow(1) }; // Opens tomorrow
 
 			(mockTransaction.limit as jest.Mock)
 				.mockResolvedValueOnce([]) // No existing subscription
@@ -484,7 +491,7 @@ describe("SubscriptionsService", () => {
 		});
 
 		it("should throw ForbiddenException when registration has closed", async () => {
-			const pastEvent = { ...mockEvent, closesAt: new Date("2023-01-01") };
+			const pastEvent = { ...mockEvent, closesAt: getDateFromNow(-1) }; // Closed yesterday
 
 			(mockTransaction.limit as jest.Mock)
 				.mockResolvedValueOnce([]) // No existing subscription
@@ -592,7 +599,7 @@ describe("SubscriptionsService", () => {
 		});
 
 		it("should throw ForbiddenException when unregistration period has closed", async () => {
-			const pastEvent = { ...mockEvent, unregisterClosesAt: new Date("2023-01-01") };
+			const pastEvent = { ...mockEvent, unregisterClosesAt: getDateFromNow(-1) }; // Closed yesterday
 			const joinedResult = {
 				subscription: mockSubscription,
 				event: pastEvent,
@@ -692,7 +699,7 @@ describe("SubscriptionsService", () => {
 		});
 
 		it("should throw ForbiddenException when unregistration period has closed", async () => {
-			const pastEvent = { ...mockEvent, unregisterClosesAt: new Date("2023-01-01") };
+			const pastEvent = { ...mockEvent, unregisterClosesAt: getDateFromNow(-1) }; // Closed yesterday
 			const joinedResult = {
 				subscription: mockSubscription,
 				event: pastEvent,
