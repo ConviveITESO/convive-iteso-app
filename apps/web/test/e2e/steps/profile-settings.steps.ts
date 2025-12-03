@@ -38,16 +38,6 @@ Given("I navigate to the profile settings page", async ({ page }) => {
 	originalUsername = (await usernameInput.inputValue()) || "";
 });
 
-When('I click the "Edit Username" button', async ({ page }) => {
-	const editButton = page.getByRole("button", { name: /edit username/i });
-	await expect(editButton).toBeVisible({ timeout: 10000 });
-	await editButton.click();
-
-	const usernameInput = page.locator('input#username[data-slot="input"]');
-	await expect(usernameInput).toBeEnabled({ timeout: 5000 });
-	await expect(usernameInput).not.toHaveAttribute("disabled");
-});
-
 When("I change my username to {string}", async ({ page }, newUsername: string) => {
 	const usernameInput = page.locator('input#username[data-slot="input"]');
 	await expect(usernameInput).toBeEnabled();
@@ -71,31 +61,6 @@ When("I change my username to {string}", async ({ page }, newUsername: string) =
 	await page.click('label[for="username"]');
 
 	await page.waitForTimeout(1500);
-});
-
-When('I click the "Save Changes" button', async ({ page }) => {
-	const saveButton = page.getByRole("button", { name: /save changes/i });
-	await expect(saveButton).toBeVisible();
-
-	await expect(saveButton).toBeEnabled({ timeout: 20000 });
-	await saveButton.click();
-
-	const savingButton = page.getByRole("button", { name: /saving/i });
-	await expect(savingButton)
-		.toBeVisible({ timeout: 5000 })
-		.catch(() => {});
-
-	const editButton = page.getByRole("button", { name: /edit username/i });
-	await expect(editButton).toBeVisible({ timeout: 10000 });
-});
-
-When('I click the "Cancel" button', async ({ page }) => {
-	const cancelButton = page.getByRole("button", { name: /cancel/i });
-	await expect(cancelButton).toBeVisible();
-	await cancelButton.click();
-
-	const editButton = page.getByRole("button", { name: /edit username/i });
-	await expect(editButton).toBeVisible({ timeout: 5000 });
 });
 
 When("I upload a new profile picture", async ({ page }) => {

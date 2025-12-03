@@ -10,12 +10,6 @@ Given("I am authenticated as an event creator", async () => {
 });
 
 // Navigation steps
-Given("I am on the feed page", async ({ page }) => {
-	// Navigate to feed page
-	await page.goto("/feed");
-	await page.waitForLoadState("domcontentloaded");
-});
-
 When("I navigate to the manage events page", async ({ page }) => {
 	// Navigate directly to manage events page
 	await page.goto("/manage-events");
