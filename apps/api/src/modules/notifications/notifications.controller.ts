@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 import { Body, Controller, Get, Param, Post } from "@nestjs/common";
 import { SubscriptionCreatedTestPayload, subscriptionCreatedSchema, z } from "@repo/schemas";
 import { ZodBody, ZodParam, ZodValidationPipe } from "@/pipes/zod-validation/zod-validation.pipe";

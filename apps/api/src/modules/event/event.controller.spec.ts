@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { BadRequestException } from "@nestjs/common";
 import { Test, TestingModule } from "@nestjs/testing";
 import {
 	CreateEventSchema,
@@ -97,6 +98,52 @@ describe("EventController", () => {
 		expect(result).toEqual(createdEvent);
 		expect(mockEventService.createEvent).toHaveBeenCalledWith(payload, req.user.id, file);
 		expect(mockEventService.getEventByIdOrThrow).toHaveBeenCalledWith(eventId, req.user.id);
+	});
+
+	it("throws when event payload is missing", async () => {
+		const req = { user: { id: "user-1" } } as UserRequest;
+		await expect(controller.createEvent({}, req, {} as Express.Multer.File)).rejects.toThrow(
+			BadRequestException,
+		);
+	});
+
+	it("throws when event payload fails validation", async () => {
+		const req = { user: { id: "user-1" } } as UserRequest;
+
+		await expect(
+			controller.createEvent(
+				{ data: JSON.stringify({ name: "only-name" }) },
+				req,
+				{} as Express.Multer.File,
+			),
+		).rejects.toThrow(BadRequestException);
+	});
+
+	it("throws when image is missing or invalid", async () => {
+		const req = { user: { id: "user-1" } } as UserRequest;
+		const payload: CreateEventSchema = {
+			name: "Test event",
+			description: "Description",
+			startDate: new Date().toISOString(),
+			endDate: new Date().toISOString(),
+			quota: 25,
+			locationId: randomUUID(),
+			categoryIds: [],
+			badgeIds: [],
+		};
+
+		await expect(
+			controller.createEvent(
+				{ data: JSON.stringify(payload) },
+				req,
+				undefined as unknown as Express.Multer.File,
+			),
+		).rejects.toThrow(BadRequestException);
+		await expect(
+			controller.createEvent({ data: JSON.stringify(payload) }, req, {
+				mimetype: "text/plain",
+			} as Express.Multer.File),
+		).rejects.toThrow(BadRequestException);
 	});
 
 	it("updates an event and returns the latest state", async () => {
