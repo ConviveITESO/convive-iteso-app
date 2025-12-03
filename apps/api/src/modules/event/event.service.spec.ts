@@ -279,7 +279,7 @@ describe("EventService", () => {
 			const result = await service.getEventsCreatedByUser("user-1", { status: "active" } as any);
 
 			expect(result).toHaveLength(2);
-			expect(result[0]?.startDate).toBe(rows[0]?.startDate.toISOString());
+			expect(result[0]?.startDate).toBe(String(rows[0]?.startDate));
 			expect(result[1]?.startDate).toBe("2024-01-01T00:00:00.000Z");
 			expect(result[0]?.attendance).toEqual({ registered: 2, waitlisted: 1 });
 			expect(result[1]?.attendance).toEqual({ registered: 0, waitlisted: 0 });

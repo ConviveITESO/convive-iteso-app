@@ -704,7 +704,7 @@ describe("SubscriptionsService", () => {
 			const result = await service.checkIn("event-1", "sub-1");
 
 			expect(result.status).toBe("success");
-			expect(result.subscription.status).toBe("attended");
+			expect(result.subscription?.status).toBe("attended");
 		});
 	});
 

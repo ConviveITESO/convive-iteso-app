@@ -3,6 +3,7 @@ import {
 	CreateSubscriptionSchema,
 	EventIdParamSchema,
 	EventStatsResponseSchema,
+	SubscriptionCheckInRequestSchema,
 	SubscriptionIdParamSchema,
 	SubscriptionQuerySchema,
 	SubscriptionResponseSchema,

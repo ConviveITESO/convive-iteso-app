@@ -7,7 +7,7 @@ import { NotificationsProcessor } from "./notifications.processor";
 import { NotificationsQueueService } from "./notifications.service";
 
 describe("NotificationsQueueService", () => {
-	const mockQueue: jest.Mocked<Partial<Queue>> = {
+	const mockQueue: jest.Mocked<Pick<Queue, "add" | "getJob" | "getJobCounts">> = {
 		add: jest.fn(),
 		getJob: jest.fn(),
 		getJobCounts: jest.fn(),
@@ -20,7 +20,7 @@ describe("NotificationsQueueService", () => {
 	});
 
 	it("enqueues subscription-created notifications", async () => {
-		mockQueue.add.mockResolvedValue({ id: "job-1" });
+		mockQueue.add.mockResolvedValue({ id: "job-1" } as Job);
 		const payload = {
 			creatorEmail: "creator@test.com",
 			creatorName: "Creator",
@@ -39,7 +39,7 @@ describe("NotificationsQueueService", () => {
 	});
 
 	it("enqueues registration confirmation notifications", async () => {
-		mockQueue.add.mockResolvedValue({ id: "job-2" });
+		mockQueue.add.mockResolvedValue({ id: "job-2" } as Job);
 		const payload = { userEmail: "user@test.com", userName: "User" };
 
 		const jobId = await service.enqueueRegistrationConfirmation(payload);
