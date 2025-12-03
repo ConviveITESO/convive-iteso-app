@@ -114,7 +114,7 @@ export default function RatingModal({ eventId, userHasRated }: Props) {
 					<DialogDescription>{description}</DialogDescription>
 				</DialogHeader>
 				{/** Content of the dialog modal */}
-				<form onSubmit={handleFormSubmit} className="flex flex-col gap-3">
+				<form id="ratingModal" onSubmit={handleFormSubmit} className="flex flex-col gap-3">
 					<RatingStars
 						className="self-center"
 						stars={5}

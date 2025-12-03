@@ -19,7 +19,7 @@ export default function RatingStars({ stars, initialValue, handler, className }:
 	const canHover = (starValue: number) => hoveredStars && starValue <= hoveredStars;
 
 	return (
-		<div className={`flex items-center justify-start ${className}`}>
+		<div className={`rating-star flex items-center justify-start ${className}`}>
 			{numberArray.map((starValue) => (
 				<StarIcon
 					onMouseEnter={() => {

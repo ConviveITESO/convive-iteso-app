@@ -31,7 +31,7 @@ export default function CommentsModal({ eventId }: Props) {
 	return (
 		<Dialog>
 			<DialogTrigger asChild>
-				<Button className="rounded-full" variant="ghost">
+				<Button className="comments-btn rounded-full" variant="ghost">
 					<MessageSquareTextIcon />
 				</Button>
 			</DialogTrigger>

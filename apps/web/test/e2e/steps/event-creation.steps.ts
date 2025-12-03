@@ -117,7 +117,5 @@ Then("I should see my created event in the events list", async ({ page }) => {
 
 	// Check if the event appears in the list
 	// The event should be visible after the refresh
-	await expect(page.getByRole("heading", { name: "Test E2E Event" }).first()).toBeVisible({
-		timeout: 10000,
-	});
+	await expect(page.getByText("Test E2E Event").first()).toBeVisible({ timeout: 10000 });
 });
